@@ -37,6 +37,7 @@ img {
 }
 
 .site-header,
+.site-tagline,
 .footer,
 .hero,
 .workspace,
@@ -112,6 +113,20 @@ img {
   border-color: var(--line);
   color: white;
   background: linear-gradient(135deg, rgba(31, 95, 170, 0.38), rgba(201, 32, 50, 0.20));
+}
+
+.site-tagline {
+  margin-top: 0.8rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(201, 32, 50, 0.58);
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(90deg, rgba(201, 32, 50, 0.92), rgba(151, 20, 35, 0.70));
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  box-shadow: 0 18px 48px rgba(201, 32, 50, 0.20);
 }
 
 .hero {

@@ -415,6 +415,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <NavLink to="/advertise">Advertise</NavLink>
         </nav>
       </header>
+      <div className="site-tagline">A Centralized source for positive economic news in the state of Texas</div>
       {children}
       <footer className="footer">
         <div>
