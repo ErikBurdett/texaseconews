@@ -279,9 +279,9 @@ function FeedControls({ selectedSlugs, activeTopic, onChange }: { selectedSlugs:
     onChange([...next]);
   }
 
-  function addMatchingCounties() {
+  function applyMatchingCounties() {
     const next = new Set(selectedSlugs);
-    filtered.forEach((county) => next.add(county.slug));
+    if (query.trim()) filtered.forEach((county) => next.add(county.slug));
     onChange([...next]);
   }
 
@@ -291,10 +291,12 @@ function FeedControls({ selectedSlugs, activeTopic, onChange }: { selectedSlugs:
         <p className="eyebrow">Pick your Texas</p>
         <h2>County radar</h2>
       </div>
-      <input className="search-input" placeholder="Search counties, cities, metros, or regions. Try: Dallas, Fort Worth, Houston" value={query} onChange={(event) => setQuery(event.target.value)} />
+      <form className="search-row" onSubmit={(event) => { event.preventDefault(); applyMatchingCounties(); }}>
+        <input className="search-input" placeholder="Search counties, cities, metros, or regions. Try: Potter, Randall" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <button className="button search-button" type="submit">Search</button>
+      </form>
       <div className="quick-actions">
         <button type="button" onClick={() => onChange([])}>Texas feed</button>
-        {query.trim() ? <button type="button" onClick={addMatchingCounties}>Add {filtered.length} matches</button> : null}
         <button type="button" onClick={() => onChange(["dallas", "tarrant", "collin", "denton"])}>DFW</button>
         <button type="button" onClick={() => onChange(["travis", "williamson", "hays"])}>Austin corridor</button>
         <button type="button" onClick={() => onChange(["harris", "fort-bend", "montgomery", "galveston"])}>Houston</button>
@@ -326,6 +328,9 @@ function FeedControls({ selectedSlugs, activeTopic, onChange }: { selectedSlugs:
           </label>
         ))}
       </div>
+      <button className="button apply-filters" onClick={applyMatchingCounties} type="button">
+        {query.trim() ? `Apply ${filtered.length} matching filters` : "Apply filters"}
+      </button>
     </section>
   );
 }

@@ -250,6 +250,16 @@ img {
   font: inherit;
 }
 
+.search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+}
+
+.search-button {
+  min-width: 92px;
+}
+
 .quick-actions {
   margin: 0.85rem 0;
 }
@@ -342,6 +352,14 @@ img {
 .county-pill small {
   grid-column: 2;
   color: var(--muted);
+}
+
+.apply-filters {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.9rem;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(31, 95, 170, 0.42), rgba(201, 32, 50, 0.24));
 }
 
 .feed-column {
