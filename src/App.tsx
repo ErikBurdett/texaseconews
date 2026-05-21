@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
 import { AdSlot } from "./components/AdSlot";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
@@ -403,6 +403,7 @@ function NewsCard({ item }: { item: NewsItem }) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <MarketTicker />
       <header className="site-header">
         <Link className="brand" to="/">
           <span className="brand-mark">TX</span>
@@ -425,6 +426,49 @@ function Shell({ children }: { children: React.ReactNode }) {
         <AdSlot slot="footer" limit={1} />
       </footer>
     </>
+  );
+}
+
+function MarketTicker() {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+    script.textContent = JSON.stringify({
+      symbols: [
+        { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
+        { proName: "TVC:DJI", title: "Dow" },
+        { proName: "NASDAQ:IXIC", title: "Nasdaq" },
+        { proName: "NASDAQ:TXN", title: "Texas Instruments" },
+        { proName: "NYSE:XOM", title: "Exxon Mobil" },
+        { proName: "NYSE:CVX", title: "Chevron" },
+        { proName: "NASDAQ:TSLA", title: "Tesla" },
+        { proName: "NYMEX:CL1!", title: "Crude Oil" },
+        { proName: "NYMEX:NG1!", title: "Natural Gas" },
+      ],
+      showSymbolLogo: true,
+      isTransparent: false,
+      displayMode: "adaptive",
+      colorTheme: "dark",
+      locale: "en",
+    });
+    container.appendChild(script);
+
+    return () => {
+      container.innerHTML = "";
+    };
+  }, []);
+
+  return (
+    <aside className="market-ticker" aria-label="Market ticker">
+      <div className="tradingview-widget-container" ref={containerRef} />
+    </aside>
   );
 }
 
