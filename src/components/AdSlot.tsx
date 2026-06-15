@@ -21,6 +21,7 @@ export function AdSlot({ slot, county, topics, limit = 1 }: { slot: AdSlotId; co
 function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number]; slot: AdSlotId; county?: TexasCounty }) {
   const ref = useRef<HTMLAnchorElement | null>(null);
   const tracked = useRef(false);
+  const isExternal = /^https?:\/\//i.test(ad.href);
 
   useEffect(() => {
     const element = ref.current;
@@ -41,12 +42,27 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
     return () => observer.disconnect();
   }, [ad, county, slot]);
 
-  return (
-    <Link className={`ad-card ad-card-${ad.placement}`} onClick={() => trackAdEvent("ad_click", ad, slot, county)} ref={ref} to={ad.href}>
+  const content = (
+    <>
+      {ad.imageUrl ? <img className="ad-image" src={ad.imageUrl} alt="" loading="lazy" /> : null}
       <span className="ad-label">Sponsored by {ad.sponsor}</span>
       <strong>{ad.title}</strong>
       <span>{ad.body}</span>
       <em>{ad.cta}</em>
+    </>
+  );
+
+  if (isExternal) {
+    return (
+      <a className={`ad-card ad-card-${ad.placement}`} href={ad.href} onClick={() => trackAdEvent("ad_click", ad, slot, county)} ref={ref} rel="noopener noreferrer" target="_blank">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link className={`ad-card ad-card-${ad.placement}`} onClick={() => trackAdEvent("ad_click", ad, slot, county)} ref={ref} to={ad.href}>
+      {content}
     </Link>
   );
 }

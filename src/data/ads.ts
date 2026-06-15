@@ -1,3 +1,5 @@
+import windseyeAd from "../../ad-assets/windseye-ad.png";
+
 export type AdSlotId = "hero" | "feed-inline" | "sidebar" | "footer";
 export type AdPlacement = "leaderboard" | "card" | "compact";
 
@@ -9,6 +11,7 @@ export type AdCreative = {
   body: string;
   cta: string;
   href: string;
+  imageUrl?: string;
   active: boolean;
   priority: number;
   placement: AdPlacement;
@@ -21,6 +24,20 @@ export type AdCreative = {
 };
 
 export const ads: AdCreative[] = [
+  {
+    id: "winds-eye-capital",
+    campaignId: "sun-belt-real-estate",
+    sponsor: "Wind's Eye Capital",
+    title: "Relationship-driven commercial real estate investing",
+    body: "Wind's Eye Capital is a commercial real estate private equity firm focused on major growth markets across the Sun Belt.",
+    cta: "Visit Wind's Eye Capital",
+    href: "https://windseyecapital.com/",
+    imageUrl: windseyeAd,
+    active: true,
+    priority: 100,
+    placement: "leaderboard",
+    targeting: { slots: ["hero", "sidebar", "footer"] },
+  },
   {
     id: "tx-innovation-council",
     campaignId: "launch-partners",

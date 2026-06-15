@@ -3,7 +3,8 @@ import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
 import { AdSlot } from "./components/AdSlot";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
 import { selectedFeeds, type FeedDefinition } from "./data/feeds";
-import { getTopicBySlug, isTopicSlug, topicCatalog, topicSlugs, type TopicSlug } from "./data/topics";
+import { countiesForRegion, getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
+import { energySubtopics, featuredTopicSlugs, getTopicBySlug, topicCatalog, type TopicSlug } from "./data/topics";
 import { fetchNewsFeeds, type NewsItem } from "./lib/rss";
 
 const mission =
@@ -20,6 +21,9 @@ function App() {
       <Route path="/mission" element={<MissionPage />} />
       <Route path="/advertise" element={<AdvertisePage />} />
       <Route path="/topic/:topicSlug" element={<TopicPage />} />
+      <Route path="/industry/:topicSlug" element={<TopicPage />} />
+      <Route path="/region/:regionSlug" element={<RegionPage />} />
+      <Route path="/region/:regionSlug/industry/:topicSlug" element={<RegionIndustryPage />} />
       <Route path="/county/:countySlug" element={<CountyPage />} />
       <Route path="/county/:countySlug/topic/:topicSlug" element={<CountyTopicPage />} />
       <Route path="*" element={<NotFoundPage />} />
@@ -27,12 +31,13 @@ function App() {
   );
 }
 
-function HomePage({ initialCounty, topicSlug }: { initialCounty?: TexasCounty; topicSlug?: TopicSlug }) {
+function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?: TexasCounty; initialRegion?: RegionSlug; topicSlug?: TopicSlug }) {
   const [selectedSlugs, setSelectedSlugs] = useStoredCountySelection();
   const selectedCounties = useMemo(() => selectedSlugs.map(getCountyBySlug).filter(Boolean) as TexasCounty[], [selectedSlugs]);
   const activeTopic = topicSlug ? topicCatalog[topicSlug] : undefined;
+  const activeRegion = initialRegion ? regionCatalog[initialRegion] : undefined;
   const countyFeedRequests = useMemo(() => (selectedCounties.length ? selectedFeeds(selectedCounties, topicSlug) : []), [selectedCounties, topicSlug]);
-  const statewideFeedRequests = useMemo(() => selectedFeeds([], topicSlug), [topicSlug]);
+  const statewideFeedRequests = useMemo(() => selectedFeeds([], topicSlug, initialRegion), [initialRegion, topicSlug]);
   const countyNews = useNews(countyFeedRequests);
   const statewideNews = useNews(statewideFeedRequests);
   const [visibleCountyCount, setVisibleCountyCount] = useState(pageSize);
@@ -41,12 +46,12 @@ function HomePage({ initialCounty, topicSlug }: { initialCounty?: TexasCounty; t
     () => [...new Set([...(topicSlug ? [topicSlug] : []), ...countyNews.items.flatMap((item) => item.topics), ...statewideNews.items.flatMap((item) => item.topics)])],
     [countyNews.items, statewideNews.items, topicSlug],
   );
-  const scopeLabel = selectedCounties.length ? selectedCounties.map((county) => county.name).join(", ") : "Texas statewide";
+  const scopeLabel = activeRegion ? activeRegion.label : selectedCounties.length ? selectedCounties.map((county) => county.name).join(", ") : "Texas statewide";
   const feedTitle = `${scopeLabel} ${activeTopic ? activeTopic.label.toLowerCase() : "economic momentum"}`;
   const isLoading = countyNews.loading || statewideNews.loading;
   const hasError = countyNews.error || statewideNews.error;
 
-  usePageTitle(activeTopic ? `${activeTopic.label} News` : "Positive Texas Economic News");
+  usePageTitle(activeTopic || activeRegion ? `${scopeLabel} ${activeTopic?.label || "News"}` : "Positive Texas Economic News");
   useInfiniteScroll(() => {
     if (selectedCounties.length && visibleCountyCount < countyNews.items.length) {
       setVisibleCountyCount((current) => Math.min(current + pageSize, countyNews.items.length));
@@ -62,35 +67,38 @@ function HomePage({ initialCounty, topicSlug }: { initialCounty?: TexasCounty; t
 
   useEffect(() => {
     if (initialCounty) setSelectedSlugs([initialCounty.slug]);
-  }, [initialCounty, setSelectedSlugs]);
+    else if (initialRegion) setSelectedSlugs(regionCatalog[initialRegion].countySlugs);
+  }, [initialCounty, initialRegion, setSelectedSlugs]);
 
   return (
     <Shell>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">{activeTopic ? "Lone Star topic radar" : "Texas growth signal"}</p>
-          <h1>{activeTopic ? `${activeTopic.label} news across Texas.` : "Good news from every corner of Texas."}</h1>
-          <p>{activeTopic ? activeTopic.description : mission}</p>
+          <p className="eyebrow">{activeTopic || activeRegion ? "Texas business radar" : "Texas growth signal"}</p>
+          <h1>{activeTopic ? `${activeTopic.label} news across Texas.` : activeRegion ? `${activeRegion.label} growth news.` : "Good news from every corner of Texas."}</h1>
+          <p>{activeTopic ? activeTopic.description : activeRegion ? activeRegion.description : mission}</p>
+          <div className="hero-chip-group" aria-label="Energy subtopics">
+            {energySubtopics.map((subtopic) => <span key={subtopic}>{subtopic}</span>)}
+          </div>
           <div className="hero-stats">
             <span><strong>{texasCounties.length}</strong> counties</span>
-            <span><strong>{selectedCounties.length || "All"}</strong> feed scope</span>
-            <span><strong>{activeTopic ? activeTopic.label : "Bright"}</strong> growth filter</span>
+            <span><strong>{activeRegion ? displayLabel(activeRegion) : selectedCounties.length || "All"}</strong> feed scope</span>
+            <span><strong>{activeTopic ? displayLabel(activeTopic) : "Bright"}</strong> growth filter</span>
           </div>
         </div>
         <div className="hero-panel">
           <div className="orb" />
-          <h2>{activeTopic ? `Track ${activeTopic.label.toLowerCase()} by county` : "Build your Texas opportunity radar"}</h2>
-          <p>Pick one county, several counties, or stay statewide. We check each local story for real Texas place signals before it lands in your feed.</p>
+          <h2>{activeTopic ? `Track ${activeTopic.label.toLowerCase()} by region and county` : "Track Texas growth by region and industry"}</h2>
+          <p>Search by county, metro, or corridor, then narrow the feed by the industries driving Texas business: energy, finance, infrastructure, chips, sports, medicine, agriculture, and more.</p>
           <AdSlot slot="hero" limit={1} />
         </div>
       </section>
 
       <section className="workspace">
-        <aside className="control-rail">
-          <FeedControls selectedSlugs={selectedSlugs} activeTopic={topicSlug} onChange={setSelectedSlugs} />
+        <div className="filter-stack">
+          <FeedControls selectedSlugs={selectedSlugs} activeRegion={initialRegion} activeTopic={topicSlug} onChange={setSelectedSlugs} />
           <AdSlot slot="sidebar" topics={topics} limit={2} />
-        </aside>
-
+        </div>
         <main className="feed-column">
           <div className="feed-toolbar">
             <div>
@@ -143,6 +151,24 @@ function TopicPage() {
 
   if (!topic || !topicSlug) return <NotFoundPage title="Topic not found" body="That topic is not available in the Texas EcoNews feed." />;
   return <HomePage topicSlug={topicSlug as TopicSlug} />;
+}
+
+function RegionPage() {
+  const { regionSlug } = useParams();
+  const region = getRegionBySlug(regionSlug);
+
+  if (!region || !regionSlug) return <NotFoundPage title="Region not found" body="That region URL does not match an available Texas EcoNews region." />;
+  return <HomePage initialRegion={regionSlug as RegionSlug} />;
+}
+
+function RegionIndustryPage() {
+  const { regionSlug, topicSlug } = useParams();
+  const region = getRegionBySlug(regionSlug);
+  const topic = getTopicBySlug(topicSlug);
+
+  if (!region || !regionSlug) return <NotFoundPage title="Region not found" body="That region URL does not match an available Texas EcoNews region." />;
+  if (!topic || !topicSlug) return <NotFoundPage title="Industry not found" body="That industry is not available in the Texas EcoNews feed." />;
+  return <HomePage initialRegion={regionSlug as RegionSlug} topicSlug={topicSlug as TopicSlug} />;
 }
 
 function CountyTopicPage() {
@@ -265,7 +291,7 @@ function NotFoundPage({ title = "Page not found", body = "The page you requested
   );
 }
 
-function FeedControls({ selectedSlugs, activeTopic, onChange }: { selectedSlugs: string[]; activeTopic?: TopicSlug; onChange: (slugs: string[]) => void }) {
+function FeedControls({ selectedSlugs, activeRegion, activeTopic, onChange }: { selectedSlugs: string[]; activeRegion?: RegionSlug; activeTopic?: TopicSlug; onChange: (slugs: string[]) => void }) {
   const [query, setQuery] = useState("");
   const selected = new Set(selectedSlugs);
   const searchTerms = searchTokens(query);
@@ -285,40 +311,60 @@ function FeedControls({ selectedSlugs, activeTopic, onChange }: { selectedSlugs:
     onChange([...next]);
   }
 
+  function selectRegion(regionSlug: RegionSlug) {
+    onChange(countiesForRegion(regionSlug).map((county) => county.slug));
+  }
+
   return (
     <section className="controls-card">
       <div className="controls-heading">
-        <p className="eyebrow">Pick your Texas</p>
-        <h2>County radar</h2>
+        <p className="eyebrow">Search and filter news</p>
+        <h2>Build your Texas feed</h2>
+        <p>Start with a region, county, city, or metro. Then choose an industry chip to get a shareable feed.</p>
       </div>
       <form className="search-row" onSubmit={(event) => { event.preventDefault(); applyMatchingCounties(); }}>
-        <input className="search-input" placeholder="Search counties, cities, metros, or regions. Try: Potter, Randall" value={query} onChange={(event) => setQuery(event.target.value)} />
-        <button className="button search-button" type="submit">Search</button>
+        <input className="search-input" placeholder="Search county, city, metro, or region. Try: Frisco or Potter, Randall" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <button className="button search-button" type="submit">Add matches</button>
       </form>
+      <div className="filter-block">
+        <span className="filter-label">Regions</span>
+        <div className="quick-actions">
+          <Link className={!activeRegion && !selectedSlugs.length ? "topic-chip selected" : "topic-chip"} onClick={() => onChange([])} to="/">Texas feed</Link>
+          {regionSlugs.map((regionSlug) => (
+            <Link className={activeRegion === regionSlug ? "topic-chip selected" : "topic-chip"} key={regionSlug} onClick={() => selectRegion(regionSlug)} to={`/region/${regionSlug}`}>
+              {displayLabel(regionCatalog[regionSlug])}
+            </Link>
+          ))}
+        </div>
+      </div>
+      <div className="filter-block">
+        <span className="filter-label">Industries</span>
+        <div className="topic-links">
+          <Link className={!activeTopic ? "topic-chip selected" : "topic-chip"} to={activeRegion ? `/region/${activeRegion}` : "/"}>All growth</Link>
+          {featuredTopicSlugs.map((slug) => (
+            <Link className={activeTopic === slug ? "topic-chip selected" : "topic-chip"} key={slug} to={topicPath(slug, selectedCounties.length === 1 ? selectedCounties[0] : undefined, activeRegion)}>
+              {displayLabel(topicCatalog[slug])}
+            </Link>
+          ))}
+        </div>
+      </div>
       <div className="quick-actions">
-        <button type="button" onClick={() => onChange([])}>Texas feed</button>
-        <button type="button" onClick={() => onChange(["dallas", "tarrant", "collin", "denton"])}>DFW</button>
-        <button type="button" onClick={() => onChange(["travis", "williamson", "hays"])}>Austin corridor</button>
-        <button type="button" onClick={() => onChange(["harris", "fort-bend", "montgomery", "galveston"])}>Houston</button>
+        <span className="filter-label">Suggested searches</span>
+        <button type="button" onClick={() => setQuery("Frisco")}>Frisco</button>
+        <button type="button" onClick={() => setQuery("Permian Basin")}>Permian Basin</button>
+        <button type="button" onClick={() => setQuery("Potter, Randall")}>Potter, Randall</button>
+        <button type="button" onClick={() => setQuery("San Antonio")}>San Antonio</button>
       </div>
       {selectedCounties.length ? (
         <div className="selected-counties" aria-label="Selected counties">
           {selectedCounties.map((county) => (
-            <button key={county.slug} type="button" onClick={() => toggleCounty(county.slug)}>
+            <button aria-label={`Remove ${county.name} County`} key={county.slug} type="button" onClick={() => toggleCounty(county.slug)}>
               {county.name} x
             </button>
           ))}
         </div>
       ) : null}
-      <div className="topic-links">
-        <Link className={!activeTopic ? "topic-chip selected" : "topic-chip"} to="/">All growth</Link>
-        {topicSlugs.map((slug) => (
-          <Link className={activeTopic === slug ? "topic-chip selected" : "topic-chip"} key={slug} to={topicPath(slug, selectedCounties.length === 1 ? selectedCounties[0] : undefined)}>
-            {topicCatalog[slug].label}
-          </Link>
-        ))}
-      </div>
-      <p className="picker-count">{filtered.length} of {texasCounties.length} Texas counties shown. Search accepts multiple counties or cities separated by commas.</p>
+      <p className="picker-count">{filtered.length} of {texasCounties.length} Texas counties shown. Search accepts counties, cities, metros, regions, and comma-separated lists.</p>
       <div className="county-picker">
         {filtered.map((county) => (
           <label className={selected.has(county.slug) ? "county-pill selected" : "county-pill"} key={county.fips}>
@@ -342,13 +388,18 @@ function searchTokens(query: string) {
     .filter(Boolean);
 }
 
+function displayLabel(definition: { label: string; shortLabel?: string }) {
+  return definition.shortLabel || definition.label;
+}
+
 function countyMatchesSearch(county: TexasCounty, terms: string[]) {
   if (!terms.length) return true;
   const text = normalizeCountySearch(countySearchText(county));
   return terms.some((term) => text.includes(term));
 }
 
-function topicPath(topicSlug: TopicSlug, county?: TexasCounty) {
+function topicPath(topicSlug: TopicSlug, county?: TexasCounty, region?: RegionSlug) {
+  if (region) return `/region/${region}/industry/${topicSlug}`;
   return county ? `/county/${county.slug}/topic/${topicSlug}` : `/topic/${topicSlug}`;
 }
 
@@ -378,7 +429,7 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
 function NewsCard({ item }: { item: NewsItem }) {
   return (
     <article className="news-card">
-      <a className="news-image" href={item.link} rel="noopener noreferrer" target="_blank">
+      <a aria-label={`Open article: ${item.title}`} className="news-image" href={item.link} rel="noopener noreferrer" target="_blank">
         <img src={item.imageUrl} alt="" loading="lazy" />
       </a>
       <div className="news-body">
@@ -388,13 +439,6 @@ function NewsCard({ item }: { item: NewsItem }) {
         </div>
         <h3><a href={item.link} rel="noopener noreferrer" target="_blank">{item.title}</a></h3>
         {item.description ? <p>{item.description}</p> : null}
-        <div className="tag-row">
-          {(item.topics.length ? item.topics : ["growth"]).map((topic) => (
-            isTopicSlug(topic) ? <Link key={topic} to={topicPath(topic, getCountyBySlug(item.countySlug))}>{topicCatalog[topic].label}</Link> : <span key={topic}>{topic.replace("-", " ")}</span>
-          ))}
-          {item.countySlug ? <Link to={`/county/${item.countySlug}`}>{getCountyBySlug(item.countySlug)?.name || "County"}</Link> : null}
-          {item.source ? <span>{item.source}</span> : null}
-        </div>
       </div>
     </article>
   );

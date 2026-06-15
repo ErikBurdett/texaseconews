@@ -211,8 +211,19 @@ function extractTopics(value: string) {
   if (text.includes("data center") || text.includes(" ai ") || text.includes("artificial intelligence")) topics.push("ai", "data-centers");
   if (text.includes("job") || text.includes("hiring") || text.includes("workforce")) topics.push("jobs");
   if (text.includes("manufactur") || text.includes("semiconductor")) topics.push("manufacturing");
-  if (text.includes("energy") || text.includes("power")) topics.push("energy");
+  if (text.includes("energy") || text.includes("power") || text.includes("oil") || text.includes("gas") || text.includes("wind") || text.includes("solar") || text.includes("nuclear")) topics.push("energy");
   if (text.includes("startup") || text.includes("small business")) topics.push("small-business");
+  if (text.includes("finance") || text.includes("bank") || text.includes("fintech") || text.includes("private equity") || text.includes("stock exchange")) topics.push("finance");
+  if (text.includes("aerospace") || text.includes("aviation") || text.includes("space industry")) topics.push("aerospace");
+  if (text.includes("infrastructure") || text.includes("construction") || text.includes("port") || text.includes("logistics")) topics.push("infrastructure");
+  if (text.includes("chip") || text.includes("fab")) topics.push("semiconductors");
+  if (text.includes("robot")) topics.push("robotics");
+  if (text.includes("film") || text.includes("movie") || text.includes("studio")) topics.push("film");
+  if (text.includes("sports") || text.includes("stadium") || text.includes("training facility")) topics.push("sports-business");
+  if (text.includes("theme park") || text.includes("attraction")) topics.push("theme-parks");
+  if (text.includes("defense") || text.includes("military")) topics.push("defense");
+  if (text.includes("hospital") || text.includes("medical") || text.includes("medicine") || text.includes("health system")) topics.push("medicine");
+  if (text.includes("agriculture") || text.includes("farming") || text.includes("ranching") || text.includes("cattle") || text.includes("hemp")) topics.push("agriculture");
   return [...new Set(topics)].filter(isTopicSlug);
 }
 

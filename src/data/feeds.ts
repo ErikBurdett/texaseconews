@@ -1,4 +1,5 @@
 import { countyQueryAliases, type TexasCounty } from "./counties";
+import { regionCatalog, type RegionSlug } from "./regions";
 import { topicCatalog, type TopicSlug } from "./topics";
 
 export type FeedScope = "texas" | "county";
@@ -77,6 +78,20 @@ export function topicFeed(topic: TopicSlug): FeedDefinition {
   };
 }
 
+export function regionFeed(region: RegionSlug, topic?: TopicSlug): FeedDefinition {
+  const regionDefinition = regionCatalog[region];
+  const locationTerms = regionDefinition.queryTerms.map((term) => `"${term}"`).join(" OR ");
+  const terms = topic ? topicCatalog[topic].queryTerms.join(" OR ") : positiveEconomicTerms.join(" OR ");
+
+  return {
+    id: topic ? `region-${region}-${topic}` : `region-${region}`,
+    label: topic ? `${regionDefinition.label} ${topicCatalog[topic].label}` : regionDefinition.label,
+    scope: "texas",
+    region: regionDefinition.label,
+    url: googleNewsFeed(`(${locationTerms}) (${terms}) ${excludedTerms}`),
+  };
+}
+
 export function countyFeed(county: TexasCounty, topic?: TopicSlug): FeedDefinition {
   const locationTerms = countyQueryAliases(county).map((alias) => `"${alias}"`).join(" OR ");
   const terms = topic ? topicCatalog[topic].queryTerms.join(" OR ") : positiveEconomicTerms.join(" OR ");
@@ -91,8 +106,9 @@ export function countyFeed(county: TexasCounty, topic?: TopicSlug): FeedDefiniti
   };
 }
 
-export function selectedFeeds(counties: TexasCounty[], topic?: TopicSlug) {
+export function selectedFeeds(counties: TexasCounty[], topic?: TopicSlug, region?: RegionSlug) {
   if (counties.length) return counties.map((county) => countyFeed(county, topic));
+  if (region) return [regionFeed(region, topic)];
   if (topic) return [topicFeed(topic)];
   return statewideFeeds;
 }
