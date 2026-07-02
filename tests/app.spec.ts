@@ -34,6 +34,9 @@ async function mockExternalProviders(page: Page) {
   await page.route("https://s3.tradingview.com/**", (route) =>
     route.fulfill({ status: 200, contentType: "application/javascript", body: "window.__tradingViewMocked = true;" }),
   );
+  await page.route("https://www.livecoinwatch.com/**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "window.__liveCoinWatchMocked = true;" }),
+  );
   await page.route("https://api.allorigins.win/raw**", (route) =>
     route.fulfill({ status: 200, contentType: "application/rss+xml", body: rssFor(route.request().url()) }),
   );
@@ -52,7 +55,10 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("heading", { name: "Build your Texas feed" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
-  await expect(page.getByText("Sponsored by Wind's Eye Capital")).toBeVisible();
+  await expect(page.getByText("Sponsored by Double B Ranch")).toBeVisible();
+  await expect(page.getByText("TexasBusiness.News")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
 });
 
 test("supports multi-county search, region filters, and industry navigation", async ({ page }) => {
@@ -63,13 +69,11 @@ test("supports multi-county search, region filters, and industry navigation", as
   await expect(page.getByRole("button", { name: "Remove Randall County" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Selected counties articles" })).toBeVisible();
 
-  await page.getByRole("link", { name: "DFW" }).click();
-  await expect(page).toHaveURL("/region/dfw");
-  await expect(page.getByRole("button", { name: "Remove Dallas County" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Remove Tarrant County" })).toBeVisible();
+  await page.getByRole("button", { name: "DFW" }).click();
+  await expect(page.getByRole("button", { name: "Remove DFW region" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Energy" }).click();
-  await expect(page).toHaveURL("/region/dfw/industry/energy");
+  await page.getByRole("button", { name: "Energy" }).click();
+  await expect(page.getByRole("button", { name: "Remove Energy industry" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Energy news across Texas." })).toBeVisible();
 });
 
@@ -87,11 +91,11 @@ test("renders shareable county and county-topic routes", async ({ page }) => {
 test("renders shareable region and region-industry routes", async ({ page }) => {
   await page.goto("/region/permian-basin");
   await expect(page.getByRole("heading", { name: "Permian Basin growth news." })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Remove Midland County" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove Permian Basin region" })).toBeVisible();
 
   await page.goto("/region/gulf/industry/finance");
   await expect(page.getByRole("heading", { name: "Finance news across Texas." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Finance" })).toHaveClass(/selected/);
+  await expect(page.getByRole("button", { name: "Finance" })).toHaveClass(/selected/);
 });
 
 test("covers directory, mission, advertising, and not-found routes", async ({ page }) => {
@@ -108,6 +112,14 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
   await page.goto("/advertise");
   await expect(page.getByRole("heading", { name: "Reach Texans looking for what is growing." })).toBeVisible();
   await expect(page.getByText("Launch packages")).toBeVisible();
+
+  await page.goto("/terms");
+  await expect(page.getByRole("heading", { name: "Terms for using TexasBusiness.News." })).toBeVisible();
+  await expect(page.getByText("No Professional Advice")).toBeVisible();
+
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "Privacy-first by design." })).toBeVisible();
+  await expect(page.getByText("Local Preferences")).toBeVisible();
 
   await page.goto("/not-a-real-route");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();

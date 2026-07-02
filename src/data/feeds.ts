@@ -32,6 +32,23 @@ const positiveEconomicTerms = [
   "port expansion",
   "housing development",
   "economic opportunity",
+  "robotics",
+  "technology",
+  "sports business",
+  "finance",
+  "Texas Stock Exchange",
+  "space",
+  "SpaceX",
+  "Blue Origin",
+  "Firefly Aerospace",
+  "real estate",
+  "ranching",
+  "cattle",
+  "higher education",
+  "medical",
+  "Baylor Scott and White",
+  "hunting",
+  "state park",
 ];
 
 const excludedTerms = "-death -killed -murder -shooting -violence -drug -drugs -arrest -crash -fatal -crime -lawsuit -scandal";
@@ -63,6 +80,12 @@ export const statewideFeeds: FeedDefinition[] = [
     label: "Opportunity",
     scope: "texas",
     url: googleNewsFeed(`Texas ("economic opportunity" OR "workforce training" OR startup OR "small business" OR "business expansion") ${excludedTerms}`),
+  },
+  {
+    id: "texas-business-sectors",
+    label: "Texas Business Sectors",
+    scope: "texas",
+    url: googleNewsFeed(`Texas (robotics OR technology OR finance OR "Texas Stock Exchange" OR space OR "real estate" OR ranching OR cattle OR "higher education" OR medical OR hunting OR tourism OR "state park") ${excludedTerms}`),
   },
 ];
 
@@ -106,9 +129,25 @@ export function countyFeed(county: TexasCounty, topic?: TopicSlug): FeedDefiniti
   };
 }
 
-export function selectedFeeds(counties: TexasCounty[], topic?: TopicSlug, region?: RegionSlug) {
-  if (counties.length) return counties.map((county) => countyFeed(county, topic));
-  if (region) return [regionFeed(region, topic)];
-  if (topic) return [topicFeed(topic)];
+function asArray<T>(value?: T | T[]) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+export function selectedFeeds(counties: TexasCounty[], topics?: TopicSlug | TopicSlug[], regions?: RegionSlug | RegionSlug[]) {
+  const selectedTopics = asArray(topics);
+  const selectedRegions = asArray(regions);
+
+  if (counties.length) {
+    if (selectedTopics.length) return counties.flatMap((county) => selectedTopics.map((topic) => countyFeed(county, topic)));
+    return counties.map((county) => countyFeed(county));
+  }
+
+  if (selectedRegions.length) {
+    if (selectedTopics.length) return selectedRegions.flatMap((region) => selectedTopics.map((topic) => regionFeed(region, topic)));
+    return selectedRegions.map((region) => regionFeed(region));
+  }
+
+  if (selectedTopics.length) return selectedTopics.map(topicFeed);
   return statewideFeeds;
 }

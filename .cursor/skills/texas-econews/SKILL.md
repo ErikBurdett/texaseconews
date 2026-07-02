@@ -1,13 +1,13 @@
 ---
-name: texas-econews
-description: Provides Texas EcoNews project context, roadmap priorities, testing expectations, deployment constraints, and Texas-focused compliance guidance. Use when working on Texas EcoNews features, docs, audits, Playwright tests, Amplify deployment, region filters, industry taxonomy, sponsor placements, or compliance.
+name: texas-business-news
+description: Provides TexasBusiness.News project context, roadmap priorities, testing expectations, deployment constraints, and Texas-focused compliance guidance. Use when working on TexasBusiness.News features, docs, audits, Playwright tests, Amplify deployment, region filters, industry taxonomy, sponsor placements, or compliance.
 ---
 
-# Texas EcoNews
+# TexasBusiness.News
 
 ## Product Context
 
-Texas EcoNews is a lightweight frontend-only React SPA for positive Texas economic news. There is no backend for now. Keep solutions static, client-side, and deployable through AWS Amplify Hosting connected to GitHub unless the user explicitly asks for backend work.
+TexasBusiness.News is a lightweight frontend-only React SPA for positive Texas business news. There is no backend for now. Keep solutions static, client-side, and deployable through AWS Amplify Hosting connected to GitHub unless the user explicitly asks for backend work.
 
 ## Current Stack
 

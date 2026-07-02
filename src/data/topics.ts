@@ -1,4 +1,4 @@
-export type TopicCategory = "technology" | "energy" | "industry" | "finance" | "places" | "public-sector" | "lifestyle";
+export type TopicCategory = "technology" | "energy" | "industry" | "finance" | "places" | "public-sector" | "lifestyle" | "education" | "outdoors" | "real-estate";
 
 export type TopicDefinition = {
   label: string;
@@ -47,12 +47,24 @@ export const topicCatalog = {
     description: "Local entrepreneurship, startups, storefronts, and Main Street opportunity.",
     queryTerms: ["small business", "startup", "entrepreneur", "opens", "launches"],
   },
+  technology: {
+    label: "Technology",
+    category: "technology",
+    description: "Software, chips, data, AI, automation, digital infrastructure, and applied technology growth.",
+    queryTerms: ["technology", "software", "AI", "data center", "semiconductor", "automation", "digital infrastructure"],
+  },
   finance: {
     label: "Finance",
     category: "finance",
     description: "Banking, fintech, private equity, insurance, and Texas financial-sector growth.",
     queryTerms: ["finance", "banking", "fintech", "private equity", "insurance", "Texas Stock Exchange", "Y'all Street"],
     subtopics: ["Banking", "Fintech", "Private Equity", "Insurance", "Texas Financial System", "Texas Stock Exchange"],
+  },
+  "tx-stock-exchange": {
+    label: "TX Stock Exchange",
+    category: "finance",
+    description: "Texas Stock Exchange, capital markets, listings, finance jobs, and related business services.",
+    queryTerms: ["Texas Stock Exchange", "TXSE", "Y'all Street", "stock exchange", "capital markets", "listings"],
   },
   aerospace: {
     label: "Aerospace",
@@ -87,7 +99,7 @@ export const topicCatalog = {
     queryTerms: ["film industry", "movie production", "studio", "soundstage", "film incentives", "movie capital"],
   },
   "sports-business": {
-    label: "Sports Business",
+    label: "Sports",
     category: "lifestyle",
     description: "College and pro sports operations, facilities, training centers, ownership, and sports health business.",
     queryTerms: ["sports business", "college sports", "pro sports", "training facility", "stadium", "sports operations", "sports health insurance"],
@@ -111,20 +123,95 @@ export const topicCatalog = {
     description: "Hospital construction, health research, medical real estate, biotech, and Texas health-system growth.",
     queryTerms: ["hospital construction", "medical research", "health system", "Baylor Scott White", "Rice", "MD Anderson", "biotech"],
   },
+  medical: {
+    label: "Medical",
+    category: "industry",
+    description: "Hospitals, care systems, research, medical real estate, and health business growth.",
+    queryTerms: ["medical", "hospital", "health system", "Baylor Scott and White", "Baylor Scott White", "clinic", "medical research", "biotech"],
+  },
   agriculture: {
-    label: "Agriculture",
+    label: "Agricultural",
     category: "industry",
     description: "Farming, ranching, cattle, hemp, food systems, agtech, and rural economic development.",
     queryTerms: ["agriculture", "farming", "ranching", "cattle", "hemp", "food production", "agtech"],
     subtopics: ["Hemp", "Farming", "Ranching", "Cattle", "Food", "Agtech"],
+  },
+  space: {
+    label: "Space",
+    category: "technology",
+    description: "Space launch, aerospace suppliers, SpaceX, Blue Origin, Firefly, and Texas space-economy growth.",
+    queryTerms: ["space", "SpaceX", "Blue Origin", "Firefly Aerospace", "spaceport", "launch site", "rocket", "aerospace"],
+  },
+  "real-estate": {
+    label: "Real Estate",
+    category: "real-estate",
+    description: "Commercial real estate, development, housing, land, industrial, retail, and mixed-use growth.",
+    queryTerms: ["real estate", "commercial real estate", "development", "land", "industrial real estate", "multifamily", "mixed-use"],
+  },
+  ranching: {
+    label: "Ranching",
+    category: "outdoors",
+    description: "Ranching, land stewardship, rural business, wildlife, and working-land economics.",
+    queryTerms: ["ranching", "ranch", "ranch land", "land stewardship", "wildlife management", "rural business"],
+  },
+  cattle: {
+    label: "Cattle",
+    category: "industry",
+    description: "Cattle, beef, livestock markets, ranch operations, and food-supply business news.",
+    queryTerms: ["cattle", "beef", "livestock", "ranch operations", "cattle market", "meat processing"],
+  },
+  "higher-education": {
+    label: "Higher Education",
+    category: "education",
+    description: "Texas colleges, universities, research, workforce pipelines, facilities, and higher-ed business activity.",
+    queryTerms: ["higher education", "university", "college", "WTAMU", "West Texas A&M", "TSU", "Texas Southern University", "UT", "University of Texas", "Texas A&M"],
+    subtopics: ["WTAMU", "TSU", "UT", "Texas A&M", "Research", "Workforce"],
+  },
+  hunting: {
+    label: "Hunting",
+    category: "outdoors",
+    description: "Hunting, outfitting, wildlife, outdoor recreation, land, and tourism business.",
+    queryTerms: ["hunting", "outfitter", "wildlife", "deer", "outdoor recreation", "hunting lease"],
+  },
+  tourism: {
+    label: "Tourism",
+    category: "lifestyle",
+    description: "Travel, hospitality, attractions, destination marketing, conventions, and visitor economy growth.",
+    queryTerms: ["tourism", "travel", "hospitality", "visitor economy", "hotel", "convention", "destination marketing"],
+  },
+  "state-parks": {
+    label: "State Parks",
+    category: "outdoors",
+    description: "Texas state parks, outdoor recreation, park investments, trails, tourism, and conservation business.",
+    queryTerms: ["Texas state parks", "state park", "TPWD", "parks and wildlife", "outdoor recreation", "trails"],
   },
 } as const satisfies Record<string, TopicDefinition>;
 
 export type TopicSlug = keyof typeof topicCatalog;
 
 export const topicSlugs = Object.keys(topicCatalog) as TopicSlug[];
-export const featuredTopicSlugs = ["energy", "finance", "aerospace", "infrastructure", "semiconductors", "robotics", "film", "sports-business", "defense", "medicine", "agriculture"] as const satisfies TopicSlug[];
-export const energySubtopics = topicCatalog.energy.subtopics;
+export const featuredTopicSlugs = [
+  "energy",
+  "robotics",
+  "small-business",
+  "infrastructure",
+  "technology",
+  "sports-business",
+  "finance",
+  "tx-stock-exchange",
+  "agriculture",
+  "space",
+  "real-estate",
+  "ranching",
+  "cattle",
+  "higher-education",
+  "medical",
+  "hunting",
+  "tourism",
+  "state-parks",
+] as const satisfies TopicSlug[];
+
+export const heroTopicSlugs = featuredTopicSlugs;
 
 export function getTopicBySlug(slug?: string) {
   return slug && isTopicSlug(slug) ? topicCatalog[slug] : undefined;

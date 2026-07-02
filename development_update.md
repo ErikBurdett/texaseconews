@@ -1,10 +1,10 @@
-# Texas EcoNews Development Update
+# TexasBusiness.News Development Update
 
 Date: June 14, 2026
 
 ## Executive Summary
 
-Texas EcoNews is currently a lightweight frontend-only React SPA for positive Texas economic news. It has a working Vite/React foundation, client-side routing, county and topic filters, sponsor placements, external RSS ingestion through client-side proxy providers, and AWS Amplify deployment notes. There is no backend, database, authentication, CMS, or editorial workflow yet.
+TexasBusiness.News is currently a lightweight frontend-only React SPA for positive Texas business news. It has a working Vite/React foundation, client-side routing, county and topic filters, sponsor placements, external RSS ingestion through client-side proxy providers, and AWS Amplify deployment notes. There is no backend, database, authentication, CMS, or editorial workflow yet.
 
 The current app is a strong proof-of-concept for a simple public site, but it is not feature complete. The next work should focus on the content taxonomy requested in the meeting notes, region filters, expanded industry/topic pages, static legal/compliance pages, better SEO/share metadata, CI coverage, and production hardening for Amplify.
 
@@ -154,7 +154,7 @@ Update the hero to make the broader Texas business scope obvious:
 - Add visible energy subtopic chips: Oil, Gas, Wind, Solar, Nuclear, Grid.
 - Add high-value industry chips: Finance, Aerospace, Infrastructure, Semiconductors, Robotics, Film, Sports Business, Defense, Medicine, Agriculture.
 - Consider a temporary Texas Stock Exchange banner: Texas Stock Exchange / "Y'all Street" opening in July. Verify the opening date and phrasing before publishing.
-- Add a sponsor or partner card for Winds Eye Capital after confirming spelling, desired copy, and whether "Brittian's business" is internal shorthand or public-facing language.
+- Add sponsor or partner cards only after confirming spelling, desired copy, destination URL, and legal comfort for public-facing language.
 
 ### Phase 3: Region Pages
 
@@ -389,7 +389,7 @@ Later:
 
 ## Open Questions
 
-- Confirm public name and spelling for Winds Eye Capital and Brittian/Brittain/Britton.
+- Confirm public sponsor names, spelling, destination URLs, and approved ad copy before publishing.
 - Confirm whether Texas Stock Exchange launch timing and "Y'all Street" banner copy are approved for publication.
 - Confirm whether sports business should be a normal industry topic, a top-level section, or both.
 - Confirm whether theme parks belong under Tourism, Real Estate/Development, or their own Attractions category.

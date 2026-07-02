@@ -68,6 +68,25 @@ const positiveKeywords = [
   "development",
   "headquarters",
   "innovation",
+  "robotics",
+  "technology",
+  "sports",
+  "finance",
+  "stock exchange",
+  "space",
+  "spacex",
+  "blue origin",
+  "firefly",
+  "real estate",
+  "ranching",
+  "cattle",
+  "higher education",
+  "university",
+  "college",
+  "medical",
+  "hospital",
+  "hunting",
+  "state park",
 ];
 
 const blockedKeywords = [
@@ -209,12 +228,15 @@ function extractTopics(value: string) {
   const text = ` ${value.toLowerCase()} `;
   const topics: string[] = [];
   if (text.includes("data center") || text.includes(" ai ") || text.includes("artificial intelligence")) topics.push("ai", "data-centers");
+  if (text.includes("technology") || text.includes("software") || text.includes("digital infrastructure")) topics.push("technology");
   if (text.includes("job") || text.includes("hiring") || text.includes("workforce")) topics.push("jobs");
   if (text.includes("manufactur") || text.includes("semiconductor")) topics.push("manufacturing");
   if (text.includes("energy") || text.includes("power") || text.includes("oil") || text.includes("gas") || text.includes("wind") || text.includes("solar") || text.includes("nuclear")) topics.push("energy");
   if (text.includes("startup") || text.includes("small business")) topics.push("small-business");
   if (text.includes("finance") || text.includes("bank") || text.includes("fintech") || text.includes("private equity") || text.includes("stock exchange")) topics.push("finance");
+  if (text.includes("texas stock exchange") || text.includes("txse") || text.includes("y'all street")) topics.push("tx-stock-exchange");
   if (text.includes("aerospace") || text.includes("aviation") || text.includes("space industry")) topics.push("aerospace");
+  if (text.includes("space") || text.includes("spacex") || text.includes("blue origin") || text.includes("firefly")) topics.push("space");
   if (text.includes("infrastructure") || text.includes("construction") || text.includes("port") || text.includes("logistics")) topics.push("infrastructure");
   if (text.includes("chip") || text.includes("fab")) topics.push("semiconductors");
   if (text.includes("robot")) topics.push("robotics");
@@ -222,8 +244,15 @@ function extractTopics(value: string) {
   if (text.includes("sports") || text.includes("stadium") || text.includes("training facility")) topics.push("sports-business");
   if (text.includes("theme park") || text.includes("attraction")) topics.push("theme-parks");
   if (text.includes("defense") || text.includes("military")) topics.push("defense");
-  if (text.includes("hospital") || text.includes("medical") || text.includes("medicine") || text.includes("health system")) topics.push("medicine");
+  if (text.includes("real estate") || text.includes("development") || text.includes("multifamily") || text.includes("mixed-use")) topics.push("real-estate");
+  if (text.includes("ranching") || text.includes(" ranch ") || text.includes("ranch land")) topics.push("ranching");
+  if (text.includes("cattle") || text.includes("beef") || text.includes("livestock")) topics.push("cattle");
+  if (text.includes("higher education") || text.includes("university") || text.includes("college") || text.includes("wtamu") || text.includes("west texas a&m") || text.includes("tsu") || text.includes("texas southern") || text.includes("university of texas")) topics.push("higher-education");
+  if (text.includes("hospital") || text.includes("medical") || text.includes("medicine") || text.includes("health system") || text.includes("baylor scott")) topics.push("medicine", "medical");
   if (text.includes("agriculture") || text.includes("farming") || text.includes("ranching") || text.includes("cattle") || text.includes("hemp")) topics.push("agriculture");
+  if (text.includes("hunting") || text.includes("outfitter") || text.includes("wildlife")) topics.push("hunting");
+  if (text.includes("tourism") || text.includes("travel") || text.includes("hospitality") || text.includes("visitor economy")) topics.push("tourism");
+  if (text.includes("state park") || text.includes("texas state parks") || text.includes("tpwd") || text.includes("parks and wildlife")) topics.push("state-parks");
   return [...new Set(topics)].filter(isTopicSlug);
 }
 

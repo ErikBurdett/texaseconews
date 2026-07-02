@@ -1,6 +1,6 @@
-# Texas EcoNews
+# TexasBusiness.News
 
-Texas EcoNews is a Texas-only React SPA for positive economic news and opportunity signals. The product highlights constructive stories about jobs, business growth, infrastructure, energy, AI, data centers, manufacturing, tourism, workforce training, and local investment across the Lone Star State.
+TexasBusiness.News is a Texas-only React SPA for positive business news and opportunity signals. The product highlights constructive stories about jobs, business growth, infrastructure, energy, AI, data centers, manufacturing, tourism, workforce training, and local investment across the Lone Star State.
 
 ## Current Features
 
