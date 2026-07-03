@@ -100,14 +100,14 @@ test("renders shareable region and region-industry routes", async ({ page }) => 
 
 test("covers directory, mission, advertising, and not-found routes", async ({ page }) => {
   await page.goto("/counties");
-  await expect(page.getByRole("heading", { name: "Find good economic news by Texas county." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find good business news by Texas county." })).toBeVisible();
   await page.getByPlaceholder("Search counties, cities, metros, or regions...").fill("Frisco");
   await expect(page.getByRole("link", { name: /Collin County/ })).toBeVisible();
   await page.getByRole("link", { name: /Collin County/ }).click();
   await expect(page).toHaveURL("/county/collin");
 
   await page.goto("/mission");
-  await expect(page.getByRole("heading", { name: "Helping Texans spot useful economic opportunity." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Helping Texans spot useful business opportunity." })).toBeVisible();
 
   await page.goto("/advertise");
   await expect(page.getByRole("heading", { name: "Reach Texans looking for what is growing." })).toBeVisible();
@@ -120,6 +120,10 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { name: "Privacy-first by design." })).toBeVisible();
   await expect(page.getByText("Local Preferences")).toBeVisible();
+
+  await page.goto("/contact");
+  await expect(page.getByRole("heading", { name: "Reach TexasBusiness.News." })).toBeVisible();
+  await expect(page.getByText("admin@texasbusiness.news")).toBeVisible();
 
   await page.goto("/not-a-real-route");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();

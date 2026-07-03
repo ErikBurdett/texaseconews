@@ -4,7 +4,7 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 
 ## Current Features
 
-- Main feed for statewide Texas economic momentum.
+- Main feed for statewide Texas business momentum.
 - County-specific feeds for all 254 Texas counties.
 - County, city, metro, and region search with comma-separated multi-search, such as `Potter, Randall`.
 - Search and Apply Filters actions that select all matching county filters and refresh the feed.
@@ -24,6 +24,9 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - `/counties` county directory
 - `/mission` mission statement
 - `/advertise` sponsor information and placement details
+- `/contact` contact form and admin email
+- `/terms` terms of service
+- `/privacy` privacy statement
 - `/topic/:topicSlug` statewide topic feed
 - `/county/:countySlug` county-specific feed
 - `/county/:countySlug/topic/:topicSlug` county-specific topic feed
@@ -38,12 +41,24 @@ County feeds use two layers of filtering:
 - Feed query targeting: county names, county display names, and curated city/metro aliases are included in the Google News query.
 - Post-fetch relevance gate: county-scoped stories must mention the county or accepted local place aliases before they appear.
 
-Positive economic filtering keeps constructive growth stories and excludes common tragedy/crime terms such as death, violence, drugs, arrests, fatal crashes, and similar negative stories.
+Positive business filtering keeps constructive growth stories and excludes common tragedy/crime terms such as death, violence, drugs, arrests, fatal crashes, and similar negative stories.
 
-Optional environment variables:
+Environment variables:
+
+Required for the contact form through EmailJS:
+
+- `VITE_EMAILJS_SERVICE_ID`
+- `VITE_EMAILJS_TEMPLATE_ID`
+- `VITE_EMAILJS_PUBLIC_KEY`
+
+These must be set in AWS Amplify environment variables for the deployed contact form to send to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
+
+Optional RSS override variables:
 
 - `VITE_RSS_PROVIDER_URL`
 - `VITE_RSS_RAW_PROXY_URL`
+
+RSS works without those RSS variables. When they are not set, the app uses built-in defaults for RSS2JSON and AllOrigins.
 
 ## Local Development
 
@@ -92,3 +107,13 @@ frontend:
 ```
 
 Because this is a React Router SPA, Amplify should include a rewrite rule that sends unmatched routes to `/index.html` with a `200` status so deep links like `/county/dallas/topic/jobs` work after deployment.
+
+AWS Amplify environment variables needed for production contact form support:
+
+```text
+VITE_EMAILJS_SERVICE_ID
+VITE_EMAILJS_TEMPLATE_ID
+VITE_EMAILJS_PUBLIC_KEY
+```
+
+RSS environment variables are optional unless you want to override the default RSS providers.

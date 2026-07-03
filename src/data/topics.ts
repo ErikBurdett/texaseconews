@@ -132,7 +132,7 @@ export const topicCatalog = {
   agriculture: {
     label: "Agricultural",
     category: "industry",
-    description: "Farming, ranching, cattle, hemp, food systems, agtech, and rural economic development.",
+    description: "Farming, ranching, cattle, hemp, food systems, agtech, and rural business development.",
     queryTerms: ["agriculture", "farming", "ranching", "cattle", "hemp", "food production", "agtech"],
     subtopics: ["Hemp", "Farming", "Ranching", "Cattle", "Food", "Agtech"],
   },
@@ -151,7 +151,7 @@ export const topicCatalog = {
   ranching: {
     label: "Ranching",
     category: "outdoors",
-    description: "Ranching, land stewardship, rural business, wildlife, and working-land economics.",
+    description: "Ranching, land stewardship, rural business, wildlife, and working-land business trends.",
     queryTerms: ["ranching", "ranch", "ranch land", "land stewardship", "wildlife management", "rural business"],
   },
   cattle: {

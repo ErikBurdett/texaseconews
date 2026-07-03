@@ -13,8 +13,8 @@ export type FeedDefinition = {
   region?: string;
 };
 
-const positiveEconomicTerms = [
-  "economic growth",
+const positiveBusinessTerms = [
+  "business growth",
   "jobs",
   "business expansion",
   "new headquarters",
@@ -31,7 +31,7 @@ const positiveEconomicTerms = [
   "infrastructure",
   "port expansion",
   "housing development",
-  "economic opportunity",
+  "business opportunity",
   "robotics",
   "technology",
   "sports business",
@@ -67,7 +67,7 @@ export const statewideFeeds: FeedDefinition[] = [
     id: "texas-growth",
     label: "Texas Growth",
     scope: "texas",
-    url: googleNewsFeed(`Texas (${positiveEconomicTerms.slice(0, 7).join(" OR ")}) ${excludedTerms}`),
+    url: googleNewsFeed(`Texas (${positiveBusinessTerms.slice(0, 7).join(" OR ")}) ${excludedTerms}`),
   },
   {
     id: "texas-ai-data-centers",
@@ -79,7 +79,7 @@ export const statewideFeeds: FeedDefinition[] = [
     id: "texas-opportunity",
     label: "Opportunity",
     scope: "texas",
-    url: googleNewsFeed(`Texas ("economic opportunity" OR "workforce training" OR startup OR "small business" OR "business expansion") ${excludedTerms}`),
+    url: googleNewsFeed(`Texas ("business opportunity" OR "workforce training" OR startup OR "small business" OR "business expansion") ${excludedTerms}`),
   },
   {
     id: "texas-business-sectors",
@@ -104,7 +104,7 @@ export function topicFeed(topic: TopicSlug): FeedDefinition {
 export function regionFeed(region: RegionSlug, topic?: TopicSlug): FeedDefinition {
   const regionDefinition = regionCatalog[region];
   const locationTerms = regionDefinition.queryTerms.map((term) => `"${term}"`).join(" OR ");
-  const terms = topic ? topicCatalog[topic].queryTerms.join(" OR ") : positiveEconomicTerms.join(" OR ");
+  const terms = topic ? topicCatalog[topic].queryTerms.join(" OR ") : positiveBusinessTerms.join(" OR ");
 
   return {
     id: topic ? `region-${region}-${topic}` : `region-${region}`,
@@ -117,7 +117,7 @@ export function regionFeed(region: RegionSlug, topic?: TopicSlug): FeedDefinitio
 
 export function countyFeed(county: TexasCounty, topic?: TopicSlug): FeedDefinition {
   const locationTerms = countyQueryAliases(county).map((alias) => `"${alias}"`).join(" OR ");
-  const terms = topic ? topicCatalog[topic].queryTerms.join(" OR ") : positiveEconomicTerms.join(" OR ");
+  const terms = topic ? topicCatalog[topic].queryTerms.join(" OR ") : positiveBusinessTerms.join(" OR ");
 
   return {
     id: topic ? `county-${county.slug}-${topic}` : `county-${county.slug}`,

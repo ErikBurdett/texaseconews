@@ -33,15 +33,16 @@ The current app is a strong proof-of-concept for a simple public site, but it is
 
 ### Existing Product Features
 
-- Statewide positive Texas economic feed.
+- Statewide positive Texas business feed.
 - All 254 Texas counties available as filters.
 - County search by county, city, metro, region, and comma-separated multi-search.
 - Quick filters for DFW, Austin corridor, Houston, and statewide reset.
 - Existing topics: AI, data centers, jobs, manufacturing, energy, small business.
 - County relevance gate to keep county feeds tied to local place signals.
-- Positive economic filter and negative/crime/tragedy keyword exclusions.
+- Positive business filter and negative/crime/tragedy keyword exclusions.
 - Sponsor cards with impression and click events pushed to `dataLayer`.
 - TradingView ticker widget for public market context.
+- Contact form sends through EmailJS when `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, and `VITE_EMAILJS_PUBLIC_KEY` are configured.
 - Responsive CSS for desktop and mobile.
 
 ### New Test Infrastructure Added
@@ -69,6 +70,23 @@ The current app is a strong proof-of-concept for a simple public site, but it is
 - `npm run lint` passes.
 - `npm run build` passes.
 - Production build output is generated in `dist`.
+
+### Environment Variables
+
+Required in AWS Amplify for the contact form:
+
+- `VITE_EMAILJS_SERVICE_ID`
+- `VITE_EMAILJS_TEMPLATE_ID`
+- `VITE_EMAILJS_PUBLIC_KEY`
+
+The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`, with `to_email` set by the app to `admin@texasbusiness.news`.
+
+Optional RSS override variables:
+
+- `VITE_RSS_PROVIDER_URL`
+- `VITE_RSS_RAW_PROXY_URL`
+
+RSS should still work when the RSS variables are not set because the app falls back to built-in RSS2JSON and AllOrigins provider URLs.
 
 ### Blocked In This WSL Environment
 
@@ -100,9 +118,9 @@ In CI, use the official Playwright GitHub Action image or install dependencies b
 
 The first production version should stay frontend-only unless a feature truly requires server-side persistence. Feature complete should mean:
 
-- Users can browse positive Texas economic stories by statewide scope, region, county, and topic.
+- Users can browse positive Texas business stories by statewide scope, region, county, and topic.
 - Meeting-note industries and regions are represented in the taxonomy and UI.
-- Key pages exist for mission, advertise, privacy, terms, methodology/editorial standards, and contact.
+- Key pages exist for mission, advertise, privacy, terms, methodology/editorial standards, and contact via contact forms plus `admin@texasbusiness.news`.
 - Deep links work on Amplify for every county, region, and topic route.
 - Static sponsor placements work without collecting sensitive user data.
 - Analytics are privacy-aware and documented.
@@ -198,14 +216,14 @@ Sports business should include business operations, new facilities, training fac
 
 Medicine should include hospital construction, research, medical real estate, and institutions such as Baylor Scott & White, Rice, MD Anderson, and other Texas health systems. Use neutral source-driven wording.
 
-Agriculture should include hemp, farming, ranching, cattle, food, water, logistics, agtech, and rural economic development.
+Agriculture should include hemp, farming, ranching, cattle, food, water, logistics, agtech, and rural business development.
 
 ### Phase 5: Content Quality And Editorial Trust
 
 Add a methodology page that explains:
 
 - Texas-only scope.
-- Positive economic filter.
+- Positive business filter.
 - County relevance checks.
 - Why some stories are excluded.
 - That stories come from third-party public feeds.
@@ -297,7 +315,7 @@ Recommended changes before launch:
 - Document analytics, ad measurement, third-party embeds, and RSS providers.
 - If analytics or ad pixels are added, collect the minimum data needed and avoid sensitive data.
 - Add a cookie/consent approach if using non-essential tracking technologies.
-- Provide a contact path for privacy requests.
+- Provide contact forms and `admin@texasbusiness.news` for privacy requests. Do not list phone numbers or street addresses.
 - If newsletter/email is added, comply with CAN-SPAM.
 - If SMS is added, comply with TCPA and get explicit opt-in.
 - If sponsored content becomes paid editorial, follow FTC endorsement and native advertising disclosure expectations.
@@ -313,7 +331,7 @@ Recommended changes:
 - Keep excerpts short and link prominently to original publishers.
 - Avoid copying full article bodies.
 - Confirm image usage from RSS thumbnails is acceptable or switch to neutral fallback images.
-- Add a takedown/contact process.
+- Add a takedown/contact process through contact forms and `admin@texasbusiness.news`.
 - Preserve publisher attribution.
 - Consider using only source-provided thumbnails or internal generic topic art.
 
@@ -364,7 +382,7 @@ Must-have:
 - Expanded industry taxonomy from meeting notes.
 - Updated hero with energy and industry chips.
 - Texas Stock Exchange banner after verification.
-- Static privacy, terms, methodology, and contact pages.
+- Static privacy, terms, methodology, and contact pages using contact forms and `admin@texasbusiness.news`.
 - Amplify rewrite and security headers.
 - CI that runs lint, build, and Playwright E2E.
 - Route-specific SEO metadata.

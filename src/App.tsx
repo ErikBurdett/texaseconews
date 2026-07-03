@@ -1,4 +1,5 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import emailjs from "@emailjs/browser";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
 import { AdSlot } from "./components/AdSlot";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
@@ -9,7 +10,7 @@ import { fetchNewsFeeds, type NewsItem } from "./lib/rss";
 
 const siteName = "TexasBusiness.News";
 const mission =
-  "Howdy. TexasBusiness.News gathers positive economic news and opportunity signals from across the Lone Star State so citizens, builders, employers, investors, visitors, and future Texans can see where momentum is forming. We focus on growth, jobs, small business, innovation, data centers, AI advancement, infrastructure, workforce pathways, and local wins that help people make the most of opportunity close to home.";
+  "Howdy. TexasBusiness.News gathers positive business news and opportunity signals from across the Lone Star State so citizens, builders, employers, investors, visitors, and future Texans can see where momentum is forming. We focus on growth, jobs, small business, innovation, data centers, AI advancement, infrastructure, workforce pathways, and local wins that help people make the most of opportunity close to home.";
 
 const curatedStorageKey = "texasbusiness-news:selected-counties";
 const pageSize = 12;
@@ -21,6 +22,7 @@ function App() {
       <Route path="/counties" element={<CountyDirectoryPage />} />
       <Route path="/mission" element={<MissionPage />} />
       <Route path="/advertise" element={<AdvertisePage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/topic/:topicSlug" element={<TopicPage />} />
@@ -53,11 +55,11 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
   );
   const scopeLabel = selectedRegions.length ? selectedRegions.map(displayLabel).join(", ") : selectedCounties.length ? selectedCounties.map((county) => county.name).join(", ") : "Texas statewide";
   const industryLabel = selectedTopics.length ? selectedTopics.map(displayLabel).join(", ") : "";
-  const feedTitle = `${scopeLabel} ${industryLabel ? industryLabel.toLowerCase() : "economic momentum"}`;
+  const feedTitle = `${scopeLabel} ${industryLabel ? industryLabel.toLowerCase() : "business momentum"}`;
   const isLoading = countyNews.loading || statewideNews.loading;
   const hasError = countyNews.error || statewideNews.error;
 
-  usePageTitle(selectedTopicSlugs.length || selectedRegionSlugs.length ? `${scopeLabel} ${industryLabel || "News"}` : "Positive Texas Economic News");
+  usePageTitle(selectedTopicSlugs.length || selectedRegionSlugs.length ? `${scopeLabel} ${industryLabel || "News"}` : "Positive Texas Business News");
   useInfiniteScroll(() => {
     if (selectedCounties.length && visibleCountyCount < countyNews.items.length) {
       setVisibleCountyCount((current) => Math.min(current + pageSize, countyNews.items.length));
@@ -226,7 +228,7 @@ function CountyDirectoryPage() {
     <Shell>
       <section className="page-hero">
         <p className="eyebrow">County directory</p>
-        <h1>Find good economic news by Texas county.</h1>
+        <h1>Find good business news by Texas county.</h1>
         <p>Open a county feed, then narrow by topic for shareable local growth pages with strict Texas place checks.</p>
         <input className="search-input directory-search" placeholder="Search counties, cities, metros, or regions..." value={query} onChange={(event) => setQuery(event.target.value)} />
       </section>
@@ -256,7 +258,7 @@ function MissionPage() {
     <Shell>
       <section className="page-hero">
         <p className="eyebrow">Mission</p>
-        <h1>Helping Texans spot useful economic opportunity.</h1>
+        <h1>Helping Texans spot useful business opportunity.</h1>
         <p>{mission}</p>
       </section>
       <section className="mission-grid">
@@ -279,7 +281,7 @@ function AdvertisePage() {
         <p>Sponsor statewide, regional, county-specific, or topic-specific placements across {siteName}. Every placement sits beside constructive opportunity signals, not outrage cycles.</p>
       </section>
       <section className="feature-grid">
-        <InfoCard title="County Spotlights" body="Own a county or corridor placement for economic development, hiring, launches, tourism, and infrastructure audiences across Texas." />
+        <InfoCard title="County Spotlights" body="Own a county or corridor placement for business development, hiring, launches, tourism, and infrastructure audiences across Texas." />
         <InfoCard title="Topic Targeting" body="Align campaigns to AI, data centers, jobs, manufacturing, energy, or small business stories as the feed updates." />
         <InfoCard title="Clean Measurement" body="Impression and click events are pushed to dataLayer with campaign, slot, county, and region metadata." />
       </section>
@@ -296,6 +298,84 @@ function AdvertisePage() {
         </div>
       </section>
       <AdSlot slot="footer" limit={3} />
+    </Shell>
+  );
+}
+
+function ContactPage() {
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
+  usePageTitle("Contact");
+
+  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const name = String(formData.get("name") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const message = String(formData.get("message") || "").trim();
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      setStatus("error");
+      setStatusMessage("Contact form is not configured yet. Please email admin@texasbusiness.news.");
+      return;
+    }
+
+    setStatus("submitting");
+    setStatusMessage("");
+
+    try {
+      await emailjs.send(
+        serviceId,
+        templateId,
+        {
+          to_email: "admin@texasbusiness.news",
+          from_name: name,
+          reply_to: email,
+          message,
+        },
+        { publicKey },
+      );
+      form.reset();
+      setStatus("success");
+      setStatusMessage("Message sent. We will review it at admin@texasbusiness.news.");
+    } catch {
+      setStatus("error");
+      setStatusMessage("Message failed to send. Please email admin@texasbusiness.news.");
+    }
+  }
+
+  return (
+    <Shell>
+      <section className="page-hero legal-page">
+        <p className="eyebrow">Contact</p>
+        <h1>Reach TexasBusiness.News.</h1>
+        <p>Use the contact form for sponsor questions, source suggestions, corrections, privacy requests, or general site feedback. You can also email <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+      </section>
+      <section className="contact-panel">
+        <form className="contact-form" onSubmit={handleContactSubmit}>
+          <label>
+            <span>Name</span>
+            <input name="name" placeholder="Your name" required type="text" />
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" placeholder="you@example.com" required type="email" />
+          </label>
+          <label>
+            <span>Message</span>
+            <textarea name="message" placeholder="How can we help?" required rows={6} />
+          </label>
+          <button className="button" disabled={status === "submitting"} type="submit">
+            {status === "submitting" ? "Sending..." : "Send to admin@texasbusiness.news"}
+          </button>
+          {statusMessage ? <p className={`form-status ${status}`}>{statusMessage}</p> : null}
+        </form>
+        <InfoCard title="Contact Policy" body="TexasBusiness.News does not list phone numbers or street addresses on the site. Contact forms and admin@texasbusiness.news are the official contact paths." />
+      </section>
     </Shell>
   );
 }
@@ -333,6 +413,7 @@ function PrivacyPage() {
         <InfoCard title="Local Preferences" body="County selections may be stored in your browser localStorage so the feed can remember your preferred Texas scope. You can clear this through your browser settings." />
         <InfoCard title="Sponsor Measurement" body="Sponsor impressions and clicks may be measured as anonymous interaction events. We do not use those events to create account profiles because this site does not currently have accounts." />
         <InfoCard title="Third-Party Widgets" body="Market widgets, crypto widgets, RSS providers, sponsors, and linked publishers may receive technical information when their content loads or when you click through to them. Review their privacy terms for details." />
+        <InfoCard title="Privacy Contact" body="Use the contact form or admin@texasbusiness.news for privacy questions and requests. No street address or phone contact is listed for this site." />
       </section>
     </Shell>
   );
@@ -594,9 +675,10 @@ function Shell({ children }: { children: React.ReactNode }) {
           <NavLink to="/counties">Counties</NavLink>
           <NavLink to="/mission">Mission</NavLink>
           <NavLink to="/advertise">Advertise</NavLink>
+          <NavLink to="/contact">Contact</NavLink>
         </nav>
       </header>
-      <div className="site-tagline">A Centralized source for positive economic news in the state of Texas</div>
+      <div className="site-tagline">A Centralized source for positive business news in the state of Texas</div>
       {children}
       <footer className="footer">
         <section className="footer-card footer-brand">
@@ -608,10 +690,11 @@ function Shell({ children }: { children: React.ReactNode }) {
           <h2>Legal</h2>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/privacy">Privacy Statement</Link>
+          <Link to="/contact">Contact</Link>
         </section>
         <section className="footer-card">
           <h2>Site Notes</h2>
-          <p>No accounts. No backend. Public publisher links and third-party widgets may have their own terms.</p>
+          <p>No accounts. No backend. Official contact paths are the contact form and admin@texasbusiness.news.</p>
         </section>
         <AdSlot slot="footer" limit={1} />
       </footer>

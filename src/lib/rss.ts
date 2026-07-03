@@ -117,7 +117,7 @@ export async function fetchNewsFeeds(feeds: FeedRequest[]) {
 
   return results
     .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
-    .filter((item) => isPositiveEconomicItem(item))
+    .filter((item) => isPositiveBusinessItem(item))
     .filter((item) => isRelevantToCountyScope(item))
     .sort((first, second) => timestamp(second.publishedAt) - timestamp(first.publishedAt))
     .filter((item) => {
@@ -211,7 +211,7 @@ async function fetchRawRss(feed: FeedRequest) {
   });
 }
 
-function isPositiveEconomicItem(item: NewsItem) {
+function isPositiveBusinessItem(item: NewsItem) {
   const text = `${item.title} ${item.description || ""}`.toLowerCase();
   return positiveKeywords.some((keyword) => text.includes(keyword)) && !blockedKeywords.some((keyword) => text.includes(keyword));
 }

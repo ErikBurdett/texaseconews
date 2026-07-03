@@ -10,7 +10,7 @@ export function AdSlot({ slot, county, topics, limit = 1 }: { slot: AdSlotId; co
   if (!ads.length) return null;
 
   return (
-    <aside className={`ad-slot ad-slot-${slot}`} aria-label="Sponsored economic opportunity">
+    <aside className={`ad-slot ad-slot-${slot}`} aria-label="Sponsored business opportunity">
       {ads.map((ad) => (
         <AdCard ad={ad} county={county} key={ad.id} slot={slot} />
       ))}

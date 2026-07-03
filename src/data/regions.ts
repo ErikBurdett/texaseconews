@@ -23,7 +23,7 @@ export const regionCatalog = {
   },
   "san-antonio": {
     label: "San Antonio",
-    description: "San Antonio metro business, military, medicine, tourism, infrastructure, and cross-border economic signal.",
+    description: "San Antonio metro business, military, medicine, tourism, infrastructure, and cross-border business signal.",
     countySlugs: ["bexar"],
     queryTerms: ["San Antonio", "Bexar County", "Alamo City"],
   },

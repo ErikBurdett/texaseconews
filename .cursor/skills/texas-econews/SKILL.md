@@ -55,6 +55,23 @@ sudo npx playwright install-deps chromium
 
 The E2E suite mocks RSS providers and should not depend on live Google News, AllOrigins, RSS2JSON, or TradingView availability.
 
+## Environment Variables
+
+Required for the deployed EmailJS contact form:
+
+- `VITE_EMAILJS_SERVICE_ID`
+- `VITE_EMAILJS_TEMPLATE_ID`
+- `VITE_EMAILJS_PUBLIC_KEY`
+
+The contact form sends to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
+
+RSS provider variables are optional:
+
+- `VITE_RSS_PROVIDER_URL`
+- `VITE_RSS_RAW_PROXY_URL`
+
+RSS should still work without them because the app has default RSS2JSON and AllOrigins provider URLs.
+
 ## Compliance And Trust
 
 Before production launch or tracking additions:

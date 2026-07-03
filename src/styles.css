@@ -796,6 +796,70 @@ img {
   padding: clamp(1.2rem, 3vw, 2rem);
 }
 
+.contact-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 1rem;
+  width: calc(100% - (var(--page-gutter) * 2));
+  margin: 1rem auto 0;
+}
+
+.contact-form {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background:
+    linear-gradient(90deg, rgba(31, 95, 170, 0.16), transparent 22%),
+    linear-gradient(145deg, rgba(10, 29, 63, 0.90), rgba(8, 18, 38, 0.76));
+  box-shadow: var(--shadow);
+}
+
+.contact-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  font: inherit;
+}
+
+.contact-form button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.form-status {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.form-status.success {
+  border-color: rgba(107, 255, 184, 0.45);
+  color: #c8ffe2;
+  background: rgba(14, 119, 73, 0.22);
+}
+
+.form-status.error {
+  border-color: rgba(255, 138, 138, 0.45);
+  color: #ffd4d4;
+  background: rgba(148, 27, 39, 0.24);
+}
+
 .advertise-panel h2 {
   margin-top: 0;
   font-size: clamp(2rem, 4vw, 4rem);
@@ -929,7 +993,8 @@ img {
   .mission-grid,
   .feature-grid,
   .legal-grid,
-  .advertise-panel {
+  .advertise-panel,
+  .contact-panel {
     grid-template-columns: 1fr;
   }
 
