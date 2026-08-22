@@ -1,4 +1,4 @@
-import doubleBRanchLogo from "../../ad-assets/doubleb.PNG";
+import doubleBRanchLogo from "../../ad-assets/bb-ranch-deer-final.png";
 
 export type AdSlotId = "hero" | "feed-inline" | "sidebar" | "footer";
 export type AdPlacement = "leaderboard" | "card" | "compact";
@@ -36,19 +36,6 @@ export const ads: AdCreative[] = [
     active: true,
     priority: 100,
     placement: "leaderboard",
-    targeting: { slots: ["hero", "sidebar", "footer"] },
-  },
-  {
-    id: "county-growth-spotlight",
-    campaignId: "county-growth",
-    sponsor: "TexasBusiness.News",
-    title: "Sponsor a county growth spotlight",
-    body: "Put your project in front of readers tracking new jobs, new investment, and local Texas opportunity.",
-    cta: "Reserve a county",
-    href: "/advertise",
-    active: true,
-    priority: 70,
-    placement: "compact",
-    targeting: { slots: ["feed-inline", "sidebar"] },
+    targeting: { slots: ["hero", "feed-inline", "sidebar", "footer"] },
   },
 ];

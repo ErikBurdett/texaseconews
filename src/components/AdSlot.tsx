@@ -44,7 +44,7 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
 
   const content = (
     <>
-      {ad.imageUrl ? <img className="ad-image" src={ad.imageUrl} alt="" loading="lazy" /> : null}
+      {ad.imageUrl ? <img className="ad-image" src={ad.imageUrl} alt="" decoding="async" fetchPriority="low" height="1024" loading="lazy" width="1024" /> : null}
       <span className="ad-label">Sponsored by {ad.sponsor}</span>
       <strong>{ad.title}</strong>
       <span>{ad.body}</span>

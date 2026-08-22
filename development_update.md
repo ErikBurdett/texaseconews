@@ -1,12 +1,49 @@
 # TexasBusiness.News Development Update
 
-Date: June 14, 2026
+Last updated: August 22, 2026
 
 ## Executive Summary
 
 TexasBusiness.News is currently a lightweight frontend-only React SPA for positive Texas business news. It has a working Vite/React foundation, client-side routing, county and topic filters, sponsor placements, external RSS ingestion through client-side proxy providers, and AWS Amplify deployment notes. There is no backend, database, authentication, CMS, or editorial workflow yet.
 
-The current app is a strong proof-of-concept for a simple public site, but it is not feature complete. The next work should focus on the content taxonomy requested in the meeting notes, region filters, expanded industry/topic pages, static legal/compliance pages, better SEO/share metadata, CI coverage, and production hardening for Amplify.
+The current app is a substantial lightweight MVP: the expanded Texas business taxonomy, region and industry filtering, legal pages, EmailJS contact flow, sponsor system, responsive layouts, and deterministic browser-test coverage are implemented. Production readiness still requires better SEO/share metadata, CI execution of the browser suite, deployed-device performance validation, content-source governance, and Amplify security hardening.
+
+## August 22, 2026 Development Status
+
+### Current Product State
+
+- Public brand is `TexasBusiness.News`.
+- Frontend remains a static Vite/React application with no backend or accounts.
+- Users can combine multiple counties, regions, and industries in one feed.
+- Article cards include full publication dates and matching industry tags.
+- Statewide, county, region, industry, region-industry, legal, contact, mission, and advertising routes are available.
+- Contact submissions use EmailJS and send to `admin@texasbusiness.news` when the three required `VITE_EMAILJS_*` variables are configured in Amplify.
+- RSS provider environment variables remain optional because built-in RSS2JSON and AllOrigins defaults are present.
+
+### Advertising
+
+- Double B Ranch is the only active advertiser.
+- `ad-assets/bb-ranch-deer-final.png` is the only ad asset.
+- The same Double B Ranch creative is eligible for hero, sidebar, inline-feed, and footer placements.
+- All other ad creatives and ad assets have been removed.
+- The supplied PNG is 4.58 MB. Browser decoding is asynchronous and layout dimensions are reserved, but the source should be compressed substantially before production to improve first-load performance.
+
+### Ticker Performance Refinement
+
+- LiveCoinWatch and TradingView now mount once at the application root instead of remounting on route changes.
+- Third-party ticker scripts initialize after the critical React render.
+- The LiveCoinWatch marquee was reduced from 20 to 12 items to lower animation and DOM workload.
+- The ticker stack is no longer sticky, avoiding continuous repaint/compositing work while the page scrolls.
+- Ticker containers are isolated into fixed-size paint/compositing layers and expensive ticker shadows were removed.
+- Production should be rechecked on desktop, mobile, 4K, and ultrawide displays because final animation timing is controlled partly by third-party widget code and network delivery.
+
+### Current Verification Priorities
+
+1. Run the Playwright suite in CI or a Linux image with the required Chromium libraries.
+2. Smoke-test ticker smoothness on the deployed Amplify domain and on lower-powered mobile hardware.
+3. Compress the 4.58 MB sponsor PNG and verify the Double B Ranch destination, approved copy, and image rendering in every placement.
+4. Verify EmailJS domain restrictions, template variables, and delivery to `admin@texasbusiness.news`.
+5. Add route-specific SEO metadata, sitemap generation, and production security headers.
 
 ## Current Technical State
 
@@ -17,7 +54,7 @@ The current app is a strong proof-of-concept for a simple public site, but it is
 - CSS in `src/styles.css`; no component library.
 - County data from `@nickgraffis/us-counties` plus local Texas region, metro, and city aliases.
 - Client-side RSS fetching from Google News RSS via AllOrigins first and RSS2JSON as fallback.
-- Sponsor/ad placements are static local data and route internally to `/advertise`.
+- Sponsor/ad placements use static local data; the sole active Double B Ranch creative opens its approved external destination.
 - Deployment target is AWS Amplify Hosting through a GitHub connection.
 
 ### Existing Routes
@@ -26,7 +63,13 @@ The current app is a strong proof-of-concept for a simple public site, but it is
 - `/counties` county directory.
 - `/mission` mission statement.
 - `/advertise` sponsor page.
+- `/contact` EmailJS contact form.
+- `/terms` terms of service.
+- `/privacy` privacy statement.
 - `/topic/:topicSlug` topic feed.
+- `/industry/:topicSlug` industry feed alias.
+- `/region/:regionSlug` region feed.
+- `/region/:regionSlug/industry/:topicSlug` combined region-industry feed.
 - `/county/:countySlug` county feed.
 - `/county/:countySlug/topic/:topicSlug` county topic feed.
 - `*` not-found recovery page.
@@ -36,12 +79,13 @@ The current app is a strong proof-of-concept for a simple public site, but it is
 - Statewide positive Texas business feed.
 - All 254 Texas counties available as filters.
 - County search by county, city, metro, region, and comma-separated multi-search.
-- Quick filters for DFW, Austin corridor, Houston, and statewide reset.
-- Existing topics: AI, data centers, jobs, manufacturing, energy, small business.
+- Multi-select region and industry filters with removable selections.
+- Expanded topics include energy, robotics, small business, infrastructure, technology, sports, finance, TX Stock Exchange, agriculture, space, real estate, ranching, cattle, higher education, medical, hunting, tourism, and state parks.
 - County relevance gate to keep county feeds tied to local place signals.
 - Positive business filter and negative/crime/tragedy keyword exclusions.
-- Sponsor cards with impression and click events pushed to `dataLayer`.
-- TradingView ticker widget for public market context.
+- Sole Double B Ranch sponsor creative with impression and click events pushed to `dataLayer`.
+- LiveCoinWatch crypto and TradingView market ticker widgets.
+- Incremental article loading, full publication dates, and matching industry tags.
 - Contact form sends through EmailJS when `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, and `VITE_EMAILJS_PUBLIC_KEY` are configured.
 - Responsive CSS for desktop and mobile.
 
@@ -88,31 +132,15 @@ Optional RSS override variables:
 
 RSS should still work when the RSS variables are not set because the app falls back to built-in RSS2JSON and AllOrigins provider URLs.
 
-### Blocked In This WSL Environment
+### Browser Test Status
 
-`npm run test:e2e` starts the Playwright suite, but Chromium cannot launch because the local WSL image is missing a native browser dependency:
+The Playwright suite now runs successfully in this WSL environment:
 
 ```text
-error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory
+12 passed
 ```
 
-Attempted remediation:
-
-```bash
-npx playwright install chromium
-npx playwright install-deps chromium
-```
-
-`npx playwright install chromium` succeeded. `npx playwright install-deps chromium` requires sudo and could not complete because the session cannot provide a sudo password.
-
-To finish local Playwright verification, run this in an environment with sudo access:
-
-```bash
-sudo npx playwright install-deps chromium
-npm run test:e2e
-```
-
-In CI, use the official Playwright GitHub Action image or install dependencies before running `npm run test:e2e`.
+Coverage passes in desktop Chromium and mobile Chrome. CI should still install the Playwright browser and native dependencies before running `npm run test:e2e`.
 
 ## Feature Complete Definition For A Lightweight No-Backend MVP
 

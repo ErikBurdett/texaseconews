@@ -55,8 +55,8 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("heading", { name: "Build your Texas feed" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
-  await expect(page.getByText("Sponsored by Double B Ranch")).toBeVisible();
-  await expect(page.getByText("TexasBusiness.News")).toBeVisible();
+  await expect(page.getByText("Sponsored by Double B Ranch").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "TX TexasBusiness.News", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
 });
@@ -72,7 +72,7 @@ test("supports multi-county search, region filters, and industry navigation", as
   await page.getByRole("button", { name: "DFW" }).click();
   await expect(page.getByRole("button", { name: "Remove DFW region" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Energy" }).click();
+  await page.getByRole("button", { name: "Energy", exact: true }).click();
   await expect(page.getByRole("button", { name: "Remove Energy industry" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Energy news across Texas." })).toBeVisible();
 });
@@ -81,7 +81,7 @@ test("renders shareable county and county-topic routes", async ({ page }) => {
   await page.goto("/county/dallas");
   await expect(page.getByRole("button", { name: "Remove Dallas County" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Dallas County articles" })).toBeVisible();
-  await expect(page.getByText("Dallas County, Texas business expansion creates positive growth")).toBeVisible();
+  await expect(page.getByText(/^Dallas County, Texas .* creates positive growth$/).first()).toBeVisible();
 
   await page.goto("/county/dallas/topic/jobs");
   await expect(page.getByRole("heading", { name: "Jobs news across Texas." })).toBeVisible();
@@ -95,7 +95,7 @@ test("renders shareable region and region-industry routes", async ({ page }) => 
 
   await page.goto("/region/gulf/industry/finance");
   await expect(page.getByRole("heading", { name: "Finance news across Texas." })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Finance" })).toHaveClass(/selected/);
+  await expect(page.getByRole("button", { name: "Finance", exact: true })).toHaveClass(/selected/);
 });
 
 test("covers directory, mission, advertising, and not-found routes", async ({ page }) => {
@@ -123,7 +123,7 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
 
   await page.goto("/contact");
   await expect(page.getByRole("heading", { name: "Reach TexasBusiness.News." })).toBeVisible();
-  await expect(page.getByText("admin@texasbusiness.news")).toBeVisible();
+  await expect(page.getByRole("link", { name: "admin@texasbusiness.news", exact: true })).toBeVisible();
 
   await page.goto("/not-a-real-route");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
@@ -141,6 +141,7 @@ test("does not expose unlabeled interactive controls", async ({ page }) => {
           element.getAttribute("placeholder") ||
           element.textContent?.trim() ||
           element.getAttribute("title") ||
+          ("labels" in element ? Array.from(element.labels || []).map((label) => label.textContent?.trim()).join(" ") : "") ||
           "",
       }))
       .filter((item) => !item.name)

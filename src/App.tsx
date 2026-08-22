@@ -17,22 +17,25 @@ const pageSize = 12;
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/counties" element={<CountyDirectoryPage />} />
-      <Route path="/mission" element={<MissionPage />} />
-      <Route path="/advertise" element={<AdvertisePage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/topic/:topicSlug" element={<TopicPage />} />
-      <Route path="/industry/:topicSlug" element={<TopicPage />} />
-      <Route path="/region/:regionSlug" element={<RegionPage />} />
-      <Route path="/region/:regionSlug/industry/:topicSlug" element={<RegionIndustryPage />} />
-      <Route path="/county/:countySlug" element={<CountyPage />} />
-      <Route path="/county/:countySlug/topic/:topicSlug" element={<CountyTopicPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <>
+      <TickerStack />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/counties" element={<CountyDirectoryPage />} />
+        <Route path="/mission" element={<MissionPage />} />
+        <Route path="/advertise" element={<AdvertisePage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/topic/:topicSlug" element={<TopicPage />} />
+        <Route path="/industry/:topicSlug" element={<TopicPage />} />
+        <Route path="/region/:regionSlug" element={<RegionPage />} />
+        <Route path="/region/:regionSlug/industry/:topicSlug" element={<RegionIndustryPage />} />
+        <Route path="/county/:countySlug" element={<CountyPage />} />
+        <Route path="/county/:countySlug/topic/:topicSlug" element={<CountyTopicPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   );
 }
 
@@ -664,7 +667,6 @@ function formatPublishedDate(value?: string) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <TickerStack />
       <header className="site-header">
         <Link className="brand" to="/">
           <span className="brand-mark">TX</span>
@@ -718,14 +720,18 @@ function CryptoTicker() {
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = '<div class="livecoinwatch-widget-5" lcw-base="USD" lcw-color-tx="#ffffff" lcw-marquee-1="coins" lcw-marquee-2="none" lcw-marquee-items="20"></div>';
-    const script = document.createElement("script");
-    script.async = true;
-    script.defer = true;
-    script.src = "https://www.livecoinwatch.com/static/lcw-widget.js";
-    container.appendChild(script);
+    let script: HTMLScriptElement | undefined;
+    const timer = window.setTimeout(() => {
+      container.innerHTML = '<div class="livecoinwatch-widget-5" lcw-base="USD" lcw-color-tx="#ffffff" lcw-marquee-1="coins" lcw-marquee-2="none" lcw-marquee-items="12"></div>';
+      script = document.createElement("script");
+      script.async = true;
+      script.src = "https://www.livecoinwatch.com/static/lcw-widget.js";
+      container.appendChild(script);
+    }, 250);
 
     return () => {
+      window.clearTimeout(timer);
+      script?.remove();
       container.innerHTML = "";
     };
   }, []);
@@ -744,31 +750,36 @@ function MarketTicker() {
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.textContent = JSON.stringify({
-      symbols: [
-        { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
-        { proName: "TVC:DJI", title: "Dow" },
-        { proName: "NASDAQ:IXIC", title: "Nasdaq" },
-        { proName: "NASDAQ:TXN", title: "Texas Instruments" },
-        { proName: "NYSE:XOM", title: "Exxon Mobil" },
-        { proName: "NYSE:CVX", title: "Chevron" },
-        { proName: "NASDAQ:TSLA", title: "Tesla" },
-        { proName: "NYMEX:CL1!", title: "Crude Oil" },
-        { proName: "NYMEX:NG1!", title: "Natural Gas" },
-      ],
-      showSymbolLogo: true,
-      isTransparent: false,
-      displayMode: "adaptive",
-      colorTheme: "dark",
-      locale: "en",
-    });
-    container.appendChild(script);
+    let script: HTMLScriptElement | undefined;
+    const timer = window.setTimeout(() => {
+      container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+      script = document.createElement("script");
+      script.async = true;
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+      script.textContent = JSON.stringify({
+        symbols: [
+          { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
+          { proName: "TVC:DJI", title: "Dow" },
+          { proName: "NASDAQ:IXIC", title: "Nasdaq" },
+          { proName: "NASDAQ:TXN", title: "Texas Instruments" },
+          { proName: "NYSE:XOM", title: "Exxon Mobil" },
+          { proName: "NYSE:CVX", title: "Chevron" },
+          { proName: "NASDAQ:TSLA", title: "Tesla" },
+          { proName: "NYMEX:CL1!", title: "Crude Oil" },
+          { proName: "NYMEX:NG1!", title: "Natural Gas" },
+        ],
+        showSymbolLogo: true,
+        isTransparent: false,
+        displayMode: "adaptive",
+        colorTheme: "dark",
+        locale: "en",
+      });
+      container.appendChild(script);
+    }, 350);
 
     return () => {
+      window.clearTimeout(timer);
+      script?.remove();
       container.innerHTML = "";
     };
   }, []);
