@@ -27,6 +27,11 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - The same Double B Ranch creative is eligible for hero, sidebar, inline-feed, and footer placements.
 - All other ad creatives and ad assets have been removed.
 - The supplied PNG is 4.58 MB. Browser decoding is asynchronous and layout dimensions are reserved, but the source should be compressed substantially before production to improve first-load performance.
+- The advertiser-preview branch adds fixed Preferred, Gold, Platinum, County, and custom Statewide packages; pricing is not based on population.
+- `/advertise` now previews 250×250, Presented by, and responsive 980×300 formats with the complete fixed rate card.
+- `/payments` provides a campaign-request builder, fixed-price estimates, EmailJS submission, local creative validation, and a visibly disabled future Stripe checkout stage.
+- Responsive in-feed placeholder inventory appears after every five article cards.
+- `advertising_pricing.md` is the source of truth for package rates, placement mapping, annual and additional-county rules, creative specifications, submission, measurement, and advertising standards.
 
 ### Ticker Performance Refinement
 
@@ -63,6 +68,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - `/counties` county directory.
 - `/mission` mission statement.
 - `/advertise` sponsor page.
+- `/payments` advertiser quote builder and campaign-request form.
 - `/contact` EmailJS contact form.
 - `/terms` terms of service.
 - `/privacy` privacy statement.
@@ -84,6 +90,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - County relevance gate to keep county feeds tied to local place signals.
 - Positive business filter and negative/crime/tragedy keyword exclusions.
 - Sole Double B Ranch sponsor creative with impression and click events pushed to `dataLayer`.
+- Advertiser placement previews, fixed package pricing, and responsive in-feed placeholders after every five articles.
 - LiveCoinWatch crypto and TradingView market ticker widgets.
 - Incremental article loading, full publication dates, and matching industry tags.
 - Contact form sends through EmailJS when `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, and `VITE_EMAILJS_PUBLIC_KEY` are configured.

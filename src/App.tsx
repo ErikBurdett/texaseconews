@@ -1,7 +1,9 @@
 import emailjs from "@emailjs/browser";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
+import { AdPreviewPlaceholder } from "./components/AdPreviewPlaceholder";
 import { AdSlot } from "./components/AdSlot";
+import { AdvertiserOrderContent, AdvertiserPreviewContent } from "./components/AdvertiserPreview";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
 import { selectedFeeds, type FeedDefinition } from "./data/feeds";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
@@ -24,6 +26,7 @@ function App() {
         <Route path="/counties" element={<CountyDirectoryPage />} />
         <Route path="/mission" element={<MissionPage />} />
         <Route path="/advertise" element={<AdvertisePage />} />
+        <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
@@ -278,29 +281,16 @@ function AdvertisePage() {
 
   return (
     <Shell>
-      <section className="page-hero">
-        <p className="eyebrow">Dynamic ads</p>
-        <h1>Reach Texans looking for what is growing.</h1>
-        <p>Sponsor statewide, regional, county-specific, or topic-specific placements across {siteName}. Every placement sits beside constructive opportunity signals, not outrage cycles.</p>
-      </section>
-      <section className="feature-grid">
-        <InfoCard title="County Spotlights" body="Own a county or corridor placement for business development, hiring, launches, tourism, and infrastructure audiences across Texas." />
-        <InfoCard title="Topic Targeting" body="Align campaigns to AI, data centers, jobs, manufacturing, energy, or small business stories as the feed updates." />
-        <InfoCard title="Clean Measurement" body="Impression and click events are pushed to dataLayer with campaign, slot, county, and region metadata." />
-      </section>
-      <section className="advertise-panel">
-        <div>
-          <p className="eyebrow">Launch packages</p>
-          <h2>Built for sponsors with a Texas growth story.</h2>
-          <p>Use hero, sidebar, inline feed, and footer placements to reach readers while they are actively exploring where Texas is moving next.</p>
-        </div>
-        <div className="package-list">
-          <InfoCard title="Statewide Launch Partner" body="Broad Texas visibility across hero and footer placements." />
-          <InfoCard title="Regional Growth Partner" body="Target metros, regions, or county clusters where your work is creating opportunity." />
-          <InfoCard title="Topic Partner" body="Sponsor focused areas such as AI infrastructure, jobs, energy, or small business expansion." />
-        </div>
-      </section>
-      <AdSlot slot="footer" limit={3} />
+      <AdvertiserPreviewContent />
+    </Shell>
+  );
+}
+
+function PaymentsPage() {
+  usePageTitle("Advertiser Rates and Reservation");
+  return (
+    <Shell>
+      <AdvertiserOrderContent />
     </Shell>
   );
 }
@@ -604,9 +594,9 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
       <div className="news-list">
         {visibleItems.map((item, index) => (
           <Fragment key={item.id}>
-            {index > 0 && index % 10 === 0 ? (
+            {index > 0 && index % 5 === 0 ? (
               <div className="feed-ad-break">
-                <AdSlot slot="feed-inline" topics={item.topics} county={getCountyBySlug(item.countySlug)} />
+                <AdPreviewPlaceholder format="feed" label="In-feed article sponsor" pricingKey="feed-articles" />
               </div>
             ) : null}
             <NewsCard item={item} />
@@ -677,6 +667,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <NavLink to="/counties">Counties</NavLink>
           <NavLink to="/mission">Mission</NavLink>
           <NavLink to="/advertise">Advertise</NavLink>
+          <NavLink to="/payments">Rates</NavLink>
           <NavLink to="/contact">Contact</NavLink>
         </nav>
       </header>
@@ -692,6 +683,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <h2>Legal</h2>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/privacy">Privacy Statement</Link>
+          <Link to="/advertise">Advertise</Link>
           <Link to="/contact">Contact</Link>
         </section>
         <section className="footer-card">

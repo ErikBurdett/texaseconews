@@ -5,6 +5,15 @@ function rssFor(url: string) {
   const county = decoded.includes("Dallas") || decoded.includes("dallas") ? "Dallas County, Texas" : decoded.includes("Potter") ? "Potter County, Texas" : "Texas";
   const topic = decoded.includes("energy") || decoded.includes("power") ? "energy investment" : decoded.includes("jobs") ? "jobs and workforce training" : "business expansion";
   const title = `${county} ${topic} creates positive growth`;
+  const additionalItems = Array.from({ length: 10 }, (_, index) => `
+      <item>
+        <title>${county} business project ${index + 1} adds jobs and investment</title>
+        <link>https://example.com/project-${index + 1}-${encodeURIComponent(county)}</link>
+        <guid>${county}-project-${index + 1}</guid>
+        <pubDate>Fri, ${12 - index} Jun 2026 12:00:00 GMT</pubDate>
+        <source url="https://example.com">Example Texas Business Journal</source>
+        <description>${county} reports business expansion, jobs, infrastructure, and manufacturing investment.</description>
+      </item>`).join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
   <rss version="2.0">
@@ -26,6 +35,7 @@ function rssFor(url: string) {
         <source url="https://example.com">Example Texas Business Journal</source>
         <description>Texas statewide manufacturing and AI infrastructure investment creates workforce opportunity.</description>
       </item>
+      ${additionalItems}
     </channel>
   </rss>`;
 }
@@ -56,6 +66,7 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
   await expect(page.getByText("Sponsored by Double B Ranch").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Advertise in this In-feed article sponsor placement" })).toHaveCount(2);
   await expect(page.getByRole("link", { name: "TX TexasBusiness.News", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
@@ -110,8 +121,16 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
   await expect(page.getByRole("heading", { name: "Helping Texans spot useful business opportunity." })).toBeVisible();
 
   await page.goto("/advertise");
-  await expect(page.getByRole("heading", { name: "Reach Texans looking for what is growing." })).toBeVisible();
-  await expect(page.getByText("Launch packages")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reach Texans following where business is growing." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fixed packages. No population tiers." })).toBeVisible();
+  await expect(page.getByText("$295/mo · $2,950/yr").first()).toBeVisible();
+
+  await page.goto("/payments");
+  await expect(page.getByRole("heading", { name: "Build a Texas advertising request." })).toBeVisible();
+  await page.getByPlaceholder("Search Texas counties, cities, metros, or regions").fill("Dallas");
+  await page.getByRole("button", { name: /Dallas County/ }).click();
+  await expect(page.getByRole("heading", { name: "$295" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stripe checkout coming soon" })).toBeDisabled();
 
   await page.goto("/terms");
   await expect(page.getByRole("heading", { name: "Terms for using TexasBusiness.News." })).toBeVisible();
@@ -133,7 +152,7 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
 
 test("does not expose unlabeled interactive controls", async ({ page }) => {
   const issues = await page.evaluate(() => {
-    return Array.from(document.querySelectorAll("button, a, input"))
+    return Array.from(document.querySelectorAll("button, a, input, select, textarea"))
       .map((element) => ({
         html: element.outerHTML.slice(0, 140),
         name:

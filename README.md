@@ -14,7 +14,9 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - Shareable county-topic feeds, such as `/county/dallas/topic/jobs`.
 - County directory for browsing and opening county feeds.
 - Texas-themed red, white, and blue visual treatment with friendly Texas copy.
-- Sponsor placements that route to `/advertise` and track impression/click events through `dataLayer`.
+- Sponsor placements and advertiser-preview inventory with impression/click events tracked through `dataLayer`.
+- Fixed advertiser package pricing, responsive 250×250 and 980×300 placement previews, and a campaign-request builder.
+- Clearly labeled responsive in-feed advertising inventory after every five article cards.
 - News article links open in a new tab and prefer publisher/source URLs over Google News URLs when available.
 - Responsive layout for mobile, desktop, and large-format displays.
 
@@ -24,6 +26,7 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - `/counties` county directory
 - `/mission` mission statement
 - `/advertise` sponsor information and placement details
+- `/payments` advertiser quote builder and campaign-request form; Stripe checkout is intentionally disabled
 - `/contact` contact form and admin email
 - `/terms` terms of service
 - `/privacy` privacy statement
@@ -31,6 +34,8 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - `/county/:countySlug` county-specific feed
 - `/county/:countySlug/topic/:topicSlug` county-specific topic feed
 - `*` not-found page
+
+The complete preview rate card, billing rules, creative specifications, submission flow, and advertising standards are documented in `advertising_pricing.md`.
 
 ## Feeds And Filtering
 
@@ -51,7 +56,7 @@ Required for the contact form through EmailJS:
 - `VITE_EMAILJS_TEMPLATE_ID`
 - `VITE_EMAILJS_PUBLIC_KEY`
 
-These must be set in AWS Amplify environment variables for the deployed contact form to send to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
+These must be set in AWS Amplify environment variables for the deployed contact and advertiser-request forms to send to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`; optional advertiser variables include `submission_type`, `business_name`, `placement`, `billing`, `targeting`, `estimated_total`, and `creative_name`.
 
 Optional RSS override variables:
 
@@ -75,11 +80,12 @@ npm run build
 
 - Run `npm run lint`.
 - Run `npm run build`.
-- Smoke-check `/`, `/counties`, `/county/dallas`, `/topic/jobs`, `/county/dallas/topic/jobs`, `/advertise`, and a missing route.
+- Smoke-check `/`, `/counties`, `/county/dallas`, `/topic/jobs`, `/county/dallas/topic/jobs`, `/advertise`, `/payments`, and a missing route.
 - Verify county search can select multiple counties from a query like `Potter, Randall`.
 - Verify selecting a county shows county-specific articles first and statewide Texas articles beneath.
 - Verify external news article links open in a new tab.
-- Verify sponsor cards route to `/advertise`.
+- Verify in-feed advertiser placeholders appear after every five article cards without breaking the responsive grid.
+- Verify `/payments` calculates county, multi-county, statewide, monthly, and annual preview rates without collecting payment.
 
 ## Deployment
 
