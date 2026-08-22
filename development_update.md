@@ -4,7 +4,7 @@ Last updated: August 22, 2026
 
 ## Executive Summary
 
-TexasBusiness.News is currently a lightweight frontend-only React SPA for positive Texas business news. It has a working Vite/React foundation, client-side routing, county and topic filters, sponsor placements, external RSS ingestion through client-side proxy providers, and AWS Amplify deployment notes. There is no backend, database, authentication, CMS, or editorial workflow yet.
+TexasBusiness.News is currently a lightweight React SPA for positive Texas business news. It has a working Vite/React foundation, client-side routing, county and topic filters, sponsor placements, a typed integration with the TexasBusiness.News page API, an outage-only RSS proxy fallback, and AWS Amplify deployment notes. The product still has no accounts, authentication, CMS, or editorial workflow.
 
 The current app is a substantial lightweight MVP: the expanded Texas business taxonomy, region and industry filtering, legal pages, EmailJS contact flow, sponsor system, responsive layouts, and deterministic browser-test coverage are implemented. Production readiness still requires better SEO/share metadata, CI execution of the browser suite, deployed-device performance validation, content-source governance, and Amplify security hardening.
 
@@ -13,12 +13,12 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 ### Current Product State
 
 - Public brand is `TexasBusiness.News`.
-- Frontend remains a static Vite/React application with no backend or accounts.
+- The frontend remains a static Vite/React application, consumes a read-only news API, and has no accounts.
 - Users can combine multiple counties, regions, and industries in one feed.
 - Article cards include full publication dates and matching industry tags.
 - Statewide, county, region, industry, region-industry, legal, contact, mission, and advertising routes are available.
 - Contact submissions use EmailJS and send to `admin@texasbusiness.news` when the three required `VITE_EMAILJS_*` variables are configured in Amplify.
-- RSS provider environment variables remain optional because built-in RSS2JSON and AllOrigins defaults are present.
+- `VITE_NEWS_API_URL` configures primary production news delivery; local development defaults to `http://localhost:8787`, and API availability failures trigger the RSS proxy fallback.
 
 ### Advertising
 
@@ -53,7 +53,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - React Router for client-side routes.
 - CSS in `src/styles.css`; no component library.
 - County data from `@nickgraffis/us-counties` plus local Texas region, metro, and city aliases.
-- Client-side RSS fetching from Google News RSS via AllOrigins first and RSS2JSON as fallback.
+- Typed client-side fetching from `GET /v1/pages/home`, with county and statewide results returned together and focused Google News plus reviewed local-feed proxy fetching reserved for API outages.
 - Sponsor/ad placements use static local data; the sole active Double B Ranch creative opens its approved external destination.
 - Deployment target is AWS Amplify Hosting through a GitHub connection.
 
@@ -82,6 +82,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - Multi-select region and industry filters with removable selections.
 - Expanded topics include energy, robotics, small business, infrastructure, technology, sports, finance, TX Stock Exchange, agriculture, space, real estate, ranching, cattle, higher education, medical, hunting, tourism, and state parks.
 - County relevance gate to keep county feeds tied to local place signals.
+- Potter and Randall fallback coverage combines focused county searches with reviewed Amarillo-area RSS feeds.
 - Positive business filter and negative/crime/tragedy keyword exclusions.
 - Sole Double B Ranch sponsor creative with impression and click events pushed to `dataLayer`.
 - LiveCoinWatch crypto and TradingView market ticker widgets.
@@ -94,7 +95,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - Added `@playwright/test`.
 - Added `npm run test:e2e`.
 - Added `playwright.config.ts`.
-- Added `tests/app.spec.ts` with deterministic mocked RSS/provider coverage for:
+- Added `tests/app.spec.ts` with deterministic mocked page API and RSS fallback coverage for:
   - Home route, hero, feed, sponsor content.
   - Multi-county search for `Potter, Randall`.
   - DFW quick filter and Texas feed reset.
@@ -125,26 +126,32 @@ Required in AWS Amplify for the contact form:
 
 The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`, with `to_email` set by the app to `admin@texasbusiness.news`.
 
-Optional RSS override variables:
+Required for production news delivery:
+
+- `VITE_NEWS_API_URL`
+
+Local development uses `http://localhost:8787` when this variable is unset. Production should configure it; missing configuration, network failures, eligible availability responses, malformed JSON, and invalid API response shapes trigger the RSS proxy fallback.
+
+Optional RSS fallback overrides:
 
 - `VITE_RSS_PROVIDER_URL`
 - `VITE_RSS_RAW_PROXY_URL`
 
-RSS should still work when the RSS variables are not set because the app falls back to built-in RSS2JSON and AllOrigins provider URLs.
+Built-in RSS2JSON and AllOrigins endpoints are used when these are unset.
 
 ### Browser Test Status
 
 The Playwright suite now runs successfully in this WSL environment:
 
 ```text
-12 passed
+20 passed
 ```
 
 Coverage passes in desktop Chromium and mobile Chrome. CI should still install the Playwright browser and native dependencies before running `npm run test:e2e`.
 
-## Feature Complete Definition For A Lightweight No-Backend MVP
+## Feature Complete Definition For A Lightweight API-Backed MVP
 
-The first production version should stay frontend-only unless a feature truly requires server-side persistence. Feature complete should mean:
+The first production version should keep the frontend static and use the existing page API for news delivery. Feature complete should mean:
 
 - Users can browse positive Texas business stories by statewide scope, region, county, and topic.
 - Meeting-note industries and regions are represented in the taxonomy and UI.
@@ -152,7 +159,7 @@ The first production version should stay frontend-only unless a feature truly re
 - Deep links work on Amplify for every county, region, and topic route.
 - Static sponsor placements work without collecting sensitive user data.
 - Analytics are privacy-aware and documented.
-- RSS/provider failure states are graceful and do not break the app.
+- News API failure states are graceful and do not clear the last successful results.
 - Basic SEO metadata exists for major routes.
 - Lint, build, and Playwright E2E checks run in CI before deployment.
 
@@ -270,16 +277,16 @@ Before production launch:
 
 - Add Amplify SPA rewrite rule to serve `/index.html` with `200` for unmatched routes.
 - Add custom response headers in Amplify for security.
-- Add environment variable documentation for RSS providers.
+- Configure and document `VITE_NEWS_API_URL`.
 - Run lint, build, and E2E in GitHub Actions before Amplify deployment.
 - Confirm route deep links after deployment.
-- Confirm third-party script loading and RSS proxy behavior from the production domain.
+- Confirm third-party script loading and page API behavior from the production domain.
 
 ## Best Practice Audit
 
 ### Architecture
 
-Current state is appropriate for a very lightweight frontend-only MVP. The app is simple, readable, and avoids premature backend complexity.
+Current state is appropriate for a lightweight API-backed MVP. The static app remains simple while provider ingestion and caching stay behind the page API.
 
 Recommended changes:
 
@@ -317,7 +324,7 @@ Recommended changes:
 
 ### Security
 
-Current risk is moderate because the app is static and has no auth or backend. Main concerns are third-party scripts, external links, and external feed content.
+Current risk is moderate because the app is static, has no auth, and calls a read-only news API. Main concerns are third-party scripts, external links, and external feed content.
 
 Recommended changes:
 
@@ -330,7 +337,7 @@ Recommended changes:
 - Keep `rel="noopener noreferrer"` on all external links.
 - Sanitize any RSS-rendered HTML. Current code strips HTML for descriptions, which is good.
 - Avoid rendering untrusted RSS HTML directly.
-- Document third-party services: Google News RSS, AllOrigins, RSS2JSON, TradingView.
+- Document the news API, TradingView, LiveCoinWatch, sponsors, and linked publishers.
 - Avoid collecting precise location, sensitive personal data, or user accounts unless a privacy program is in place.
 
 ### Privacy And Compliance
@@ -379,12 +386,12 @@ Recommended changes:
 
 ### Performance
 
-Current bundle size is reasonable for an MVP. Main performance risks come from client-side RSS fanout and third-party scripts.
+Current bundle size is reasonable for an MVP. Main performance risks come from page API latency, remote images, and third-party scripts.
 
 Recommended changes:
 
 - Lazy-load the TradingView ticker or make it optional.
-- Limit simultaneous feed requests for large multi-county selections.
+- Keep county, region, and topic changes consolidated into one page API request.
 - Add request timeouts and clearer feed failure messaging.
 - Consider caching feed results in localStorage only if freshness and privacy tradeoffs are acceptable.
 - Use fallback images to avoid broken or heavy remote thumbnails.
@@ -430,7 +437,7 @@ Later:
 - Editorial curation workflow.
 - Newsletter signup.
 - Saved preferences beyond localStorage.
-- Backend feed cache if provider reliability or rate limits become a problem.
+- Page API cache tuning if provider reliability or rate limits become a problem.
 - Admin/sponsor dashboard.
 
 ## Open Questions
@@ -441,7 +448,7 @@ Later:
 - Confirm whether theme parks belong under Tourism, Real Estate/Development, or their own Attractions category.
 - Confirm whether any named individuals should appear in public copy before legal/editorial review.
 - Confirm analytics provider and whether consent management is required at launch.
-- Confirm whether the site will collect contact forms or newsletter signups before a backend exists.
+- Confirm whether the site will add newsletter signups or persist contact submissions beyond EmailJS.
 
 ## Recommended Next Sprint
 

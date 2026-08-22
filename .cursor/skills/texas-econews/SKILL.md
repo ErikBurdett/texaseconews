@@ -1,20 +1,74 @@
 ---
 name: texas-business-news
-description: Provides TexasBusiness.News project context, roadmap priorities, testing expectations, deployment constraints, and Texas-focused compliance guidance. Use when working on TexasBusiness.News features, docs, audits, Playwright tests, Amplify deployment, region filters, industry taxonomy, sponsor placements, or compliance.
+description: Provides TexasBusiness.News project context, news API integration rules, testing expectations, deployment constraints, and Texas-focused compliance guidance. Use when working on TexasBusiness.News features, docs, audits, Playwright tests, Amplify deployment, region filters, industry taxonomy, sponsor placements, or compliance.
 ---
 
 # TexasBusiness.News
 
 ## Product Context
 
-TexasBusiness.News is a lightweight frontend-only React SPA for positive Texas business news. There is no backend for now. Keep solutions static, client-side, and deployable through AWS Amplify Hosting connected to GitHub unless the user explicitly asks for backend work.
+TexasBusiness.News is a lightweight React SPA for positive Texas business news. The static frontend is deployable through AWS Amplify Hosting and reads normalized article data from the TexasBusiness.News backend API. It has no user accounts or database access. Browser-side RSS proxy ingestion exists only as an automatic availability fallback.
 
 ## Current Stack
 
 - Vite, React, TypeScript, React Router.
-- Client-side Google News RSS feed loading through proxy providers.
-- Static local data for counties, topics, feeds, and sponsor placements.
+- Typed page API client for county, region, topic, and statewide news.
+- Outage-only Google News RSS fallback through AllOrigins and RSS2JSON.
+- Static local data for counties, topics, regions, and sponsor placements.
 - Deployment target: AWS Amplify Hosting with an SPA rewrite to `/index.html`.
+
+## News Page API Contract
+
+The home feed uses:
+
+```text
+GET {VITE_NEWS_API_URL}/v1/pages/home?counties=csv&regions=csv&topics=csv&limit=n
+```
+
+The response is:
+
+```text
+{
+  county: FeedResponse | null,
+  statewide: FeedResponse,
+  meta: { fetchedAt: ISO string }
+}
+```
+
+Each `FeedResponse` contains `items` and metadata for count, sources used, fetch time, cache TTL, stale state, and partial failures. Each item contains `id`, `title`, `link`, `topics`, and only the documented optional source, date, description, image, label, county, and region fields.
+
+```text
+FeedResponse = {
+  items: NewsItem[],
+  meta: {
+    count: number,
+    sourcesUsed: string[],
+    fetchedAt: string,
+    cacheTtlSeconds: number,
+    stale: boolean,
+    partialFailures: number
+  }
+}
+
+NewsItem = {
+  id: string,
+  title: string,
+  link: string,
+  source?: string,
+  sourceUrl?: string,
+  publishedAt?: string,
+  description?: string,
+  imageUrl?: string,
+  feedLabel?: string,
+  countySlug?: string,
+  region?: string,
+  topics: string[]
+}
+```
+
+Keep URL construction in `src/lib/news-api.ts` using `URL` and `URLSearchParams`. Handle non-OK responses, validate response shape at runtime, pass an `AbortSignal`, and prevent stale requests from replacing newer filter results. The UI should preserve the last successful response while a refresh is pending or fails.
+
+Use `src/lib/rss-fallback.ts` only after network failures, missing production API configuration, malformed API responses, HTTP 401/403/408/429, or 5xx responses. Never fall back for request cancellation, invalid filter input, 404, or 405 responses. Keep the fallback age-limited, filtered, county-relevant, deduplicated, and locally cached. County fallback plans may combine focused Google searches with reviewed local feeds from `src/data/feeds.ts`; a publisher name alone must not satisfy county relevance.
 
 ## Roadmap Priorities
 
@@ -29,11 +83,11 @@ When adding product features, prioritize:
 
 ## Engineering Rules
 
-- Preserve the no-backend constraint unless a feature truly requires persistence or secrets.
+- Keep the page API as the primary news path. Browser RSS proxy access is permitted only through `src/lib/rss-fallback.ts` after an eligible API availability failure.
 - Prefer structured catalogs for regions, industries, topics, query terms, and landing-page metadata.
 - Avoid hardcoding more route-specific behavior into `src/App.tsx` as the taxonomy grows.
 - Keep sponsor/ad logic clearly labeled and separated from editorial taxonomy.
-- Do not render untrusted RSS HTML. Use short excerpts and link to original publishers.
+- Do not render untrusted article HTML. Use short excerpts and link to original publishers.
 - Keep external links on `rel="noopener noreferrer"`.
 - Add or update Playwright coverage for user-facing route/filter changes.
 
@@ -53,7 +107,7 @@ If Playwright fails locally with missing native browser dependencies, install th
 sudo npx playwright install-deps chromium
 ```
 
-The E2E suite mocks RSS providers and should not depend on live Google News, AllOrigins, RSS2JSON, or TradingView availability.
+The E2E suite must mock `**/v1/pages/home**` with deterministic county and statewide responses and separately cover an API outage with mocked AllOrigins/RSS2JSON fallback responses. It must not depend on a running API or live news providers. Keep external ticker scripts mocked as well.
 
 ## Environment Variables
 
@@ -65,12 +119,16 @@ Required for the deployed EmailJS contact form:
 
 The contact form sends to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
 
-RSS provider variables are optional:
+Required for production news delivery:
+
+- `VITE_NEWS_API_URL`
+
+When unset in development, the client uses `http://localhost:8787`. Production should configure this value, but missing configuration or an eligible availability failure activates the RSS proxy fallback.
+
+Optional RSS fallback overrides:
 
 - `VITE_RSS_PROVIDER_URL`
 - `VITE_RSS_RAW_PROXY_URL`
-
-RSS should still work without them because the app has default RSS2JSON and AllOrigins provider URLs.
 
 ## Compliance And Trust
 

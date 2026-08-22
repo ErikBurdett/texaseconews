@@ -3,17 +3,22 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormE
 import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
 import { AdSlot } from "./components/AdSlot";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
-import { selectedFeeds, type FeedDefinition } from "./data/feeds";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
 import { featuredTopicSlugs, getTopicBySlug, heroTopicSlugs, isTopicSlug, topicCatalog, type TopicSlug } from "./data/topics";
-import { fetchNewsFeeds, type NewsItem } from "./lib/rss";
+import { fetchHomePage, type HomePageQuery, type HomePageResponse, type NewsItem } from "./lib/news-api";
 
 const siteName = "TexasBusiness.News";
 const mission =
   "Howdy. TexasBusiness.News gathers positive business news and opportunity signals from across the Lone Star State so citizens, builders, employers, investors, visitors, and future Texans can see where momentum is forming. We focus on growth, jobs, small business, innovation, data centers, AI advancement, infrastructure, workforce pathways, and local wins that help people make the most of opportunity close to home.";
 
-const curatedStorageKey = "texasbusiness-news:selected-counties";
 const pageSize = 12;
+const pageApiLimit = pageSize * 5;
+const maxCountyFilters = 4;
+const maxRegionFilters = 4;
+const maxTopicFilters = 4;
+const maxFilterCombinations = 8;
+const noNewsItems: NewsItem[] = [];
+const fallbackNewsImage = "https://placehold.co/720x460/07111f/e9f8ef?text=TexasBusiness.News";
 
 function App() {
   return (
@@ -40,36 +45,40 @@ function App() {
 }
 
 function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?: TexasCounty; initialRegion?: RegionSlug; topicSlug?: TopicSlug }) {
-  const [selectedSlugs, setSelectedSlugs] = useStoredCountySelection();
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() => (initialCounty ? [initialCounty.slug] : []));
   const [selectedRegionSlugs, setSelectedRegionSlugs] = useState<RegionSlug[]>(() => (initialRegion ? [initialRegion] : []));
   const [selectedTopicSlugs, setSelectedTopicSlugs] = useState<TopicSlug[]>(() => (topicSlug ? [topicSlug] : []));
   const selectedCounties = useMemo(() => selectedSlugs.map(getCountyBySlug).filter(Boolean) as TexasCounty[], [selectedSlugs]);
   const selectedRegions = useMemo(() => selectedRegionSlugs.map((slug) => regionCatalog[slug]), [selectedRegionSlugs]);
   const selectedTopics = useMemo(() => selectedTopicSlugs.map((slug) => topicCatalog[slug]), [selectedTopicSlugs]);
-  const countyFeedRequests = useMemo(() => (selectedCounties.length ? selectedFeeds(selectedCounties, selectedTopicSlugs) : []), [selectedCounties, selectedTopicSlugs]);
-  const statewideFeedRequests = useMemo(() => selectedFeeds([], selectedTopicSlugs, selectedRegionSlugs), [selectedRegionSlugs, selectedTopicSlugs]);
-  const countyNews = useNews(countyFeedRequests);
-  const statewideNews = useNews(statewideFeedRequests);
+  const pageNews = usePageNews({
+    counties: selectedSlugs,
+    regions: selectedRegionSlugs,
+    topics: selectedTopicSlugs,
+    limit: pageApiLimit,
+  });
+  const countyItems = pageNews.data?.county?.items ?? noNewsItems;
+  const statewideItems = pageNews.data?.statewide.items ?? noNewsItems;
   const [visibleCountyCount, setVisibleCountyCount] = useState(pageSize);
   const [visibleStatewideCount, setVisibleStatewideCount] = useState(pageSize);
   const topics = useMemo(
-    () => [...new Set([...selectedTopicSlugs, ...countyNews.items.flatMap((item) => item.topics), ...statewideNews.items.flatMap((item) => item.topics)])],
-    [countyNews.items, selectedTopicSlugs, statewideNews.items],
+    () => [...new Set([...selectedTopicSlugs, ...countyItems.flatMap((item) => item.topics), ...statewideItems.flatMap((item) => item.topics)])],
+    [countyItems, selectedTopicSlugs, statewideItems],
   );
   const scopeLabel = selectedRegions.length ? selectedRegions.map(displayLabel).join(", ") : selectedCounties.length ? selectedCounties.map((county) => county.name).join(", ") : "Texas statewide";
   const industryLabel = selectedTopics.length ? selectedTopics.map(displayLabel).join(", ") : "";
   const feedTitle = `${scopeLabel} ${industryLabel ? industryLabel.toLowerCase() : "business momentum"}`;
-  const isLoading = countyNews.loading || statewideNews.loading;
-  const hasError = countyNews.error || statewideNews.error;
+  const isLoading = pageNews.loading;
+  const hasError = Boolean(pageNews.error);
 
   usePageTitle(selectedTopicSlugs.length || selectedRegionSlugs.length ? `${scopeLabel} ${industryLabel || "News"}` : "Positive Texas Business News");
   useInfiniteScroll(() => {
-    if (selectedCounties.length && visibleCountyCount < countyNews.items.length) {
-      setVisibleCountyCount((current) => Math.min(current + pageSize, countyNews.items.length));
+    if (selectedCounties.length && visibleCountyCount < countyItems.length) {
+      setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length));
       return;
     }
-    setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideNews.items.length));
-  }, (selectedCounties.length && visibleCountyCount < countyNews.items.length) || visibleStatewideCount < statewideNews.items.length);
+    setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length));
+  }, (selectedCounties.length && visibleCountyCount < countyItems.length) || visibleStatewideCount < statewideItems.length);
 
   useEffect(() => {
     setVisibleCountyCount(pageSize);
@@ -98,7 +107,14 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
           <p>{selectedTopicSlugs.length === 1 ? selectedTopics[0].description : selectedRegionSlugs.length === 1 ? selectedRegions[0].description : mission}</p>
           <div className="hero-chip-group" aria-label="Texas business categories">
             {heroTopicSlugs.map((slug) => (
-              <button aria-label={`Toggle ${topicCatalog[slug].label} hero category`} className={selectedTopicSlugs.includes(slug) ? "selected" : ""} key={slug} onClick={() => toggleListValue(selectedTopicSlugs, slug, setSelectedTopicSlugs)} type="button">
+              <button
+                aria-label={`Toggle ${topicCatalog[slug].label} hero category`}
+                className={selectedTopicSlugs.includes(slug) ? "selected" : ""}
+                disabled={!selectedTopicSlugs.includes(slug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length, selectedTopicSlugs.length + 1))}
+                key={slug}
+                onClick={() => toggleListValue(selectedTopicSlugs, slug, setSelectedTopicSlugs)}
+                type="button"
+              >
                 {displayLabel(topicCatalog[slug])}
               </button>
             ))}
@@ -135,33 +151,33 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
               <p className="eyebrow">Live feed</p>
               <h2>{feedTitle}</h2>
             </div>
-            <button className="button ghost" onClick={() => { countyNews.refresh(); statewideNews.refresh(); }} type="button">Refresh</button>
+            <button className="button ghost" onClick={pageNews.refresh} type="button">Refresh</button>
           </div>
 
           {isLoading ? <StatusCard loading title="Throwin' A Lasso 'Round The Latest..." body="please wait up to 1 minute for data" /> : null}
-          {hasError ? <StatusCard title="Feed provider unavailable" body="Showing cached results when available. Try refreshing in a few minutes." /> : null}
-          {!isLoading && selectedCounties.length > 0 && !countyNews.items.length ? <StatusCard title="No county-specific growth stories yet" body="The strict county filter did not find matching local stories. Statewide Texas articles are still listed below." /> : null}
+          {hasError ? <StatusCard title="News API unavailable" body={pageNews.error || "Showing the last available results. Try refreshing in a few minutes."} /> : null}
+          {!isLoading && selectedCounties.length > 0 && !countyItems.length ? <StatusCard title="No county-specific growth stories yet" body="The strict county filter did not find matching local stories. Statewide Texas articles are still listed below." /> : null}
 
           {selectedCounties.length ? (
             <FeedSection
               emptyBody="Try another county, city, or topic while the local filters refresh."
               emptyTitle="No county-specific growth stories yet"
-              items={countyNews.items}
+              items={countyItems}
               title={`${selectedCounties.length > 1 ? "Selected counties" : selectedCounties[0].displayName} articles`}
               visibleCount={visibleCountyCount}
-              onFetchMore={countyNews.refresh}
-              onLoadMore={() => setVisibleCountyCount((current) => Math.min(current + pageSize, countyNews.items.length))}
+              onFetchMore={pageNews.refresh}
+              onLoadMore={() => setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length))}
             />
           ) : null}
 
           <FeedSection
             emptyBody="Try refreshing or clearing topic filters while the statewide feed updates."
             emptyTitle="No Texas statewide growth stories yet"
-            items={statewideNews.items}
+            items={statewideItems}
             title={selectedCounties.length ? "Texas statewide articles" : "Texas statewide articles"}
             visibleCount={visibleStatewideCount}
-            onFetchMore={statewideNews.refresh}
-            onLoadMore={() => setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideNews.items.length))}
+            onFetchMore={pageNews.refresh}
+            onLoadMore={() => setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length))}
           />
         </main>
       </section>
@@ -410,12 +426,12 @@ function PrivacyPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Privacy statement</p>
         <h1>Privacy-first by design.</h1>
-        <p>{siteName} is designed as a lightweight frontend-only experience that avoids account creation and avoids collecting sensitive personal information. We use minimal browser-side preferences and link to third-party sources that may have their own privacy practices.</p>
+        <p>{siteName} is designed as a lightweight experience that avoids account creation and avoids collecting sensitive personal information. We use minimal browser-side preferences and link to third-party sources that may have their own privacy practices.</p>
       </section>
       <section className="legal-grid">
-        <InfoCard title="Local Preferences" body="County selections may be stored in your browser localStorage so the feed can remember your preferred Texas scope. You can clear this through your browser settings." />
+        <InfoCard title="Local Preferences" body="County, region, and industry filters are kept only for the current page session. Opening the home page starts with statewide Texas stories and no default county." />
         <InfoCard title="Sponsor Measurement" body="Sponsor impressions and clicks may be measured as anonymous interaction events. We do not use those events to create account profiles because this site does not currently have accounts." />
-        <InfoCard title="Third-Party Widgets" body="Market widgets, crypto widgets, RSS providers, sponsors, and linked publishers may receive technical information when their content loads or when you click through to them. Review their privacy terms for details." />
+        <InfoCard title="Third-Party Widgets" body="Market widgets, crypto widgets, news sources, sponsors, and linked publishers may receive technical information when their content loads or when you click through to them. Review their privacy terms for details." />
         <InfoCard title="Privacy Contact" body="Use the contact form or admin@texasbusiness.news for privacy questions and requests. No street address or phone contact is listed for this site." />
       </section>
     </Shell>
@@ -456,6 +472,7 @@ function FeedControls({
   onTopicChange: (slugs: TopicSlug[]) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [filterError, setFilterError] = useState("");
   const selected = new Set(selectedSlugs);
   const searchTerms = searchTokens(query);
   const filtered = texasCounties.filter((county) => countyMatchesSearch(county, searchTerms));
@@ -465,20 +482,39 @@ function FeedControls({
     const next = new Set(selected);
     if (next.has(slug)) next.delete(slug);
     else next.add(slug);
-    onCountyChange([...next]);
+    const nextSlugs = [...next];
+    if (!acceptFilterSelection(nextSlugs, selectedRegionSlugs, selectedTopicSlugs)) return;
+    onCountyChange(nextSlugs);
   }
 
   function applyMatchingCounties() {
     const next = new Set(selectedSlugs);
     if (query.trim()) filtered.forEach((county) => next.add(county.slug));
-    onCountyChange([...next]);
+    const nextSlugs = [...next];
+    if (!acceptFilterSelection(nextSlugs, selectedRegionSlugs, selectedTopicSlugs)) return;
+    onCountyChange(nextSlugs);
   }
 
   function toggleRegion(regionSlug: RegionSlug) {
-    toggleListValue(selectedRegionSlugs, regionSlug, onRegionChange);
+    const next = toggledList(selectedRegionSlugs, regionSlug);
+    if (!acceptFilterSelection(selectedSlugs, next, selectedTopicSlugs)) return;
+    onRegionChange(next);
+  }
+
+  function toggleTopic(topicSlug: TopicSlug) {
+    const next = toggledList(selectedTopicSlugs, topicSlug);
+    if (!acceptFilterSelection(selectedSlugs, selectedRegionSlugs, next)) return;
+    onTopicChange(next);
+  }
+
+  function acceptFilterSelection(counties: string[], regions: RegionSlug[], topics: TopicSlug[]) {
+    const issue = filterSelectionIssue(counties.length, regions.length, topics.length);
+    setFilterError(issue);
+    return !issue;
   }
 
   function resetFeed() {
+    setFilterError("");
     onCountyChange([]);
     onRegionChange([]);
     onTopicChange([]);
@@ -500,7 +536,13 @@ function FeedControls({
         <div className="quick-actions">
           <button className={!selectedRegionSlugs.length && !selectedSlugs.length && !selectedTopicSlugs.length ? "selected" : ""} onClick={resetFeed} type="button">Texas feed</button>
           {regionSlugs.map((regionSlug) => (
-            <button className={selectedRegionSlugs.includes(regionSlug) ? "selected" : ""} key={regionSlug} onClick={() => toggleRegion(regionSlug)} type="button">
+            <button
+              className={selectedRegionSlugs.includes(regionSlug) ? "selected" : ""}
+              disabled={!selectedRegionSlugs.includes(regionSlug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length + 1, selectedTopicSlugs.length))}
+              key={regionSlug}
+              onClick={() => toggleRegion(regionSlug)}
+              type="button"
+            >
               {displayLabel(regionCatalog[regionSlug])}
             </button>
           ))}
@@ -509,9 +551,15 @@ function FeedControls({
       <div className="filter-block">
         <span className="filter-label">Industries</span>
         <div className="topic-links">
-          <button className={!selectedTopicSlugs.length ? "topic-chip selected" : "topic-chip"} onClick={() => onTopicChange([])} type="button">All growth</button>
+          <button className={!selectedTopicSlugs.length ? "topic-chip selected" : "topic-chip"} onClick={() => { setFilterError(""); onTopicChange([]); }} type="button">All growth</button>
           {featuredTopicSlugs.map((slug) => (
-            <button className={selectedTopicSlugs.includes(slug) ? "topic-chip selected" : "topic-chip"} key={slug} onClick={() => toggleListValue(selectedTopicSlugs, slug, onTopicChange)} type="button">
+            <button
+              className={selectedTopicSlugs.includes(slug) ? "topic-chip selected" : "topic-chip"}
+              disabled={!selectedTopicSlugs.includes(slug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length, selectedTopicSlugs.length + 1))}
+              key={slug}
+              onClick={() => toggleTopic(slug)}
+              type="button"
+            >
               {displayLabel(topicCatalog[slug])}
             </button>
           ))}
@@ -536,22 +584,30 @@ function FeedControls({
       {selectedRegionSlugs.length || selectedTopicSlugs.length ? (
         <div className="selected-counties" aria-label="Selected region and industry filters">
           {selectedRegionSlugs.map((regionSlug) => (
-            <button aria-label={`Remove ${regionCatalog[regionSlug].label} region`} key={regionSlug} type="button" onClick={() => toggleListValue(selectedRegionSlugs, regionSlug, onRegionChange)}>
+            <button aria-label={`Remove ${regionCatalog[regionSlug].label} region`} key={regionSlug} type="button" onClick={() => toggleRegion(regionSlug)}>
               {regionCatalog[regionSlug].label} x
             </button>
           ))}
           {selectedTopicSlugs.map((slug) => (
-            <button aria-label={`Remove ${topicCatalog[slug].label} industry`} key={slug} type="button" onClick={() => toggleListValue(selectedTopicSlugs, slug, onTopicChange)}>
+            <button aria-label={`Remove ${topicCatalog[slug].label} industry`} key={slug} type="button" onClick={() => toggleTopic(slug)}>
               {topicCatalog[slug].label} x
             </button>
           ))}
         </div>
       ) : null}
+      <p className="picker-count" role="status">
+        {filterError || `Choose up to ${maxCountyFilters} counties, ${maxRegionFilters} regions, and ${maxTopicFilters} industries within the ${maxFilterCombinations}-combination feed budget.`}
+      </p>
       <p className="picker-count">{filtered.length} of {texasCounties.length} Texas counties shown. Search accepts counties, cities, metros, regions, and comma-separated lists.</p>
       <div className="county-picker">
         {filtered.map((county) => (
           <label className={selected.has(county.slug) ? "county-pill selected" : "county-pill"} key={county.fips}>
-            <input checked={selected.has(county.slug)} onChange={() => toggleCounty(county.slug)} type="checkbox" />
+            <input
+              checked={selected.has(county.slug)}
+              disabled={!selected.has(county.slug) && Boolean(filterSelectionIssue(selectedSlugs.length + 1, selectedRegionSlugs.length, selectedTopicSlugs.length))}
+              onChange={() => toggleCounty(county.slug)}
+              type="checkbox"
+            />
             <span>{county.name}</span>
             <small>{county.metro || county.region}</small>
           </label>
@@ -572,7 +628,22 @@ function searchTokens(query: string) {
 }
 
 function toggleListValue<T>(values: T[], value: T, onChange: (next: T[]) => void) {
-  onChange(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+  onChange(toggledList(values, value));
+}
+
+function toggledList<T>(values: T[], value: T) {
+  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+}
+
+function filterSelectionIssue(countyCount: number, regionCount: number, topicCount: number) {
+  if (countyCount > maxCountyFilters) return `Choose up to ${maxCountyFilters} counties. Narrow the search before adding matches.`;
+  if (regionCount > maxRegionFilters) return `Choose up to ${maxRegionFilters} regions.`;
+  if (topicCount > maxTopicFilters) return `Choose up to ${maxTopicFilters} industries.`;
+  const topicFactor = Math.max(1, topicCount);
+  const combinations = (countyCount + Math.max(1, regionCount)) * topicFactor;
+  return combinations > maxFilterCombinations
+    ? `This selection would create ${combinations} feed combinations. Remove a county, region, or industry to stay within ${maxFilterCombinations}.`
+    : "";
 }
 
 function displayLabel(definition: { label: string; shortLabel?: string }) {
@@ -629,11 +700,11 @@ function NewsCard({ item }: { item: NewsItem }) {
   return (
     <article className="news-card">
       <a aria-label={`Open article: ${item.title}`} className="news-image" href={item.link} rel="noopener noreferrer" target="_blank">
-        <img src={item.imageUrl} alt="" loading="lazy" />
+        <img src={item.imageUrl || fallbackNewsImage} alt="" loading="lazy" />
       </a>
       <div className="news-body">
         <div className="meta-row">
-          <span>{item.feedLabel}</span>
+          <span>{item.feedLabel || item.source || "Texas business news"}</span>
           {publishedDate ? (
             <time dateTime={publishedDate.iso}>
               {publishedDate.label}
@@ -686,7 +757,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <section className="footer-card footer-brand">
           <strong>{siteName}</strong>
           <p>Positive business signal for the Lone Star State.</p>
-          <p className="footer-small">Independent, frontend-only news discovery experience linking readers to original publishers and public third-party sources.</p>
+          <p className="footer-small">Independent news discovery experience linking readers to original publishers and public third-party sources.</p>
         </section>
         <section className="footer-card">
           <h2>Legal</h2>
@@ -696,7 +767,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </section>
         <section className="footer-card">
           <h2>Site Notes</h2>
-          <p>No accounts. No backend. Official contact paths are the contact form and admin@texasbusiness.news.</p>
+          <p>No accounts. News is delivered through a read-only API. Official contact paths are the contact form and admin@texasbusiness.news.</p>
         </section>
         <AdSlot slot="footer" limit={1} />
       </footer>
@@ -810,49 +881,37 @@ function InfoCard({ title, body }: { title: string; body: string }) {
   );
 }
 
-function useNews(feeds: FeedDefinition[]) {
-  const [items, setItems] = useState<NewsItem[]>([]);
+function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
+  const [data, setData] = useState<HomePageResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(
-    async () => {
-      setLoading(true);
-      setError(false);
-      try {
-        setItems(await fetchNewsFeeds(feeds));
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [feeds],
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const activeRequest = useRef(0);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const controller = new AbortController();
+    const requestId = activeRequest.current + 1;
+    activeRequest.current = requestId;
+    setLoading(true);
+    setError(null);
 
-  return { items, loading, error, refresh: load };
-}
+    fetchHomePage({ counties, regions, topics, limit }, { signal: controller.signal })
+      .then((response) => {
+        if (activeRequest.current === requestId) setData(response);
+      })
+      .catch((requestError: unknown) => {
+        if (controller.signal.aborted || activeRequest.current !== requestId) return;
+        setError(requestError instanceof Error ? requestError.message : "News API request failed.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && activeRequest.current === requestId) setLoading(false);
+      });
 
-function useStoredCountySelection() {
-  const [slugs, setSlugs] = useState<string[]>(() => {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(curatedStorageKey) || "[]") as string[];
-      return parsed.filter((slug) => getCountyBySlug(slug));
-    } catch {
-      return [];
-    }
-  });
+    return () => controller.abort();
+  }, [counties, limit, refreshVersion, regions, topics]);
 
-  const update = useCallback((next: string[]) => {
-    setSlugs(next);
-    window.localStorage.setItem(curatedStorageKey, JSON.stringify(next));
-  }, []);
-
-  return [slugs, update] as const;
+  const refresh = useCallback(() => setRefreshVersion((current) => current + 1), []);
+  return { data, loading, error, refresh };
 }
 
 function useInfiniteScroll(onNearEnd: () => void, enabled: boolean) {

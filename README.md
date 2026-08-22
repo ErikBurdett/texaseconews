@@ -34,16 +34,26 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 
 ## Feeds And Filtering
 
-Feeds are Google News RSS search feeds loaded client-side. The app prefers raw RSS through AllOrigins for Google News feeds so publisher/source URLs can be extracted when present, with RSS2JSON as fallback.
+Articles are loaded from the TexasBusiness.News API through `GET /v1/pages/home`. The frontend sends the selected county, region, and topic slugs as CSV query parameters plus a result limit, then renders the separate county and statewide responses.
 
-County feeds use two layers of filtering:
+The API owns provider ingestion, constructive-business filtering, duplicate suppression, caching, source attribution, and county relevance. County results remain separate from the statewide feed so local stories can appear first without removing statewide coverage.
 
-- Feed query targeting: county names, county display names, and curated city/metro aliases are included in the Google News query.
-- Post-fetch relevance gate: county-scoped stories must mention the county or accepted local place aliases before they appear.
-
-Positive business filtering keeps constructive growth stories and excludes common tragedy/crime terms such as death, violence, drugs, arrests, fatal crashes, and similar negative stories.
+If the API is unreachable, returns an eligible availability error, or returns a malformed response, the client automatically falls back to focused Google News RSS queries and reviewed county-local feeds through AllOrigins and RSS2JSON. Potter and Randall County coverage includes verified Amarillo-area publishers in addition to separate growth and business-sector searches. The fallback applies the same 30-day age, positive-business, blocked-story, county-relevance, sorting, and deduplication safeguards and keeps a 45-minute browser cache. Client cancellation and API validation errors do not trigger proxy traffic.
 
 Environment variables:
+
+Required for production news delivery:
+
+- `VITE_NEWS_API_URL`
+
+Local development defaults to `http://localhost:8787` when `VITE_NEWS_API_URL` is unset. Production should always configure the API URL; when it is missing or unavailable, the RSS proxy fallback is used.
+
+Optional RSS fallback endpoint overrides:
+
+- `VITE_RSS_PROVIDER_URL`
+- `VITE_RSS_RAW_PROXY_URL`
+
+The built-in defaults are RSS2JSON and AllOrigins.
 
 Required for the contact form through EmailJS:
 
@@ -52,13 +62,6 @@ Required for the contact form through EmailJS:
 - `VITE_EMAILJS_PUBLIC_KEY`
 
 These must be set in AWS Amplify environment variables for the deployed contact form to send to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
-
-Optional RSS override variables:
-
-- `VITE_RSS_PROVIDER_URL`
-- `VITE_RSS_RAW_PROXY_URL`
-
-RSS works without those RSS variables. When they are not set, the app uses built-in defaults for RSS2JSON and AllOrigins.
 
 ## Local Development
 
@@ -69,6 +72,7 @@ npm install
 npm run dev
 npm run lint
 npm run build
+npm run test:e2e
 ```
 
 ## QA Checklist
@@ -108,12 +112,13 @@ frontend:
 
 Because this is a React Router SPA, Amplify should include a rewrite rule that sends unmatched routes to `/index.html` with a `200` status so deep links like `/county/dallas/topic/jobs` work after deployment.
 
-AWS Amplify environment variables needed for production contact form support:
+AWS Amplify environment variables needed for production news and contact support:
 
 ```text
+VITE_NEWS_API_URL
 VITE_EMAILJS_SERVICE_ID
 VITE_EMAILJS_TEMPLATE_ID
 VITE_EMAILJS_PUBLIC_KEY
 ```
 
-RSS environment variables are optional unless you want to override the default RSS providers.
+The optional RSS fallback override variables may also be configured when a managed proxy endpoint is preferred.

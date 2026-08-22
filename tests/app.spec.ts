@@ -1,52 +1,122 @@
 import { expect, test, type Page } from "@playwright/test";
 
-function rssFor(url: string) {
-  const decoded = decodeURIComponent(url);
-  const county = decoded.includes("Dallas") || decoded.includes("dallas") ? "Dallas County, Texas" : decoded.includes("Potter") ? "Potter County, Texas" : "Texas";
-  const topic = decoded.includes("energy") || decoded.includes("power") ? "energy investment" : decoded.includes("jobs") ? "jobs and workforce training" : "business expansion";
-  const title = `${county} ${topic} creates positive growth`;
+const fetchedAt = "2026-06-14T12:00:00.000Z";
+const pixel = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+const fallbackTitle = "Texas manufacturer expansion adds 500 jobs";
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-  <rss version="2.0">
-    <channel>
-      <title>Mock Texas Growth Feed</title>
-      <item>
-        <title>${title}</title>
-        <link>https://example.com/${encodeURIComponent(title)}</link>
-        <guid>${title}</guid>
-        <pubDate>Sun, 14 Jun 2026 12:00:00 GMT</pubDate>
-        <source url="https://example.com">Example Texas Business Journal</source>
-        <description>${county} reports new jobs, investment, infrastructure, energy, and manufacturing growth.</description>
-      </item>
-      <item>
-        <title>Texas semiconductor manufacturing expansion adds jobs</title>
-        <link>https://example.com/semiconductor-growth</link>
-        <guid>semiconductor-growth</guid>
-        <pubDate>Sat, 13 Jun 2026 12:00:00 GMT</pubDate>
-        <source url="https://example.com">Example Texas Business Journal</source>
-        <description>Texas statewide manufacturing and AI infrastructure investment creates workforce opportunity.</description>
-      </item>
-    </channel>
-  </rss>`;
+function feed(items: Array<Record<string, unknown>>) {
+  return {
+    items,
+    meta: {
+      count: items.length,
+      sourcesUsed: ["Example Texas Business Journal"],
+      fetchedAt,
+      cacheTtlSeconds: 900,
+      stale: false,
+      partialFailures: 0,
+    },
+  };
 }
 
-async function mockExternalProviders(page: Page) {
+function homePageResponse(requestUrl: string) {
+  const params = new URL(requestUrl).searchParams;
+  const counties = csv(params.get("counties"));
+  const topics = csv(params.get("topics"));
+  const topic = topics.includes("energy") ? "energy investment" : topics.includes("jobs") ? "jobs and workforce training" : "business expansion";
+  const countyNames: Record<string, string> = {
+    dallas: "Dallas County, Texas",
+    potter: "Potter County, Texas",
+    randall: "Randall County, Texas",
+  };
+
+  const countyItems = counties.map((countySlug) => {
+    const county = countyNames[countySlug] || `${countySlug} County, Texas`;
+    const title = `${county} ${topic} creates positive growth`;
+    return {
+      id: `county-${countySlug}-${topics.join("-") || "all"}`,
+      title,
+      link: `https://example.com/${encodeURIComponent(title)}`,
+      source: "Example Texas Business Journal",
+      sourceUrl: "https://example.com",
+      publishedAt: fetchedAt,
+      description: `${county} reports new jobs, investment, infrastructure, energy, and manufacturing growth.`,
+      imageUrl: pixel,
+      feedLabel: "County growth",
+      countySlug,
+      region: "Mock Texas region",
+      topics: topics.length ? topics : ["jobs", "energy", "manufacturing"],
+    };
+  });
+
+  const statewideItems = [
+    {
+      id: "semiconductor-growth",
+      title: "Texas semiconductor manufacturing expansion adds jobs",
+      link: "https://example.com/semiconductor-growth",
+      source: "Example Texas Business Journal",
+      sourceUrl: "https://example.com",
+      publishedAt: "2026-06-13T12:00:00.000Z",
+      description: "Texas statewide manufacturing and AI infrastructure investment creates workforce opportunity.",
+      imageUrl: pixel,
+      feedLabel: "Texas statewide",
+      topics: topics.length ? topics : ["jobs", "manufacturing", "semiconductors"],
+    },
+  ];
+
+  return {
+    county: counties.length ? feed(countyItems) : null,
+    statewide: feed(statewideItems),
+    meta: { fetchedAt },
+  };
+}
+
+function csv(value: string | null) {
+  return value ? value.split(",").filter(Boolean) : [];
+}
+
+function rssFallbackResponse(title = fallbackTitle) {
+  return {
+    status: "ok",
+    feed: {
+      title: "Texas Business Fallback",
+      link: "https://fallback.example.com",
+    },
+    items: [
+      {
+        title,
+        link: `https://fallback.example.com/${encodeURIComponent(title)}`,
+        guid: `rss-fallback-${title}`,
+        pubDate: new Date().toUTCString(),
+        description: "Texas investment and manufacturing growth creates jobs and workforce opportunity.",
+        thumbnail: pixel,
+        source: {
+          title: "Fallback Texas Business Journal",
+          url: "https://fallback.example.com",
+        },
+      },
+    ],
+  };
+}
+
+async function mockNetworkDependencies(page: Page) {
   await page.route("https://s3.tradingview.com/**", (route) =>
     route.fulfill({ status: 200, contentType: "application/javascript", body: "window.__tradingViewMocked = true;" }),
   );
   await page.route("https://www.livecoinwatch.com/**", (route) =>
     route.fulfill({ status: 200, contentType: "application/javascript", body: "window.__liveCoinWatchMocked = true;" }),
   );
-  await page.route("https://api.allorigins.win/raw**", (route) =>
-    route.fulfill({ status: 200, contentType: "application/rss+xml", body: rssFor(route.request().url()) }),
-  );
-  await page.route("https://api.rss2json.com/**", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok", items: [] }) }),
+  await page.route("**/v1/pages/home**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify(homePageResponse(route.request().url())),
+    }),
   );
 }
 
 test.beforeEach(async ({ page }) => {
-  await mockExternalProviders(page);
+  await mockNetworkDependencies(page);
   await page.goto("/");
 });
 
@@ -59,6 +129,112 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("link", { name: "TX TexasBusiness.News", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
+});
+
+test("always opens the home page with a statewide feed", async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem("texasbusiness-news:selected-counties", JSON.stringify(["potter"]));
+  });
+  await page.reload();
+
+  await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Potter County articles" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Remove Potter County" })).toHaveCount(0);
+});
+
+test("falls back to RSS proxies when the news API is unavailable", async ({ page }) => {
+  let rawProxyRequests = 0;
+  let rss2JsonRequests = 0;
+
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "unavailable", message: "API unavailable" } }),
+    }),
+  );
+  await page.route("https://api.allorigins.win/raw**", (route) => {
+    rawProxyRequests += 1;
+    return route.fulfill({ status: 503, body: "raw proxy unavailable" });
+  });
+  await page.route("https://api.rss2json.com/v1/api.json**", (route) => {
+    rss2JsonRequests += 1;
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(rssFallbackResponse()),
+    });
+  });
+
+  await page.reload();
+
+  await expect(page.getByText(fallbackTitle)).toBeVisible();
+  await expect(page.getByText("News API unavailable")).toHaveCount(0);
+  expect(rawProxyRequests).toBeGreaterThan(0);
+  expect(rss2JsonRequests).toBeGreaterThan(0);
+});
+
+test("uses local RSS feeds for Potter County fallback coverage", async ({ page }) => {
+  const localTitle = "Amarillo hospital construction reaches a new milestone";
+
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "unavailable", message: "API unavailable" } }),
+    }),
+  );
+  await page.route("https://api.allorigins.win/raw**", (route) =>
+    route.fulfill({ status: 503, body: "raw proxy unavailable" }),
+  );
+  await page.route("https://api.rss2json.com/v1/api.json**", (route) => {
+    const feedUrl = new URL(route.request().url()).searchParams.get("rss_url") || "";
+    const isLocalFeed = !new URL(feedUrl).hostname.includes("google.com");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        isLocalFeed
+          ? rssFallbackResponse(localTitle)
+          : { status: "error", items: [] },
+      ),
+    });
+  });
+
+  await page.goto("/county/potter");
+
+  await expect(page.getByRole("heading", { name: "Potter County articles" })).toBeVisible();
+  await expect(page.getByText(localTitle)).toBeVisible();
+  await expect(page.getByText("News API unavailable")).toHaveCount(0);
+});
+
+test("does not hide API validation errors behind the RSS fallback", async ({ page }) => {
+  let proxyRequests = 0;
+
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "invalid_query", message: "Invalid feed filters." } }),
+    }),
+  );
+  await page.route("https://api.allorigins.win/**", (route) => {
+    proxyRequests += 1;
+    return route.abort();
+  });
+  await page.route("https://api.rss2json.com/**", (route) => {
+    proxyRequests += 1;
+    return route.abort();
+  });
+
+  await page.reload();
+
+  await expect(page.getByText("News API unavailable")).toBeVisible();
+  await expect(page.getByText("Invalid feed filters.")).toBeVisible();
+  expect(proxyRequests).toBe(0);
 });
 
 test("supports multi-county search, region filters, and industry navigation", async ({ page }) => {
@@ -77,11 +253,22 @@ test("supports multi-county search, region filters, and industry navigation", as
   await expect(page.getByRole("heading", { name: "Energy news across Texas." })).toBeVisible();
 });
 
+test("keeps filter selections within the API fan-out budget", async ({ page }) => {
+  for (const industry of ["Energy", "Robotics", "Small Business", "Infrastructure"]) {
+    await page.getByRole("button", { name: industry, exact: true }).click();
+  }
+
+  await expect(page.getByRole("button", { name: "Technology", exact: true })).toBeDisabled();
+  await expect(page.getByRole("status")).toContainText("Choose up to 4 counties, 4 regions, and 4 industries");
+});
+
 test("renders shareable county and county-topic routes", async ({ page }) => {
   await page.goto("/county/dallas");
   await expect(page.getByRole("button", { name: "Remove Dallas County" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Dallas County articles" })).toBeVisible();
   await expect(page.getByText(/^Dallas County, Texas .* creates positive growth$/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
+  await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
 
   await page.goto("/county/dallas/topic/jobs");
   await expect(page.getByRole("heading", { name: "Jobs news across Texas." })).toBeVisible();
