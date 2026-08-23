@@ -19,6 +19,17 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - Statewide, county, region, industry, region-industry, legal, contact, mission, and advertising routes are available.
 - Contact submissions use EmailJS and send to `admin@texasbusiness.news` when the three required `VITE_EMAILJS_*` variables are configured in Amplify.
 - `VITE_NEWS_API_URL` configures primary production news delivery; local development defaults to `http://localhost:8787`, and API availability failures trigger the RSS proxy fallback.
+- API and fallback items support county, market, nearby, and statewide coverage tiers plus honest display labels; fallback metadata reports the returned coverage mix.
+
+### All-County RSS Resilience
+
+- Browser fallback definitions now cover all 254 Texas counties using the browser-safe geography helpers and exhaustive county centroids.
+- Each county starts with strict growth/sector or selected-topic queries plus up to four applicable reviewed direct feeds. Inventory below 12 expands through one combined two-market query, up to two reviewed feeds mapped to those markets, and one combined three-nearby-county query in parallel.
+- Primary items require article-level county/place evidence and carry a county slug. Market and nearby items are explicitly labeled, omit county slugs, and therefore cannot create false county-topic links.
+- Location evidence comes only from article titles and plain-text descriptions, never from publisher identity, feed scope, or hidden query terms.
+- Statewide direct sources now include Texas Tribune Economy, Dallas Fed Updates, Texas Comptroller News, Texas Real Estate Research Center, AgriLife Today, Texas Energy & Power, Texas Border Business, and KETK Local.
+- Reviewed regional/local feeds are requested only for selected mapped regions or counties. Existing Amarillo sources remain and Amarillo EDC is included.
+- Fallback safeguards retain a 30-day strict county/statewide window and a 60-day labeled market/nearby expansion window, constructive/blocked/topic rules, safe URL/XML handling, 10-second timeouts, globally bounded proxy concurrency, cancellation, partial failures, deterministic sorting and deduplication, scope-keyed localStorage caching, and a three-per-source first diversity pass.
 
 ### Advertising
 
@@ -53,7 +64,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - React Router for client-side routes.
 - CSS in `src/styles.css`; no component library.
 - County data from `@nickgraffis/us-counties` plus local Texas region, metro, and city aliases.
-- Typed client-side fetching from `GET /v1/pages/home`, with county and statewide results returned together and focused Google News plus reviewed local-feed proxy fetching reserved for API outages.
+- Typed client-side fetching from `GET /v1/pages/home`, including runtime validation for coverage tiers, labels, and optional coverage mixes, with county and statewide results returned together and focused Google News plus reviewed direct-feed proxy fetching reserved for API outages.
 - Sponsor/ad placements use static local data; the sole active Double B Ranch creative opens its approved external destination.
 - Deployment target is AWS Amplify Hosting through a GitHub connection.
 
@@ -82,7 +93,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - Multi-select region and industry filters with removable selections.
 - Expanded topics include energy, robotics, small business, infrastructure, technology, sports, finance, TX Stock Exchange, agriculture, space, real estate, ranching, cattle, higher education, medical, hunting, tourism, and state parks.
 - County relevance gate to keep county feeds tied to local place signals.
-- Potter and Randall fallback coverage combines focused county searches with reviewed Amarillo-area RSS feeds.
+- All 254 counties have bounded primary, nearest-market, and nearby-county fallback plans; Potter and Randall retain their reviewed Amarillo-area RSS feeds.
 - Positive business filter and negative/crime/tragedy keyword exclusions.
 - Sole Double B Ranch sponsor creative with impression and click events pushed to `dataLayer`.
 - LiveCoinWatch crypto and TradingView market ticker widgets.
@@ -105,6 +116,8 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
   - Mission, advertise, and not-found pages.
   - Desktop Chromium and mobile Chrome profiles.
   - Basic unlabeled interactive control audit.
+  - Exhaustive bounded feed-definition assertions for all 254 counties.
+  - API-offline rural-county expansion with market/nearby labels and no false county links or claims.
 - Added Playwright output folders to `.gitignore`.
 - Fixed an image-only article link accessibility issue by adding an accessible label.
 
@@ -144,7 +157,7 @@ Built-in RSS2JSON and AllOrigins endpoints are used when these are unset.
 The Playwright suite now runs successfully in this WSL environment:
 
 ```text
-20 passed
+28 passed
 ```
 
 Coverage passes in desktop Chromium and mobile Chrome. CI should still install the Playwright browser and native dependencies before running `npm run test:e2e`.

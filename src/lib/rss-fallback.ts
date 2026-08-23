@@ -1,8 +1,20 @@
-import { getCountyBySlug, isCountyRelevantText, type TexasCounty } from "../data/counties";
-import { selectedFeeds, type FeedDefinition } from "../data/feeds";
+import { getCountyBySlug, type TexasCounty } from "../data/counties";
+import {
+  marketCountyFeeds,
+  nearbyCountyFeeds,
+  primaryCountyFeeds,
+  statewideFallbackFeeds,
+  type FeedDefinition,
+} from "../data/feeds";
 import { isRegionSlug, type RegionSlug } from "../data/regions";
 import { isTopicSlug, type TopicSlug } from "../data/topics";
-import type { FeedResponse, HomePageQuery, HomePageResponse, NewsItem } from "./news-api";
+import type {
+  CoverageMix,
+  FeedResponse,
+  HomePageQuery,
+  HomePageResponse,
+  NewsItem,
+} from "./news-api";
 
 type FallbackOptions = {
   signal?: AbortSignal;
@@ -13,6 +25,13 @@ type FallbackNewsItem = NewsItem;
 type FallbackFeedResult = {
   items: FallbackNewsItem[];
   stale: boolean;
+};
+
+type FallbackBatchResult = {
+  items: FallbackNewsItem[];
+  stale: boolean;
+  partialFailures: number;
+  successfulFeeds: number;
 };
 
 type Rss2JsonResponse = {
@@ -36,8 +55,12 @@ const defaultProviderUrl = "https://api.rss2json.com/v1/api.json";
 const defaultRawProxyUrl = "https://api.allorigins.win/raw";
 const cacheTtlMs = 45 * 60 * 1000;
 const requestTimeoutMs = 10_000;
+const maxConcurrentProxyRequests = 6;
 const articleMaxAgeMs = 30 * 24 * 60 * 60 * 1000;
+const expansionArticleMaxAgeMs = 60 * 24 * 60 * 60 * 1000;
 const futureSkewMs = 60 * 60 * 1000;
+const countyExpansionThreshold = 12;
+const sourceFirstPassLimit = 3;
 
 const positiveKeywords = [
   "growth",
@@ -125,6 +148,20 @@ const blockedPatterns = [
   /\b(?:fail|fails|failed|failing)\s+compliance\b/i,
 ] as const;
 
+const explicitTexasSignals = ["Texas", "Texan", "TX"] as const;
+const otherStateNames = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+  "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+  "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
+  "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
+  "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+  "New Hampshire", "New Jersey", "New Mexico", "New York",
+  "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+  "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Utah", "Vermont", "Virginia", "Washington",
+  "West Virginia", "Wisconsin", "Wyoming",
+] as const;
+
 export async function fetchRssFallbackPage(
   query: HomePageQuery,
   options: FallbackOptions = {},
@@ -134,12 +171,11 @@ export async function fetchRssFallbackPage(
     .filter((county): county is TexasCounty => Boolean(county));
   const topics = query.topics.filter(isTopicSlug) as TopicSlug[];
   const regions = query.regions.filter(isRegionSlug) as RegionSlug[];
-  const countyFeeds = counties.length ? selectedFeeds(counties, topics) : [];
-  const statewideFeeds = selectedFeeds([], topics, regions);
+  const statewideFeeds = statewideFallbackFeeds(topics, regions);
 
   const [countyResult, statewideResult] = await Promise.allSettled([
-    countyFeeds.length
-      ? loadFallbackSection(countyFeeds, query.limit, topics, options.signal)
+    counties.length
+      ? loadCountyFallbackSection(counties, query.limit, topics, options.signal)
       : Promise.resolve<FeedResponse | null>(null),
     loadFallbackSection(statewideFeeds, query.limit, topics, options.signal),
   ]);
@@ -147,7 +183,7 @@ export async function fetchRssFallbackPage(
   if (options.signal?.aborted) throw abortError();
   if (
     statewideResult.status === "rejected" &&
-    (!countyFeeds.length || countyResult.status === "rejected")
+    (!counties.length || countyResult.status === "rejected")
   ) {
     throw new Error("News API and RSS fallback providers are unavailable.");
   }
@@ -171,22 +207,117 @@ async function loadFallbackSection(
   topics: TopicSlug[],
   signal?: AbortSignal,
 ): Promise<FeedResponse> {
+  const batch = await loadFeedBatch(feeds, topics, signal);
+  if (!batch.successfulFeeds) {
+    throw new Error("RSS fallback providers are unavailable.");
+  }
+  return fallbackFeedResponse(batch, limit);
+}
+
+async function loadCountyFallbackSection(
+  counties: TexasCounty[],
+  limit: number,
+  topics: TopicSlug[],
+  signal?: AbortSignal,
+): Promise<FeedResponse> {
   const results = await Promise.allSettled(
-    feeds.map((feed) => fetchFallbackFeed(feed, signal)),
+    counties.map((county) => loadCountyCoverage(county, topics, signal)),
   );
   if (signal?.aborted) throw abortError();
 
   const successful = results.flatMap((result) =>
     result.status === "fulfilled" ? [result.value] : [],
   );
-  const partialFailures = results.length - successful.length;
-  if (!successful.length) throw new Error("RSS fallback providers are unavailable.");
+  if (!successful.length) {
+    throw new Error("RSS fallback providers are unavailable.");
+  }
 
-  const items = dedupeItems(
-    successful.flatMap((result) => result.items),
-    topics,
-  ).slice(0, Math.max(1, limit));
+  return fallbackFeedResponse({
+    items: successful.flatMap((result) => result.items),
+    stale: successful.some((result) => result.stale),
+    partialFailures:
+      successful.reduce((total, result) => total + result.partialFailures, 0) +
+      (results.length - successful.length),
+    successfulFeeds: successful.reduce(
+      (total, result) => total + result.successfulFeeds,
+      0,
+    ),
+  }, limit);
+}
 
+async function loadCountyCoverage(
+  county: TexasCounty,
+  topics: TopicSlug[],
+  signal?: AbortSignal,
+): Promise<FallbackBatchResult> {
+  const batches: FallbackBatchResult[] = [];
+  const primary = await loadFeedBatch(primaryCountyFeeds(county, topics), topics, signal);
+  batches.push(primary);
+
+  let inventory = prepareItems(primary.items);
+  if (inventory.length < countyExpansionThreshold) {
+    const [market, nearby] = await Promise.all([
+      loadFeedBatch(marketCountyFeeds(county, topics), topics, signal),
+      loadFeedBatch(nearbyCountyFeeds(county, topics), topics, signal),
+    ]);
+    batches.push(market, nearby);
+    inventory = prepareItems([
+      ...inventory,
+      ...market.items,
+      ...nearby.items,
+    ]);
+  }
+
+  const successfulFeeds = batches.reduce(
+    (total, batch) => total + batch.successfulFeeds,
+    0,
+  );
+  if (!successfulFeeds) {
+    throw new Error(`RSS fallback providers are unavailable for ${county.displayName}.`);
+  }
+
+  return {
+    items: inventory,
+    stale: batches.some((batch) => batch.stale),
+    partialFailures: batches.reduce(
+      (total, batch) => total + batch.partialFailures,
+      0,
+    ),
+    successfulFeeds,
+  };
+}
+
+async function loadFeedBatch(
+  feeds: FeedDefinition[],
+  topics: TopicSlug[],
+  signal?: AbortSignal,
+): Promise<FallbackBatchResult> {
+  const results = await Promise.allSettled(
+    feeds.map(async (feed) => ({
+      feed,
+      result: await fetchFallbackFeed(feed, signal),
+    })),
+  );
+  if (signal?.aborted) throw abortError();
+
+  const successful = results.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value] : [],
+  );
+  return {
+    items: successful.flatMap(({ feed, result }) =>
+      result.items.filter((item) => isEligibleFallbackItem(item, topics, feed))
+    ),
+    stale: successful.some(({ result }) => result.stale),
+    partialFailures: results.length - successful.length,
+    successfulFeeds: successful.length,
+  };
+}
+
+function fallbackFeedResponse(
+  batch: FallbackBatchResult,
+  limit: number,
+): FeedResponse {
+  const items = prepareItems(batch.items).slice(0, Math.max(1, limit));
   return {
     items,
     meta: {
@@ -194,8 +325,9 @@ async function loadFallbackSection(
       sourcesUsed: ["rss-proxy-fallback"],
       fetchedAt: new Date().toISOString(),
       cacheTtlSeconds: Math.floor(cacheTtlMs / 1000),
-      stale: successful.some((result) => result.stale),
-      partialFailures,
+      stale: batch.stale,
+      partialFailures: batch.partialFailures,
+      coverageMix: coverageMix(items),
     },
   };
 }
@@ -204,6 +336,9 @@ async function fetchFallbackFeed(
   feed: FeedDefinition,
   signal?: AbortSignal,
 ): Promise<FallbackFeedResult> {
+  if (!isHttpUrl(feed.url)) {
+    throw new Error(`RSS fallback URL is unsafe for ${feed.id}.`);
+  }
   const cached = readCache(feed);
   if (cached && Date.now() - cached.fetchedAt < cacheTtlMs) {
     return { items: cached.items, stale: false };
@@ -228,9 +363,12 @@ async function fetchFallbackFeed(
 }
 
 async function fetchRss2Json(feed: FeedDefinition, signal?: AbortSignal) {
-  const url = new URL(import.meta.env.VITE_RSS_PROVIDER_URL || defaultProviderUrl);
+  const url = safeProxyUrl(
+    import.meta.env.VITE_RSS_PROVIDER_URL,
+    defaultProviderUrl,
+  );
   url.searchParams.set("rss_url", feed.url);
-  const response = await fetchWithTimeout(url, signal);
+  const response = await fetchWithTimeout(url, signal, feed.scope === "county");
   if (!response.ok) throw new Error("RSS2JSON fallback failed.");
   const payload = (await response.json()) as Rss2JsonResponse;
   if (payload.status && payload.status !== "ok") {
@@ -239,7 +377,8 @@ async function fetchRss2Json(feed: FeedDefinition, signal?: AbortSignal) {
 
   return (payload.items || []).flatMap((item, index): FallbackNewsItem[] => {
     const rawDescription = item.description || item.content || "";
-    const title = decodeHtml(stripHtml(item.title || "Untitled Texas business update"));
+    const title = plainText(item.title || "Untitled Texas business update");
+    const plainDescription = plainText(rawDescription).slice(0, 220);
     const link = articleLink(item.link || payload.feed?.link || "#", rawDescription);
     if (!isHttpUrl(link)) return [];
     const sourceUrl = sourceUrlFromRss2JsonItem(item);
@@ -252,26 +391,31 @@ async function fetchRss2Json(feed: FeedDefinition, signal?: AbortSignal) {
         : {}),
       ...(sourceUrl ? { sourceUrl } : {}),
       ...(item.pubDate ? { publishedAt: item.pubDate } : {}),
-      ...(rawDescription
-        ? { description: decodeHtml(stripHtml(rawDescription)).slice(0, 220) }
-        : {}),
+      ...(plainDescription ? { description: plainDescription } : {}),
       imageUrl: safeImageUrl(
         item.thumbnail,
         item.enclosure?.thumbnail,
         item.enclosure?.type?.startsWith("image/") ? item.enclosure.link : undefined,
       ) || fallbackImage(feed.label),
       feedLabel: feed.label,
-      ...(feed.countySlug ? { countySlug: feed.countySlug } : {}),
+      coverageTier: feed.coverageTier,
+      ...(feed.coverageLabel ? { coverageLabel: feed.coverageLabel } : {}),
+      ...(feed.coverageTier === "county" && feed.countySlug
+        ? { countySlug: feed.countySlug }
+        : {}),
       ...(feed.region ? { region: feed.region } : {}),
-      topics: extractTopics(`${item.title || ""} ${rawDescription}`),
+      topics: extractTopics(`${title} ${plainDescription}`),
     }];
   });
 }
 
 async function fetchRawRss(feed: FeedDefinition, signal?: AbortSignal) {
-  const url = new URL(import.meta.env.VITE_RSS_RAW_PROXY_URL || defaultRawProxyUrl);
+  const url = safeProxyUrl(
+    import.meta.env.VITE_RSS_RAW_PROXY_URL,
+    defaultRawProxyUrl,
+  );
   url.searchParams.set("url", feed.url);
-  const response = await fetchWithTimeout(url, signal);
+  const response = await fetchWithTimeout(url, signal, feed.scope === "county");
   if (!response.ok) throw new Error("Raw RSS fallback failed.");
   const xml = await response.text();
   if (/<!DOCTYPE|<!ENTITY/i.test(xml)) {
@@ -282,39 +426,55 @@ async function fetchRawRss(feed: FeedDefinition, signal?: AbortSignal) {
     throw new Error("Raw RSS fallback returned malformed XML.");
   }
 
-  return Array.from(documentNode.querySelectorAll("item")).flatMap(
+  return Array.from(documentNode.querySelectorAll("item, entry")).flatMap(
     (item, index): FallbackNewsItem[] => {
-      const description = tag(item, "description");
-      const title = decodeHtml(tag(item, "title") || "Untitled Texas business update");
-      const link = articleLink(tag(item, "link") || "#", description);
+      const rawDescription =
+        tag(item, "description") ||
+        tag(item, "summary") ||
+        tag(item, "content");
+      const plainDescription = plainText(rawDescription).slice(0, 220);
+      const title = plainText(
+        tag(item, "title") || "Untitled Texas business update",
+      );
+      const rawLink = tag(item, "link") || tagAttribute(item, "link", "href");
+      const link = articleLink(rawLink || "#", rawDescription);
       if (!isHttpUrl(link)) return [];
       const sourceUrl = tagAttribute(item, "source", "url");
+      const publishedAt =
+        tag(item, "pubDate") ||
+        tag(item, "published") ||
+        tag(item, "updated");
       return [{
-        id: tag(item, "guid") || link || `${feed.id}-${index}`,
+        id: tag(item, "guid") || tag(item, "id") || link || `${feed.id}-${index}`,
         title,
         link,
         ...(tag(item, "source") ? { source: tag(item, "source") } : {}),
         ...(isHttpUrl(sourceUrl) ? { sourceUrl } : {}),
-        ...(tag(item, "pubDate") ? { publishedAt: tag(item, "pubDate") } : {}),
-        ...(description
-          ? { description: decodeHtml(stripHtml(description)).slice(0, 220) }
-          : {}),
+        ...(publishedAt ? { publishedAt } : {}),
+        ...(plainDescription ? { description: plainDescription } : {}),
         imageUrl: mediaImage(item) || fallbackImage(feed.label),
         feedLabel: feed.label,
-        ...(feed.countySlug ? { countySlug: feed.countySlug } : {}),
+        coverageTier: feed.coverageTier,
+        ...(feed.coverageLabel ? { coverageLabel: feed.coverageLabel } : {}),
+        ...(feed.coverageTier === "county" && feed.countySlug
+          ? { countySlug: feed.countySlug }
+          : {}),
         ...(feed.region ? { region: feed.region } : {}),
-        topics: extractTopics(`${title} ${description}`),
+        topics: extractTopics(`${title} ${plainDescription}`),
       }];
     },
   );
 }
 
-function dedupeItems(items: FallbackNewsItem[], selectedTopics: TopicSlug[]) {
+function prepareItems(items: FallbackNewsItem[]) {
   const seenLinks = new Set<string>();
   const seenTitles = new Set<string>();
-  return items
-    .filter((item) => isEligibleFallbackItem(item, selectedTopics))
-    .sort((left, right) => timestamp(right.publishedAt) - timestamp(left.publishedAt))
+  const deduped = [...items]
+    .sort((left, right) =>
+      coveragePriority(left) - coveragePriority(right) ||
+      timestamp(right.publishedAt) - timestamp(left.publishedAt) ||
+      left.id.localeCompare(right.id)
+    )
     .filter((item) => {
       const link = canonicalUrl(item.link);
       const title = normalizeText(item.title);
@@ -322,15 +482,33 @@ function dedupeItems(items: FallbackNewsItem[], selectedTopics: TopicSlug[]) {
       if (link) seenLinks.add(link);
       seenTitles.add(title);
       return true;
-    });
+    })
+    .sort((left, right) =>
+      timestamp(right.publishedAt) - timestamp(left.publishedAt) ||
+      coveragePriority(left) - coveragePriority(right) ||
+      left.id.localeCompare(right.id)
+    );
+  return diversifySources(deduped);
+}
+
+function coveragePriority(item: FallbackNewsItem) {
+  if (item.coverageTier === "county") return 0;
+  if (item.coverageTier === "market") return 1;
+  if (item.coverageTier === "nearby") return 2;
+  return 3;
 }
 
 function isEligibleFallbackItem(
   item: FallbackNewsItem,
   selectedTopics: TopicSlug[],
+  feed: FeedDefinition,
 ) {
   const text = `${item.title} ${item.description || ""}`;
-  if (!isHttpUrl(item.link) || !isRecent(item.publishedAt) || !containsAnyTerm(text, positiveKeywords)) return false;
+  const maxAgeMs =
+    feed.coverageTier === "market" || feed.coverageTier === "nearby"
+      ? expansionArticleMaxAgeMs
+      : articleMaxAgeMs;
+  if (!isHttpUrl(item.link) || !isRecent(item.publishedAt, maxAgeMs) || !containsAnyTerm(text, positiveKeywords)) return false;
   if (containsAnyTerm(text, blockedKeywords)) return false;
   const normalized = normalizeText(text);
   if (blockedPatterns.some((pattern) => pattern.test(normalized))) return false;
@@ -338,16 +516,73 @@ function isEligibleFallbackItem(
     selectedTopics.length &&
     !selectedTopics.some((topic) => item.topics.includes(topic))
   ) return false;
-  if (!item.countySlug) return true;
-  const county = getCountyBySlug(item.countySlug);
-  return Boolean(county && isCountyRelevantText(county, text));
+  if (!containsAnyTerm(text, feed.locationTerms)) return false;
+  if (feed.coverageTier === "market" || feed.coverageTier === "nearby") {
+    if (
+      feed.coverageTier === "nearby" &&
+      !containsAnyTerm(text, explicitTexasSignals)
+    ) return false;
+    const mentionsOtherState = containsAnyTerm(text, otherStateNames);
+    if (
+      mentionsOtherState &&
+      !containsAnyTerm(text, explicitTexasSignals)
+    ) return false;
+  }
+  return true;
 }
 
-function isRecent(value?: string) {
+function diversifySources(items: FallbackNewsItem[]) {
+  const sourceCounts = new Map<string, number>();
+  const firstPass: FallbackNewsItem[] = [];
+  const deferred: FallbackNewsItem[] = [];
+
+  for (const item of items) {
+    const source = normalizedSource(item);
+    const count = sourceCounts.get(source) || 0;
+    if (count < sourceFirstPassLimit) {
+      firstPass.push(item);
+      sourceCounts.set(source, count + 1);
+    } else {
+      deferred.push(item);
+    }
+  }
+
+  return [...firstPass, ...deferred];
+}
+
+function normalizedSource(item: FallbackNewsItem) {
+  const source =
+    item.source ||
+    hostname(item.sourceUrl) ||
+    hostname(item.link) ||
+    item.feedLabel ||
+    "unknown source";
+  return normalizeText(source).replace(/^www /, "") || "unknown source";
+}
+
+function hostname(value?: string) {
+  if (!value) return "";
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function coverageMix(items: FallbackNewsItem[]) {
+  return items.reduce<CoverageMix>((mix, item) => {
+    if (item.coverageTier) {
+      mix[item.coverageTier] = (mix[item.coverageTier] || 0) + 1;
+    }
+    return mix;
+  }, {});
+}
+
+function isRecent(value: string | undefined, maxAgeMs: number) {
   const publishedAt = timestamp(value);
   if (!publishedAt) return false;
   const now = Date.now();
-  return publishedAt >= now - articleMaxAgeMs && publishedAt <= now + futureSkewMs;
+  return publishedAt >= now - maxAgeMs && publishedAt <= now + futureSkewMs;
 }
 
 function containsAnyTerm(value: string, terms: readonly string[]) {
@@ -445,6 +680,10 @@ function decodeHtml(value: string) {
   return textarea.value;
 }
 
+function plainText(value: string) {
+  return stripHtml(decodeHtml(value));
+}
+
 function normalizeText(value: string) {
   return value
     .normalize("NFKD")
@@ -489,6 +728,14 @@ function isHttpUrl(value: string) {
   }
 }
 
+function safeProxyUrl(configuredUrl: string | undefined, fallbackUrl: string) {
+  const url = new URL(configuredUrl?.trim() || fallbackUrl);
+  if (!["http:", "https:"].includes(url.protocol)) {
+    throw new Error("RSS fallback proxy URL must use HTTP or HTTPS.");
+  }
+  return url;
+}
+
 function safeImageUrl(...values: Array<string | undefined>) {
   return values.find((value) =>
     Boolean(
@@ -498,7 +745,12 @@ function safeImageUrl(...values: Array<string | undefined>) {
   );
 }
 
-async function fetchWithTimeout(url: URL, parentSignal?: AbortSignal) {
+async function fetchWithTimeout(
+  url: URL,
+  parentSignal?: AbortSignal,
+  prioritize = false,
+) {
+  await acquireProxySlot(prioritize);
   const controller = new AbortController();
   const abortFromParent = () => controller.abort();
   if (parentSignal?.aborted) controller.abort();
@@ -513,7 +765,28 @@ async function fetchWithTimeout(url: URL, parentSignal?: AbortSignal) {
   } finally {
     window.clearTimeout(timeout);
     parentSignal?.removeEventListener("abort", abortFromParent);
+    releaseProxySlot();
   }
+}
+
+let activeProxyRequests = 0;
+const proxyWaiters: Array<() => void> = [];
+
+async function acquireProxySlot(prioritize: boolean) {
+  if (activeProxyRequests < maxConcurrentProxyRequests) {
+    activeProxyRequests += 1;
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    if (prioritize) proxyWaiters.unshift(resolve);
+    else proxyWaiters.push(resolve);
+  });
+}
+
+function releaseProxySlot() {
+  const next = proxyWaiters.shift();
+  if (next) next();
+  else activeProxyRequests = Math.max(0, activeProxyRequests - 1);
 }
 
 function timestamp(value?: string) {
@@ -528,12 +801,19 @@ function fallbackImage(label: string) {
 type CachedFeed = { fetchedAt: number; items: FallbackNewsItem[] };
 
 function cacheKey(feed: FeedDefinition) {
-  const value = `${feed.url}|${feed.countySlug || ""}|${feed.region || ""}`;
+  const value = [
+    feed.scope,
+    feed.coverageTier,
+    feed.id,
+    feed.url,
+    feed.countySlug || "",
+    feed.region || "",
+  ].join("|");
   let hash = 0;
   for (let index = 0; index < value.length; index += 1) {
     hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
-  return `texaseconews:rss-fallback:v2:${hash.toString(16)}`;
+  return `texaseconews:rss-fallback:v3:${hash.toString(16)}`;
 }
 
 function readCache(feed: FeedDefinition): CachedFeed | undefined {
@@ -570,6 +850,7 @@ function emptyFallbackFeed(partialFailures: number): FeedResponse {
       cacheTtlSeconds: Math.floor(cacheTtlMs / 1000),
       stale: false,
       partialFailures,
+      coverageMix: {},
     },
   };
 }

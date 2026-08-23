@@ -46,7 +46,8 @@ FeedResponse = {
     fetchedAt: string,
     cacheTtlSeconds: number,
     stale: boolean,
-    partialFailures: number
+    partialFailures: number,
+    coverageMix?: Partial<Record<CoverageTier, number>>
   }
 }
 
@@ -62,13 +63,19 @@ NewsItem = {
   feedLabel?: string,
   countySlug?: string,
   region?: string,
+  coverageTier?: "county" | "market" | "nearby" | "statewide",
+  coverageLabel?: string,
   topics: string[]
 }
 ```
 
 Keep URL construction in `src/lib/news-api.ts` using `URL` and `URLSearchParams`. Handle non-OK responses, validate response shape at runtime, pass an `AbortSignal`, and prevent stale requests from replacing newer filter results. The UI should preserve the last successful response while a refresh is pending or fails.
 
-Use `src/lib/rss-fallback.ts` only after network failures, missing production API configuration, malformed API responses, HTTP 401/403/408/429, or 5xx responses. Never fall back for request cancellation, invalid filter input, 404, or 405 responses. Keep the fallback age-limited, filtered, county-relevant, deduplicated, and locally cached. County fallback plans may combine focused Google searches with reviewed local feeds from `src/data/feeds.ts`; a publisher name alone must not satisfy county relevance.
+Use `src/lib/rss-fallback.ts` only after network failures, missing production API configuration, malformed API responses, HTTP 401/403/408/429, or 5xx responses. Never fall back for request cancellation, invalid filter input, 404, or 405 responses. Keep the fallback age-limited, filtered, deduplicated, source-diversified, and locally cached.
+
+All 254 counties have browser-safe centroid-backed plans. Load strict primary county searches and up to four applicable direct feeds first. If a selected county has fewer than 12 eligible items, load one combined two-market search, up to two reviewed feeds mapped to those markets, and one combined three-nearby-county search in parallel. County items use `coverageTier: "county"` with `countySlug`. Market and nearby items use their corresponding tier and a clear `coverageLabel`, and must not carry `countySlug`. State and region items use `coverageTier: "statewide"`. Strict county/statewide results use a 30-day window; clearly labeled market/nearby expansion may use 60 days.
+
+Feed selection, publisher identity, and query terms are not article-level location evidence. Apply locality checks only to the article title plus plain-text description. Reject market/nearby stories that mention another state without an explicit Texas signal, and require explicit Texas evidence for nearby-county matches. Never copy internal matching terms into returned items. Keep county feed plans capped at 6 primary plus 4 expansion definitions, use 10-second request timeouts with no more than 6 concurrent proxy requests and county-priority queuing, tolerate partial provider failure, honor cancellation, and cap the first source-diversity pass at three items per normalized source before appending deferred items.
 
 ## Roadmap Priorities
 
@@ -107,7 +114,7 @@ If Playwright fails locally with missing native browser dependencies, install th
 sudo npx playwright install-deps chromium
 ```
 
-The E2E suite must mock `**/v1/pages/home**` with deterministic county and statewide responses and separately cover an API outage with mocked AllOrigins/RSS2JSON fallback responses. It must not depend on a running API or live news providers. Keep external ticker scripts mocked as well.
+The E2E suite must mock `**/v1/pages/home**` with deterministic county and statewide responses and separately cover an API outage with mocked AllOrigins/RSS2JSON fallback responses. It must not depend on a running API or live news providers. Keep external ticker scripts mocked as well. Preserve assertions that all 254 counties produce bounded, non-empty primary/market/nearby plans and that sparse rural fallback cards expose honest market/nearby labels without county links or claims.
 
 ## Environment Variables
 
@@ -129,6 +136,8 @@ Optional RSS fallback overrides:
 
 - `VITE_RSS_PROVIDER_URL`
 - `VITE_RSS_RAW_PROXY_URL`
+
+Both overrides must be HTTP(S) URLs. They configure browser fallback proxies only; direct provider URLs remain cataloged in `src/data/feeds.ts`.
 
 ## Compliance And Trust
 

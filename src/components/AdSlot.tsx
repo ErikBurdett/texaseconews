@@ -18,6 +18,56 @@ export function AdSlot({ slot, county, topics, limit = 1 }: { slot: AdSlotId; co
   );
 }
 
+export function SponsorBadge() {
+  const ad = useMemo(() => resolveAds({ slot: "sidebar", limit: 1 })[0], []);
+  const ref = useRef<HTMLAnchorElement | null>(null);
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!ad || !element || tracked.current || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          tracked.current = true;
+          trackAdEvent("ad_impression", ad, "sidebar");
+          observer.disconnect();
+        }
+      },
+      { threshold: [0, 0.5, 1] },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ad]);
+
+  if (!ad) return null;
+
+  const content = (
+    <>
+      {ad.imageUrl ? <img alt="" className="sponsor-badge-logo" decoding="async" height="1024" src={ad.imageUrl} width="1024" /> : null}
+      <span>Sponsored by <strong>{ad.sponsor}</strong></span>
+    </>
+  );
+  const className = "sponsor-badge";
+  const onClick = () => trackAdEvent("ad_click", ad, "sidebar");
+
+  if (/^https?:\/\//i.test(ad.href)) {
+    return (
+      <a aria-label={`Sponsored by ${ad.sponsor}`} className={className} href={ad.href} onClick={onClick} ref={ref} rel="noopener noreferrer" target="_blank">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link aria-label={`Sponsored by ${ad.sponsor}`} className={className} onClick={onClick} ref={ref} to={ad.href}>
+      {content}
+    </Link>
+  );
+}
+
 function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number]; slot: AdSlotId; county?: TexasCounty }) {
   const ref = useRef<HTMLAnchorElement | null>(null);
   const tracked = useRef(false);

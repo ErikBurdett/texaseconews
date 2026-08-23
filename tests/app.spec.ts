@@ -1,10 +1,24 @@
 import { expect, test, type Page } from "@playwright/test";
+import { getCountyBySlug, texasCounties } from "../src/data/counties";
+import {
+  countyFallbackFeedBounds,
+  marketCountyFeeds,
+  nearbyCountyFeeds,
+  primaryCountyFeeds,
+} from "../src/data/feeds";
+import { topicSlugs } from "../src/data/topics";
 
 const fetchedAt = "2026-06-14T12:00:00.000Z";
 const pixel = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
 const fallbackTitle = "Texas manufacturer expansion adds 500 jobs";
 
 function feed(items: Array<Record<string, unknown>>) {
+  const coverageMix = items.reduce<Record<string, number>>((mix, item) => {
+    if (typeof item.coverageTier === "string") {
+      mix[item.coverageTier] = (mix[item.coverageTier] || 0) + 1;
+    }
+    return mix;
+  }, {});
   return {
     items,
     meta: {
@@ -14,6 +28,7 @@ function feed(items: Array<Record<string, unknown>>) {
       cacheTtlSeconds: 900,
       stale: false,
       partialFailures: 0,
+      coverageMix,
     },
   };
 }
@@ -44,6 +59,8 @@ function homePageResponse(requestUrl: string) {
       feedLabel: "County growth",
       countySlug,
       region: "Mock Texas region",
+      coverageTier: "county",
+      coverageLabel: county,
       topics: topics.length ? topics : ["jobs", "energy", "manufacturing"],
     };
   });
@@ -59,6 +76,8 @@ function homePageResponse(requestUrl: string) {
       description: "Texas statewide manufacturing and AI infrastructure investment creates workforce opportunity.",
       imageUrl: pixel,
       feedLabel: "Texas statewide",
+      coverageTier: "statewide",
+      coverageLabel: "Texas statewide",
       topics: topics.length ? topics : ["jobs", "manufacturing", "semiconductors"],
     },
   ];
@@ -115,9 +134,98 @@ async function mockNetworkDependencies(page: Page) {
   );
 }
 
+async function openResponsiveFilters(page: Page) {
+  const toggle = page.getByRole("button", { name: /Show regions, industries & counties/ });
+  if (await toggle.isVisible()) await toggle.click();
+}
+
 test.beforeEach(async ({ page }) => {
   await mockNetworkDependencies(page);
   await page.goto("/");
+});
+
+test("generates bounded primary, market, and nearby feeds for all 254 counties", () => {
+  expect(texasCounties).toHaveLength(254);
+  const issues: string[] = [];
+  const check = (condition: boolean, message: string) => {
+    if (!condition) issues.push(message);
+  };
+
+  for (const county of texasCounties) {
+    const primary = primaryCountyFeeds(county);
+    const maximumPrimary = primaryCountyFeeds(county, topicSlugs.slice(0, 4));
+    const market = marketCountyFeeds(county);
+    const nearby = nearbyCountyFeeds(county);
+
+    check(primary.length > 0, `${county.slug}: missing primary feeds`);
+    check(
+      maximumPrimary.length <= countyFallbackFeedBounds.primary,
+      `${county.slug}: primary feed bound exceeded`,
+    );
+    check(market.length > 0, `${county.slug}: missing market feeds`);
+    check(
+      market.length <= countyFallbackFeedBounds.market,
+      `${county.slug}: market feed bound exceeded`,
+    );
+    check(nearby.length > 0, `${county.slug}: missing nearby feeds`);
+    check(
+      nearby.length <= countyFallbackFeedBounds.nearby,
+      `${county.slug}: nearby feed bound exceeded`,
+    );
+    check(
+      maximumPrimary.length + market.length + nearby.length <=
+        countyFallbackFeedBounds.total,
+      `${county.slug}: total county feed bound exceeded`,
+    );
+
+    for (const feedDefinition of primary) {
+      check(
+        feedDefinition.coverageTier === "county",
+        `${feedDefinition.id}: primary tier is not county`,
+      );
+      check(
+        feedDefinition.countySlug === county.slug,
+        `${feedDefinition.id}: primary county slug mismatch`,
+      );
+    }
+    for (const feedDefinition of market) {
+      check(
+        feedDefinition.coverageTier === "market",
+        `${feedDefinition.id}: market tier mismatch`,
+      );
+      check(Boolean(feedDefinition.coverageLabel), `${feedDefinition.id}: missing market label`);
+      check(feedDefinition.countySlug === undefined, `${feedDefinition.id}: market leaked county slug`);
+    }
+    for (const feedDefinition of nearby) {
+      check(
+        feedDefinition.coverageTier === "nearby",
+        `${feedDefinition.id}: nearby tier mismatch`,
+      );
+      check(Boolean(feedDefinition.coverageLabel), `${feedDefinition.id}: missing nearby label`);
+      check(feedDefinition.countySlug === undefined, `${feedDefinition.id}: nearby leaked county slug`);
+    }
+
+    for (const feedDefinition of [...primary, ...market, ...nearby]) {
+      check(
+        feedDefinition.locationTerms.length > 0,
+        `${feedDefinition.id}: missing article location evidence`,
+      );
+      const url = new URL(feedDefinition.url);
+      if (url.hostname === "news.google.com") {
+        const query = url.searchParams.get("q") || "";
+        check(query.includes("Texas"), `${feedDefinition.id}: query is not Texas-qualified`);
+        const expectedWindow =
+          feedDefinition.coverageTier === "market" ||
+          feedDefinition.coverageTier === "nearby"
+            ? "when:60d"
+            : "when:30d";
+        check(query.includes(expectedWindow), `${feedDefinition.id}: query is not age-bounded`);
+        check(feedDefinition.url.length < 4_096, `${feedDefinition.id}: query URL is too long`);
+      }
+    }
+  }
+
+  expect(issues).toEqual([]);
 });
 
 test("renders the home feed, sponsor content, and core filter controls", async ({ page }) => {
@@ -126,20 +234,23 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
   await expect(page.getByText("Sponsored by Double B Ranch").first()).toBeVisible();
+  await expect(page.locator(".controls-card").getByRole("link", { name: "Sponsored by Double B Ranch" })).toBeVisible();
+  await expect(page.locator(".controls-card").getByText("Premium ranch products from Double B Ranch")).toHaveCount(0);
+  await expect(page.locator(".news-image img").first()).toHaveCSS("object-fit", "contain");
   await expect(page.getByRole("link", { name: "TX TexasBusiness.News", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
 });
 
-test("always opens the home page with a statewide feed", async ({ page }) => {
+test("restores saved county filters alongside the statewide feed", async ({ page }) => {
   await page.evaluate(() => {
     window.localStorage.setItem("texasbusiness-news:selected-counties", JSON.stringify(["potter"]));
   });
   await page.reload();
 
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Potter County articles" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Remove Potter County" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Potter County and nearby market articles" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove Potter County" })).toBeVisible();
 });
 
 test("falls back to RSS proxies when the news API is unavailable", async ({ page }) => {
@@ -205,9 +316,94 @@ test("uses local RSS feeds for Potter County fallback coverage", async ({ page }
 
   await page.goto("/county/potter");
 
-  await expect(page.getByRole("heading", { name: "Potter County articles" })).toBeVisible();
-  await expect(page.getByText(localTitle)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Potter County and nearby market articles" })).toBeVisible();
+  await expect(page.getByText(localTitle).first()).toBeVisible();
   await expect(page.getByText("News API unavailable")).toHaveCount(0);
+});
+
+test("uses honest market and nearby coverage when a rural county feed is sparse", async ({ page }) => {
+  const county = getCountyBySlug("king");
+  expect(county).toBeTruthy();
+  if (!county) return;
+
+  const primary = primaryCountyFeeds(county);
+  const market = marketCountyFeeds(county);
+  const nearby = nearbyCountyFeeds(county);
+  const primaryUrls = new Set(primary.map((feedDefinition) => feedDefinition.url));
+  const marketByUrl = new Map(market.map((feedDefinition) => [feedDefinition.url, feedDefinition]));
+  const nearbyByUrl = new Map(nearby.map((feedDefinition) => [feedDefinition.url, feedDefinition]));
+  const marketTitle = `${market[0].locationTerms[0]} manufacturing expansion adds jobs`;
+  const nearbyTitle = `${nearby[0].locationTerms[0]} small business investment creates jobs`;
+  let marketRequests = 0;
+  let nearbyRequests = 0;
+
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "unavailable", message: "API unavailable" } }),
+    }),
+  );
+  await page.route("https://api.allorigins.win/raw**", (route) =>
+    route.fulfill({ status: 503, body: "raw proxy unavailable" }),
+  );
+  await page.route("https://api.rss2json.com/v1/api.json**", (route) => {
+    const feedUrl = new URL(route.request().url()).searchParams.get("rss_url") || "";
+    if (primaryUrls.has(feedUrl)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ status: "ok", items: [] }),
+      });
+    }
+
+    const marketDefinition = marketByUrl.get(feedUrl);
+    if (marketDefinition) {
+      marketRequests += 1;
+      const title = `${marketDefinition.locationTerms[0]} manufacturing expansion adds jobs`;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(rssFallbackResponse(title)),
+      });
+    }
+
+    const nearbyDefinition = nearbyByUrl.get(feedUrl);
+    if (nearbyDefinition) {
+      nearbyRequests += 1;
+      const title = `${nearbyDefinition.locationTerms[0]} small business investment creates jobs`;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(rssFallbackResponse(title)),
+      });
+    }
+
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "ok", items: [] }),
+    });
+  });
+
+  await page.goto("/county/king");
+
+  await expect(page.getByRole("heading", {
+    name: "King County and nearby market articles",
+  })).toBeVisible();
+  const marketCard = page.locator(".news-card").filter({ hasText: marketTitle });
+  const nearbyCard = page.locator(".news-card").filter({ hasText: nearbyTitle });
+  await expect(marketCard).toContainText(`Market coverage: ${market[0].coverageLabel}`);
+  await expect(nearbyCard).toContainText(`Nearby coverage: ${nearby[0].coverageLabel}`);
+  await expect(marketCard).not.toContainText("King County");
+  await expect(nearbyCard).not.toContainText("King County");
+  await expect(marketCard.locator('a[href^="/county/king/topic/"]')).toHaveCount(0);
+  await expect(nearbyCard.locator('a[href^="/county/king/topic/"]')).toHaveCount(0);
+  await expect(marketCard.getByRole("link", { name: "Jobs", exact: true })).toHaveAttribute("href", "/topic/jobs");
+  await expect(nearbyCard.getByRole("link", { name: "Jobs", exact: true })).toHaveAttribute("href", "/topic/jobs");
+  expect(marketRequests).toBe(market.length);
+  expect(nearbyRequests).toBe(nearby.length);
 });
 
 test("does not hide API validation errors behind the RSS fallback", async ({ page }) => {
@@ -243,8 +439,9 @@ test("supports multi-county search, region filters, and industry navigation", as
 
   await expect(page.getByRole("button", { name: "Remove Potter County" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove Randall County" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Selected counties articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Selected counties and nearby market articles" })).toBeVisible();
 
+  await openResponsiveFilters(page);
   await page.getByRole("button", { name: "DFW" }).click();
   await expect(page.getByRole("button", { name: "Remove DFW region" })).toBeVisible();
 
@@ -254,6 +451,7 @@ test("supports multi-county search, region filters, and industry navigation", as
 });
 
 test("keeps filter selections within the API fan-out budget", async ({ page }) => {
+  await openResponsiveFilters(page);
   for (const industry of ["Energy", "Robotics", "Small Business", "Infrastructure"]) {
     await page.getByRole("button", { name: industry, exact: true }).click();
   }
@@ -262,17 +460,41 @@ test("keeps filter selections within the API fan-out budget", async ({ page }) =
   await expect(page.getByRole("status")).toContainText("Choose up to 4 counties, 4 regions, and 4 industries");
 });
 
+test("provides labeled mobile disclosures for navigation and filters", async ({ page }, testInfo) => {
+  const menuButton = page.getByRole("button", { name: "Menu" });
+  const filterButton = page.locator('[aria-controls="feed-filter-panel"]');
+
+  if (testInfo.project.name === "mobile-chrome") {
+    await expect(menuButton).toBeVisible();
+    await expect(menuButton).toHaveAttribute("aria-expanded", "false");
+    await menuButton.click();
+    await expect(page.getByRole("navigation").getByRole("link", { name: "Counties" })).toBeVisible();
+    await page.getByRole("button", { name: "Close menu" }).click();
+
+    await expect(filterButton).toBeVisible();
+    await expect(filterButton).toHaveAttribute("aria-expanded", "false");
+    await filterButton.click();
+    await expect(filterButton).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("button", { name: "Browse all Texas counties" })).toBeVisible();
+    return;
+  }
+
+  await expect(menuButton).toBeHidden();
+  await expect(filterButton).toBeHidden();
+  await expect(page.getByRole("button", { name: "DFW" })).toBeVisible();
+});
+
 test("renders shareable county and county-topic routes", async ({ page }) => {
   await page.goto("/county/dallas");
   await expect(page.getByRole("button", { name: "Remove Dallas County" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dallas County articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dallas County and nearby market articles" })).toBeVisible();
   await expect(page.getByText(/^Dallas County, Texas .* creates positive growth$/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
 
   await page.goto("/county/dallas/topic/jobs");
   await expect(page.getByRole("heading", { name: "Jobs news across Texas." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dallas County articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dallas County and nearby market articles" })).toBeVisible();
 });
 
 test("renders shareable region and region-industry routes", async ({ page }) => {
@@ -282,6 +504,7 @@ test("renders shareable region and region-industry routes", async ({ page }) => 
 
   await page.goto("/region/gulf/industry/finance");
   await expect(page.getByRole("heading", { name: "Finance news across Texas." })).toBeVisible();
+  await openResponsiveFilters(page);
   await expect(page.getByRole("button", { name: "Finance", exact: true })).toHaveClass(/selected/);
 });
 

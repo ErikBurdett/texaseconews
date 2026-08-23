@@ -1,7 +1,7 @@
 import emailjs from "@emailjs/browser";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
-import { AdSlot } from "./components/AdSlot";
+import { AdSlot, SponsorBadge } from "./components/AdSlot";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
 import { featuredTopicSlugs, getTopicBySlug, heroTopicSlugs, isTopicSlug, topicCatalog, type TopicSlug } from "./data/topics";
@@ -11,6 +11,7 @@ const siteName = "TexasBusiness.News";
 const mission =
   "Howdy. TexasBusiness.News gathers positive business news and opportunity signals from across the Lone Star State so citizens, builders, employers, investors, visitors, and future Texans can see where momentum is forming. We focus on growth, jobs, small business, innovation, data centers, AI advancement, infrastructure, workforce pathways, and local wins that help people make the most of opportunity close to home.";
 
+const curatedStorageKey = "texasbusiness-news:selected-counties";
 const pageSize = 12;
 const pageApiLimit = pageSize * 5;
 const maxCountyFilters = 4;
@@ -45,7 +46,7 @@ function App() {
 }
 
 function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?: TexasCounty; initialRegion?: RegionSlug; topicSlug?: TopicSlug }) {
-  const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() => (initialCounty ? [initialCounty.slug] : []));
+  const [selectedSlugs, setSelectedSlugs] = useStoredCountySelection();
   const [selectedRegionSlugs, setSelectedRegionSlugs] = useState<RegionSlug[]>(() => (initialRegion ? [initialRegion] : []));
   const [selectedTopicSlugs, setSelectedTopicSlugs] = useState<TopicSlug[]>(() => (topicSlug ? [topicSlug] : []));
   const selectedCounties = useMemo(() => selectedSlugs.map(getCountyBySlug).filter(Boolean) as TexasCounty[], [selectedSlugs]);
@@ -61,13 +62,12 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
   const statewideItems = pageNews.data?.statewide.items ?? noNewsItems;
   const [visibleCountyCount, setVisibleCountyCount] = useState(pageSize);
   const [visibleStatewideCount, setVisibleStatewideCount] = useState(pageSize);
-  const topics = useMemo(
-    () => [...new Set([...selectedTopicSlugs, ...countyItems.flatMap((item) => item.topics), ...statewideItems.flatMap((item) => item.topics)])],
-    [countyItems, selectedTopicSlugs, statewideItems],
-  );
   const scopeLabel = selectedRegions.length ? selectedRegions.map(displayLabel).join(", ") : selectedCounties.length ? selectedCounties.map((county) => county.name).join(", ") : "Texas statewide";
   const industryLabel = selectedTopics.length ? selectedTopics.map(displayLabel).join(", ") : "";
   const feedTitle = `${scopeLabel} ${industryLabel ? industryLabel.toLowerCase() : "business momentum"}`;
+  const countySectionTitle = selectedCounties.length > 1
+    ? "Selected counties and nearby market articles"
+    : `${selectedCounties[0]?.displayName || "County"} and nearby market articles`;
   const isLoading = pageNews.loading;
   const hasError = Boolean(pageNews.error);
 
@@ -143,7 +143,6 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
             onRegionChange={setSelectedRegionSlugs}
             onTopicChange={setSelectedTopicSlugs}
           />
-          <AdSlot slot="sidebar" topics={topics} limit={2} />
         </div>
         <main className="feed-column">
           <div className="feed-toolbar">
@@ -156,14 +155,14 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
 
           {isLoading ? <StatusCard loading title="Throwin' A Lasso 'Round The Latest..." body="please wait up to 1 minute for data" /> : null}
           {hasError ? <StatusCard title="News API unavailable" body={pageNews.error || "Showing the last available results. Try refreshing in a few minutes."} /> : null}
-          {!isLoading && selectedCounties.length > 0 && !countyItems.length ? <StatusCard title="No county-specific growth stories yet" body="The strict county filter did not find matching local stories. Statewide Texas articles are still listed below." /> : null}
+          {!isLoading && selectedCounties.length > 0 && !countyItems.length ? <StatusCard title="No local or nearby growth stories yet" body="The county, nearby-market, and nearby-county checks did not find matching stories. Statewide Texas articles are still listed below." /> : null}
 
           {selectedCounties.length ? (
             <FeedSection
-              emptyBody="Try another county, city, or topic while the local filters refresh."
-              emptyTitle="No county-specific growth stories yet"
+              emptyBody="Try another county, city, or topic while the local and nearby filters refresh."
+              emptyTitle="No local or nearby growth stories yet"
               items={countyItems}
-              title={`${selectedCounties.length > 1 ? "Selected counties" : selectedCounties[0].displayName} articles`}
+              title={countySectionTitle}
               visibleCount={visibleCountyCount}
               onFetchMore={pageNews.refresh}
               onLoadMore={() => setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length))}
@@ -473,10 +472,14 @@ function FeedControls({
 }) {
   const [query, setQuery] = useState("");
   const [filterError, setFilterError] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [countyListOpen, setCountyListOpen] = useState(false);
+  const filterToggleRef = useRef<HTMLButtonElement | null>(null);
   const selected = new Set(selectedSlugs);
   const searchTerms = searchTokens(query);
   const filtered = texasCounties.filter((county) => countyMatchesSearch(county, searchTerms));
   const selectedCounties = selectedSlugs.map(getCountyBySlug).filter(Boolean) as TexasCounty[];
+  const activeFilterCount = selectedSlugs.length + selectedRegionSlugs.length + selectedTopicSlugs.length;
 
   function toggleCounty(slug: string) {
     const next = new Set(selected);
@@ -521,101 +524,145 @@ function FeedControls({
   }
 
   return (
-    <section className="controls-card">
-      <div className="controls-heading">
-        <p className="eyebrow">Search and filter news</p>
-        <h2>Build your Texas feed</h2>
-        <p>Select multiple regions, counties, and industries to build a custom Texas business feed.</p>
+    <section
+      className="controls-card"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        setCountyListOpen(false);
+        setFiltersOpen(false);
+        filterToggleRef.current?.focus();
+      }}
+    >
+      <div className="controls-heading-row">
+        <div className="controls-heading">
+          <p className="eyebrow">Search and filter news</p>
+          <h2>Build your Texas feed</h2>
+          <p>Select regions, counties, and industries to shape a focused Texas business feed.</p>
+        </div>
+        <SponsorBadge />
       </div>
       <form className="search-row" onSubmit={(event) => { event.preventDefault(); applyMatchingCounties(); }}>
         <input className="search-input" placeholder="Search county, city, metro, or region. Try: Frisco or Potter, Randall" value={query} onChange={(event) => setQuery(event.target.value)} />
         <button className="button search-button" type="submit">Add matches</button>
       </form>
-      <div className="filter-block">
-        <span className="filter-label">Regions</span>
-        <div className="quick-actions">
-          <button className={!selectedRegionSlugs.length && !selectedSlugs.length && !selectedTopicSlugs.length ? "selected" : ""} onClick={resetFeed} type="button">Texas feed</button>
-          {regionSlugs.map((regionSlug) => (
-            <button
-              className={selectedRegionSlugs.includes(regionSlug) ? "selected" : ""}
-              disabled={!selectedRegionSlugs.includes(regionSlug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length + 1, selectedTopicSlugs.length))}
-              key={regionSlug}
-              onClick={() => toggleRegion(regionSlug)}
-              type="button"
-            >
-              {displayLabel(regionCatalog[regionSlug])}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="filter-block">
-        <span className="filter-label">Industries</span>
-        <div className="topic-links">
-          <button className={!selectedTopicSlugs.length ? "topic-chip selected" : "topic-chip"} onClick={() => { setFilterError(""); onTopicChange([]); }} type="button">All growth</button>
-          {featuredTopicSlugs.map((slug) => (
-            <button
-              className={selectedTopicSlugs.includes(slug) ? "topic-chip selected" : "topic-chip"}
-              disabled={!selectedTopicSlugs.includes(slug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length, selectedTopicSlugs.length + 1))}
-              key={slug}
-              onClick={() => toggleTopic(slug)}
-              type="button"
-            >
-              {displayLabel(topicCatalog[slug])}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="quick-actions">
-        <span className="filter-label">Suggested searches</span>
-        <button type="button" onClick={() => setQuery("Frisco")}>Frisco</button>
-        <button type="button" onClick={() => setQuery("Permian Basin")}>Permian Basin</button>
-        <button type="button" onClick={() => setQuery("Potter, Randall")}>Potter, Randall</button>
-        <button type="button" onClick={() => setQuery("San Antonio")}>San Antonio</button>
-      </div>
-      {selectedCounties.length ? (
-        <div className="selected-counties" aria-label="Selected counties">
-          {selectedCounties.map((county) => (
-            <button aria-label={`Remove ${county.name} County`} key={county.slug} type="button" onClick={() => toggleCounty(county.slug)}>
-              {county.name} x
-            </button>
-          ))}
+
+      {activeFilterCount ? (
+        <div className="active-filter-summary">
+          <span className="filter-label">{activeFilterCount} active</span>
+          {selectedCounties.length ? (
+            <div className="selected-counties" aria-label="Selected counties">
+              {selectedCounties.map((county) => (
+                <button aria-label={`Remove ${county.name} County`} key={county.slug} type="button" onClick={() => toggleCounty(county.slug)}>
+                  {county.name} <span aria-hidden="true">×</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {selectedRegionSlugs.length || selectedTopicSlugs.length ? (
+            <div className="selected-counties" aria-label="Selected region and industry filters">
+              {selectedRegionSlugs.map((regionSlug) => (
+                <button aria-label={`Remove ${regionCatalog[regionSlug].label} region`} key={regionSlug} type="button" onClick={() => toggleRegion(regionSlug)}>
+                  {regionCatalog[regionSlug].label} <span aria-hidden="true">×</span>
+                </button>
+              ))}
+              {selectedTopicSlugs.map((slug) => (
+                <button aria-label={`Remove ${topicCatalog[slug].label} industry`} key={slug} type="button" onClick={() => toggleTopic(slug)}>
+                  {topicCatalog[slug].label} <span aria-hidden="true">×</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
-      {selectedRegionSlugs.length || selectedTopicSlugs.length ? (
-        <div className="selected-counties" aria-label="Selected region and industry filters">
-          {selectedRegionSlugs.map((regionSlug) => (
-            <button aria-label={`Remove ${regionCatalog[regionSlug].label} region`} key={regionSlug} type="button" onClick={() => toggleRegion(regionSlug)}>
-              {regionCatalog[regionSlug].label} x
-            </button>
-          ))}
-          {selectedTopicSlugs.map((slug) => (
-            <button aria-label={`Remove ${topicCatalog[slug].label} industry`} key={slug} type="button" onClick={() => toggleTopic(slug)}>
-              {topicCatalog[slug].label} x
-            </button>
-          ))}
-        </div>
-      ) : null}
-      <p className="picker-count" role="status">
-        {filterError || `Choose up to ${maxCountyFilters} counties, ${maxRegionFilters} regions, and ${maxTopicFilters} industries within the ${maxFilterCombinations}-combination feed budget.`}
-      </p>
-      <p className="picker-count">{filtered.length} of {texasCounties.length} Texas counties shown. Search accepts counties, cities, metros, regions, and comma-separated lists.</p>
-      <div className="county-picker">
-        {filtered.map((county) => (
-          <label className={selected.has(county.slug) ? "county-pill selected" : "county-pill"} key={county.fips}>
-            <input
-              checked={selected.has(county.slug)}
-              disabled={!selected.has(county.slug) && Boolean(filterSelectionIssue(selectedSlugs.length + 1, selectedRegionSlugs.length, selectedTopicSlugs.length))}
-              onChange={() => toggleCounty(county.slug)}
-              type="checkbox"
-            />
-            <span>{county.name}</span>
-            <small>{county.metro || county.region}</small>
-          </label>
-        ))}
-      </div>
-      <button className="button apply-filters" onClick={applyMatchingCounties} type="button">
-        {query.trim() ? `Apply ${filtered.length} matching filters` : "Apply filters"}
+
+      <button
+        aria-controls="feed-filter-panel"
+        aria-expanded={filtersOpen}
+        className="filter-toggle"
+        onClick={() => setFiltersOpen((current) => !current)}
+        ref={filterToggleRef}
+        type="button"
+      >
+        <span>{filtersOpen ? "Hide filters" : "Show regions, industries & counties"}</span>
+        <small>{activeFilterCount ? `${activeFilterCount} active` : "Optional"}</small>
       </button>
+
+      <div className={filtersOpen ? "filter-panel open" : "filter-panel"} id="feed-filter-panel">
+        <div className="filter-block">
+          <span className="filter-label">Regions</span>
+          <div className="quick-actions">
+            <button className={!selectedRegionSlugs.length && !selectedSlugs.length && !selectedTopicSlugs.length ? "selected" : ""} onClick={resetFeed} type="button">Texas feed</button>
+            {regionSlugs.map((regionSlug) => (
+              <button
+                className={selectedRegionSlugs.includes(regionSlug) ? "selected" : ""}
+                disabled={!selectedRegionSlugs.includes(regionSlug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length + 1, selectedTopicSlugs.length))}
+                key={regionSlug}
+                onClick={() => toggleRegion(regionSlug)}
+                type="button"
+              >
+                {displayLabel(regionCatalog[regionSlug])}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="filter-block">
+          <span className="filter-label">Industries</span>
+          <div className="topic-links">
+            <button className={!selectedTopicSlugs.length ? "topic-chip selected" : "topic-chip"} onClick={() => { setFilterError(""); onTopicChange([]); }} type="button">All growth</button>
+            {featuredTopicSlugs.map((slug) => (
+              <button
+                className={selectedTopicSlugs.includes(slug) ? "topic-chip selected" : "topic-chip"}
+                disabled={!selectedTopicSlugs.includes(slug) && Boolean(filterSelectionIssue(selectedSlugs.length, selectedRegionSlugs.length, selectedTopicSlugs.length + 1))}
+                key={slug}
+                onClick={() => toggleTopic(slug)}
+                type="button"
+              >
+                {displayLabel(topicCatalog[slug])}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="quick-actions suggested-searches">
+          <span className="filter-label">Suggested searches</span>
+          <button type="button" onClick={() => setQuery("Frisco")}>Frisco</button>
+          <button type="button" onClick={() => setQuery("Permian Basin")}>Permian Basin</button>
+          <button type="button" onClick={() => setQuery("Potter, Randall")}>Potter, Randall</button>
+          <button type="button" onClick={() => setQuery("San Antonio")}>San Antonio</button>
+        </div>
+        <p className="picker-count" role="status">
+          {filterError || `Choose up to ${maxCountyFilters} counties, ${maxRegionFilters} regions, and ${maxTopicFilters} industries within the ${maxFilterCombinations}-combination feed budget.`}
+        </p>
+        <button
+          aria-controls="county-filter-panel"
+          aria-expanded={countyListOpen}
+          className="county-toggle"
+          onClick={() => setCountyListOpen((current) => !current)}
+          type="button"
+        >
+          <span>{countyListOpen ? "Hide county directory" : "Browse all Texas counties"}</span>
+          <small>{filtered.length} matching</small>
+        </button>
+        <div className={countyListOpen ? "county-browser open" : "county-browser"} id="county-filter-panel">
+          <p className="picker-count">{filtered.length} of {texasCounties.length} Texas counties shown. Search accepts counties, cities, metros, regions, and comma-separated lists.</p>
+          <div className="county-picker">
+            {filtered.map((county) => (
+              <label className={selected.has(county.slug) ? "county-pill selected" : "county-pill"} key={county.fips}>
+                <input
+                  checked={selected.has(county.slug)}
+                  disabled={!selected.has(county.slug) && Boolean(filterSelectionIssue(selectedSlugs.length + 1, selectedRegionSlugs.length, selectedTopicSlugs.length))}
+                  onChange={() => toggleCounty(county.slug)}
+                  type="checkbox"
+                />
+                <span>{county.name}</span>
+                <small>{county.metro || county.region}</small>
+              </label>
+            ))}
+          </div>
+          <button className="button apply-filters" onClick={applyMatchingCounties} type="button">
+            {query.trim() ? `Apply ${filtered.length} matching filters` : "Apply filters"}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
@@ -696,15 +743,29 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
 function NewsCard({ item }: { item: NewsItem }) {
   const matchedTopics = item.topics.filter(isTopicSlug);
   const publishedDate = formatPublishedDate(item.publishedAt);
+  const topicCounty = item.coverageTier === "county"
+    ? getCountyBySlug(item.countySlug)
+    : undefined;
+  const expandedCoverageLabel =
+    item.coverageTier === "market"
+      ? `Market coverage: ${item.coverageLabel || item.feedLabel || "nearby market"}`
+      : item.coverageTier === "nearby"
+        ? `Nearby coverage: ${item.coverageLabel || item.feedLabel || "nearby county"}`
+        : "";
 
   return (
     <article className="news-card">
       <a aria-label={`Open article: ${item.title}`} className="news-image" href={item.link} rel="noopener noreferrer" target="_blank">
-        <img src={item.imageUrl || fallbackNewsImage} alt="" loading="lazy" />
+        <img alt="" decoding="async" height="460" loading="lazy" src={item.imageUrl || fallbackNewsImage} width="720" />
       </a>
       <div className="news-body">
         <div className="meta-row">
           <span>{item.feedLabel || item.source || "Texas business news"}</span>
+          {expandedCoverageLabel ? (
+            <span className={`coverage-chip ${item.coverageTier}`}>
+              {expandedCoverageLabel}
+            </span>
+          ) : null}
           {publishedDate ? (
             <time dateTime={publishedDate.iso}>
               {publishedDate.label}
@@ -716,7 +777,7 @@ function NewsCard({ item }: { item: NewsItem }) {
         {matchedTopics.length ? (
           <div className="tag-row" aria-label="Matching industry tags">
             {matchedTopics.map((topic) => (
-              <Link key={topic} to={topicPath(topic, getCountyBySlug(item.countySlug))}>{displayLabel(topicCatalog[topic])}</Link>
+              <Link key={topic} to={topicPath(topic, topicCounty)}>{displayLabel(topicCatalog[topic])}</Link>
             ))}
           </div>
         ) : null}
@@ -736,23 +797,35 @@ function formatPublishedDate(value?: string) {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const [navigationOpen, setNavigationOpen] = useState(false);
+
   return (
     <>
+      <a className="skip-link" href="#main-content">Skip to news</a>
       <header className="site-header">
         <Link className="brand" to="/">
           <span className="brand-mark">TX</span>
           <span>{siteName}</span>
         </Link>
-        <nav>
-          <NavLink to="/">Feed</NavLink>
-          <NavLink to="/counties">Counties</NavLink>
-          <NavLink to="/mission">Mission</NavLink>
-          <NavLink to="/advertise">Advertise</NavLink>
-          <NavLink to="/contact">Contact</NavLink>
+        <button
+          aria-controls="site-navigation"
+          aria-expanded={navigationOpen}
+          className="nav-toggle"
+          onClick={() => setNavigationOpen((current) => !current)}
+          type="button"
+        >
+          {navigationOpen ? "Close menu" : "Menu"}
+        </button>
+        <nav className={navigationOpen ? "open" : ""} id="site-navigation">
+          <NavLink onClick={() => setNavigationOpen(false)} to="/">Feed</NavLink>
+          <NavLink onClick={() => setNavigationOpen(false)} to="/counties">Counties</NavLink>
+          <NavLink onClick={() => setNavigationOpen(false)} to="/mission">Mission</NavLink>
+          <NavLink onClick={() => setNavigationOpen(false)} to="/advertise">Advertise</NavLink>
+          <NavLink onClick={() => setNavigationOpen(false)} to="/contact">Contact</NavLink>
         </nav>
       </header>
       <div className="site-tagline">A Centralized source for positive business news in the state of Texas</div>
-      {children}
+      <div id="main-content">{children}</div>
       <footer className="footer">
         <section className="footer-card footer-brand">
           <strong>{siteName}</strong>
@@ -912,6 +985,35 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
 
   const refresh = useCallback(() => setRefreshVersion((current) => current + 1), []);
   return { data, loading, error, refresh };
+}
+
+function useStoredCountySelection() {
+  const [slugs, setSlugs] = useState<string[]>(() => {
+    try {
+      const parsed = JSON.parse(
+        window.localStorage.getItem(curatedStorageKey) || "[]",
+      ) as string[];
+      return parsed
+        .filter((slug) => getCountyBySlug(slug))
+        .slice(0, maxCountyFilters);
+    } catch {
+      return [];
+    }
+  });
+
+  const update = useCallback((next: string[]) => {
+    const bounded = next
+      .filter((slug) => getCountyBySlug(slug))
+      .slice(0, maxCountyFilters);
+    setSlugs(bounded);
+    try {
+      window.localStorage.setItem(curatedStorageKey, JSON.stringify(bounded));
+    } catch {
+      // Strict storage settings may prevent preference persistence.
+    }
+  }, []);
+
+  return [slugs, update] as const;
 }
 
 function useInfiniteScroll(onNearEnd: () => void, enabled: boolean) {

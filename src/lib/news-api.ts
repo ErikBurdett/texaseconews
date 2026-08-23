@@ -1,5 +1,9 @@
 import { fetchRssFallbackPage } from "./rss-fallback";
 
+export const coverageTiers = ["county", "market", "nearby", "statewide"] as const;
+export type CoverageTier = (typeof coverageTiers)[number];
+export type CoverageMix = Partial<Record<CoverageTier, number>>;
+
 export type NewsItem = {
   id: string;
   title: string;
@@ -12,6 +16,8 @@ export type NewsItem = {
   feedLabel?: string;
   countySlug?: string;
   region?: string;
+  coverageTier?: CoverageTier;
+  coverageLabel?: string;
   topics: string[];
 };
 
@@ -22,6 +28,7 @@ export type FeedMeta = {
   cacheTtlSeconds: number;
   stale: boolean;
   partialFailures: number;
+  coverageMix?: CoverageMix;
 };
 
 export type FeedResponse = {
@@ -181,13 +188,14 @@ function isFeedResponse(value: unknown): value is FeedResponse {
     isIsoDateString(meta.fetchedAt) &&
     isNonNegativeInteger(meta.cacheTtlSeconds) &&
     typeof meta.stale === "boolean" &&
-    isNonNegativeInteger(meta.partialFailures)
+    isNonNegativeInteger(meta.partialFailures) &&
+    (meta.coverageMix === undefined || isCoverageMix(meta.coverageMix))
   );
 }
 
 function isNewsItem(value: unknown): value is NewsItem {
   if (!isRecord(value)) return false;
-  return (
+  const validFields = (
     isString(value.id) &&
     isString(value.title) &&
     isString(value.link) &&
@@ -200,8 +208,22 @@ function isNewsItem(value: unknown): value is NewsItem {
     isOptionalString(value.imageUrl) &&
     isOptionalString(value.feedLabel) &&
     isOptionalString(value.countySlug) &&
-    isOptionalString(value.region)
+    isOptionalString(value.region) &&
+    isOptionalCoverageTier(value.coverageTier) &&
+    isOptionalString(value.coverageLabel)
   );
+  if (!validFields || value.coverageTier === undefined) return validFields;
+  if (value.coverageTier === "county") {
+    return isString(value.countySlug) && Boolean(value.countySlug.trim());
+  }
+  if (value.countySlug !== undefined) return false;
+  if (value.coverageTier === "market" || value.coverageTier === "nearby") {
+    return Boolean(
+      (isString(value.coverageLabel) && value.coverageLabel.trim()) ||
+      (isString(value.feedLabel) && value.feedLabel.trim()),
+    );
+  }
+  return true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -214,6 +236,19 @@ function isString(value: unknown): value is string {
 
 function isOptionalString(value: unknown): value is string | undefined {
   return value === undefined || isString(value);
+}
+
+function isOptionalCoverageTier(value: unknown): value is CoverageTier | undefined {
+  return value === undefined ||
+    (isString(value) && coverageTiers.some((tier) => tier === value));
+}
+
+function isCoverageMix(value: unknown): value is CoverageMix {
+  if (!isRecord(value)) return false;
+  return Object.entries(value).every(([tier, count]) =>
+    coverageTiers.some((candidate) => candidate === tier) &&
+    isNonNegativeInteger(count)
+  );
 }
 
 function isNonNegativeInteger(value: unknown): value is number {
