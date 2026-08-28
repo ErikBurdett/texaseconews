@@ -56,6 +56,16 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 4. Verify EmailJS domain restrictions, template variables, and delivery to `admin@texasbusiness.news`.
 5. Add route-specific SEO metadata, sitemap generation, and production security headers.
 
+### API Delivery Readiness
+
+- The API and frontend are an integrated pre-production MVP, estimated at roughly 70% overall launch readiness.
+- API lint, typecheck, build, and 51 deterministic tests pass; frontend lint, build, and 28 desktop/mobile Playwright checks pass.
+- Exhaustive tests prove that all 254 counties have centroid-backed primary, market, and nearby plans.
+- Representative live API checks returned 16–20 items for Loving, King, Anderson, Harris, Starr, and Potter counties, with 9–13 distinct publishers in the first 20 where 20 items were available.
+- Those samples do not replace a rate-limited live acceptance audit across all 254 counties.
+- Anonymous AllOrigins/RSS2JSON fallback checks remain inconsistent and can be slow or empty for a first-time rural request. A managed, origin-restricted RSS proxy is required before presenting fallback as a production availability guarantee.
+- The authoritative API readiness criteria and phased roadmap are maintained in `/PIA/txbiz-api/docs/status-and-roadmap.md`.
+
 ## Current Technical State
 
 ### Stack

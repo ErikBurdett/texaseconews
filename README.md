@@ -128,3 +128,5 @@ VITE_EMAILJS_PUBLIC_KEY
 ```
 
 The optional RSS fallback override variables may also be configured when a managed proxy endpoint is preferred.
+
+For current API readiness, verified county-coverage evidence, launch criteria, known fallback limitations, and the phased roadmap, see `/PIA/txbiz-api/docs/status-and-roadmap.md`.
