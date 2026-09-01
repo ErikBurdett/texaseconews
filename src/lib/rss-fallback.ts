@@ -317,7 +317,9 @@ function fallbackFeedResponse(
   batch: FallbackBatchResult,
   limit: number,
 ): FeedResponse {
-  const items = prepareItems(batch.items).slice(0, Math.max(1, limit));
+  const items = prepareItems(batch.items)
+    .slice(0, Math.max(1, limit))
+    .map(rightsSafeItem);
   return {
     items,
     meta: {
@@ -351,7 +353,7 @@ async function fetchFallbackFeed(
   for (const load of loaders) {
     try {
       const items = await load(feed, signal);
-      writeCache(feed, items);
+      writeCache(feed, items.map(rightsSafeItem));
       return { items, stale: false };
     } catch (error) {
       if (signal?.aborted) throw error;
@@ -630,9 +632,8 @@ function articleLink(link: string, html: string) {
 }
 
 function firstExternalPublisherLink(html: string) {
-  const container = document.createElement("template");
-  container.innerHTML = html;
-  return Array.from(container.content.querySelectorAll("a"))
+  const documentNode = new DOMParser().parseFromString(html, "text/html");
+  return Array.from(documentNode.querySelectorAll("a"))
     .map((anchor) => anchor.href)
     .find((href) => isHttpUrl(href) && !isGoogleNewsUrl(href)) || "";
 }
@@ -818,12 +819,16 @@ function cacheKey(feed: FeedDefinition) {
 
 function readCache(feed: FeedDefinition): CachedFeed | undefined {
   try {
-    const raw = window.localStorage.getItem(cacheKey(feed));
+    const key = cacheKey(feed);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw) as CachedFeed;
-    return typeof parsed.fetchedAt === "number" && Array.isArray(parsed.items)
-      ? parsed
-      : undefined;
+    if (typeof parsed.fetchedAt !== "number" || !Array.isArray(parsed.items)) return undefined;
+    if (Date.now() - parsed.fetchedAt >= cacheTtlMs) {
+      window.localStorage.removeItem(key);
+      return undefined;
+    }
+    return parsed;
   } catch {
     return undefined;
   }
@@ -838,6 +843,13 @@ function writeCache(feed: FeedDefinition, items: FallbackNewsItem[]) {
   } catch {
     // Strict storage policies may block fallback caching.
   }
+}
+
+function rightsSafeItem(item: FallbackNewsItem): FallbackNewsItem {
+  const safeItem = { ...item };
+  delete safeItem.description;
+  delete safeItem.imageUrl;
+  return safeItem;
 }
 
 function emptyFallbackFeed(partialFailures: number): FeedResponse {

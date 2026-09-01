@@ -73,6 +73,7 @@ export async function fetchHomePage(query: HomePageQuery, options: RequestOption
   } catch (error) {
     if (options.signal?.aborted || isAbortError(error)) throw error;
     if (error instanceof NewsApiError && !error.fallbackEligible) throw error;
+    if (!rssFallbackEnabled()) throw error;
 
     try {
       return await fetchRssFallbackPage(query, options);
@@ -81,6 +82,12 @@ export async function fetchHomePage(query: HomePageQuery, options: RequestOption
       throw new NewsApiError("News API and RSS fallback providers are unavailable.");
     }
   }
+}
+
+function rssFallbackEnabled() {
+  const configured = import.meta.env.VITE_ENABLE_RSS_FALLBACK?.trim().toLowerCase();
+  if (configured) return configured === "true";
+  return import.meta.env.DEV;
 }
 
 async function fetchHomePageFromApi(query: HomePageQuery, options: RequestOptions) {

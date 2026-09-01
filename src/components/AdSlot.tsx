@@ -10,7 +10,7 @@ export function AdSlot({ slot, county, topics, limit = 1 }: { slot: AdSlotId; co
   if (!ads.length) return null;
 
   return (
-    <aside className={`ad-slot ad-slot-${slot}`} aria-label="Sponsored business opportunity">
+    <aside className={`ad-slot ad-slot-${slot}`} aria-label="Advertisement" data-ad-placement={slot}>
       {ads.map((ad) => (
         <AdCard ad={ad} county={county} key={ad.id} slot={slot} />
       ))}
@@ -47,7 +47,8 @@ export function SponsorBadge() {
   const content = (
     <>
       {ad.imageUrl ? <img alt="" className="sponsor-badge-logo" decoding="async" height="1024" src={ad.imageUrl} width="1024" /> : null}
-      <span>Sponsored by <strong>{ad.sponsor}</strong></span>
+      <span className="ad-disclosure">Advertisement</span>
+      <span>Paid sponsor: <strong>{ad.sponsor}</strong></span>
     </>
   );
   const className = "sponsor-badge";
@@ -55,14 +56,14 @@ export function SponsorBadge() {
 
   if (/^https?:\/\//i.test(ad.href)) {
     return (
-      <a aria-label={`Sponsored by ${ad.sponsor}`} className={className} href={ad.href} onClick={onClick} ref={ref} rel="noopener noreferrer" target="_blank">
+      <a aria-label={`Advertisement paid for by ${ad.sponsor} (opens in a new tab)`} className={className} href={ad.href} onClick={onClick} ref={ref} referrerPolicy="strict-origin-when-cross-origin" rel="sponsored nofollow noopener noreferrer" target="_blank">
         {content}
       </a>
     );
   }
 
   return (
-    <Link aria-label={`Sponsored by ${ad.sponsor}`} className={className} onClick={onClick} ref={ref} to={ad.href}>
+    <Link aria-label={`Advertisement paid for by ${ad.sponsor}`} className={className} onClick={onClick} ref={ref} to={ad.href}>
       {content}
     </Link>
   );
@@ -81,7 +82,7 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
       ([entry]) => {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
           tracked.current = true;
-          trackAdEvent("ad_impression", ad, slot, county);
+          trackAdEvent("ad_impression", ad, slot);
           observer.disconnect();
         }
       },
@@ -95,7 +96,8 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
   const content = (
     <>
       {ad.imageUrl ? <img className="ad-image" src={ad.imageUrl} alt="" decoding="async" fetchPriority="low" height="1024" loading="lazy" width="1024" /> : null}
-      <span className="ad-label">Sponsored by {ad.sponsor}</span>
+      <span className="ad-disclosure">Advertisement</span>
+      <span className="ad-label">Paid sponsor: {ad.sponsor}</span>
       <strong>{ad.title}</strong>
       <span>{ad.body}</span>
       <em>{ad.cta}</em>
@@ -104,14 +106,14 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
 
   if (isExternal) {
     return (
-      <a className={`ad-card ad-card-${ad.placement}`} href={ad.href} onClick={() => trackAdEvent("ad_click", ad, slot, county)} ref={ref} rel="noopener noreferrer" target="_blank">
+      <a aria-label={`Advertisement paid for by ${ad.sponsor}: ${ad.title} (opens in a new tab)`} className={`ad-card ad-card-${ad.placement}`} href={ad.href} onClick={() => trackAdEvent("ad_click", ad, slot)} ref={ref} referrerPolicy="strict-origin-when-cross-origin" rel="sponsored nofollow noopener noreferrer" target="_blank">
         {content}
       </a>
     );
   }
 
   return (
-    <Link className={`ad-card ad-card-${ad.placement}`} onClick={() => trackAdEvent("ad_click", ad, slot, county)} ref={ref} to={ad.href}>
+    <Link className={`ad-card ad-card-${ad.placement}`} onClick={() => trackAdEvent("ad_click", ad, slot)} ref={ref} to={ad.href}>
       {content}
     </Link>
   );

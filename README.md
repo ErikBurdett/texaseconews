@@ -15,8 +15,10 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - Shareable county-topic feeds, such as `/county/dallas/topic/jobs`.
 - County directory for browsing and opening county feeds.
 - Texas-themed red, white, and blue visual treatment with friendly Texas copy.
-- Sponsor placements that route to `/advertise` and track impression/click events through `dataLayer`.
+- Paid placements with visible `Advertisement` and `Paid sponsor` labels, external-link safeguards, and page-memory-only interaction events.
 - News article links open in a new tab and prefer publisher/source URLs over Google News URLs when available.
+- Rights-conscious article cards display headline, actual source, date, automated tags, and the original link without publisher images or feed excerpts.
+- Optional LiveCoinWatch and TradingView scripts remain off until the reader allows them.
 - Responsive layout for mobile, desktop, and large-format displays.
 
 ## Routes
@@ -28,6 +30,8 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - `/contact` contact form and admin email
 - `/terms` terms of service
 - `/privacy` privacy statement
+- `/methodology` editorial and source methodology
+- `/advertising-standards` advertising acceptance and disclosure standards
 - `/topic/:topicSlug` statewide topic feed
 - `/county/:countySlug` county-specific feed
 - `/county/:countySlug/topic/:topicSlug` county-specific topic feed
@@ -39,11 +43,11 @@ Articles are loaded from the TexasBusiness.News API through `GET /v1/pages/home`
 
 The API owns provider ingestion, constructive-business filtering, duplicate suppression, caching, source attribution, and county relevance. County results remain separate from the statewide feed so local stories can appear first without removing statewide coverage. The shared item contract supports `coverageTier` (`county`, `market`, `nearby`, or `statewide`) and `coverageLabel`; feed metadata may include `coverageMix`.
 
-If the API is unreachable, returns an eligible availability error, or returns a malformed response, the client automatically falls back through AllOrigins and RSS2JSON. For each selected county it loads strict county growth/sector or topic searches and up to four applicable reviewed local feeds first. When fewer than 12 eligible stories remain, it requests one combined two-market search, up to two reviewed feeds mapped to those markets, and one combined three-nearby-county search in parallel. Centroid-based plans exist for all 254 counties and are capped at 6 primary plus 4 expansion definitions per county.
+In development, if the API is unreachable, returns an eligible availability error, or returns a malformed response, the client can fall back through AllOrigins and RSS2JSON. Production fallback is disabled by default and requires `VITE_ENABLE_RSS_FALLBACK=true` after source licenses and proxy terms are approved. For each selected county the fallback loads strict county growth/sector or topic searches and up to four applicable local feeds first. When fewer than 12 eligible stories remain, it requests one combined two-market search, up to two feeds mapped to those markets, and one combined three-nearby-county search in parallel. Centroid-based plans exist for all 254 counties and are capped at 6 primary plus 4 expansion definitions per county.
 
-Every fallback article must establish its location in the title or plain-text description. A feed's publisher, retrieval scope, or query is not treated as article evidence. True county items carry `coverageTier: "county"` and a `countySlug`; market and nearby items carry their honest coverage label and intentionally omit `countySlug`. State and region items use the statewide tier. Strict county/statewide fallback uses a 30-day age limit, while clearly labeled sparse market/nearby context may look back 60 days. The fallback also enforces constructive/blocked/topic rules, safe HTTP(S) URLs and XML, 10-second request timeouts, globally bounded proxy concurrency, cancellation, partial-failure handling, deterministic sorting and deduplication, a first pass of at most three stories per normalized source, and a 45-minute scope-keyed browser cache.
+Every fallback article must establish its location in the title or plain-text description. A feed's publisher, retrieval scope, or query is not treated as article evidence. True county items carry `coverageTier: "county"` and a `countySlug`; market and nearby items carry their honest coverage label and intentionally omit `countySlug`. State and region items use the statewide tier. Strict county/statewide fallback uses a 30-day age limit, while clearly labeled sparse market/nearby context may look back 60 days. The fallback also enforces constructive/blocked/topic rules, safe HTTP(S) URLs and XML, 10-second request timeouts, globally bounded proxy concurrency, cancellation, partial-failure handling, deterministic sorting and deduplication, a first pass of at most three stories per normalized source, and a 45-minute scope-keyed browser cache. Descriptions may be inspected transiently for relevance, but fallback responses and cache entries strip descriptions and image URLs before display or persistence.
 
-Statewide direct fallback sources include Texas Tribune Economy, Dallas Fed Updates, Texas Comptroller News, the Texas Real Estate Research Center, AgriLife Today, Texas Energy & Power, Texas Border Business, and KETK Local. Reviewed regional/local feeds are requested only when their mapped region or county is selected. These include Dallas Innovates, Fort Worth Report Business, Houston Public Media Business, Opportunity Austin, Bexar ECD, San Antonio Report, El Paso Matters, Amarillo EDC and the retained Amarillo feeds, Midland Reporter-Telegram, Port Corpus Christi, and Everything Lubbock.
+The fallback catalog includes Texas Tribune Economy, Dallas Fed Updates, Texas Comptroller News, the Texas Real Estate Research Center, AgriLife Today, Texas Energy & Power, Texas Border Business, KETK Local, and mapped regional/local feeds. Catalog inclusion is not legal approval. `rss_source_compliance.md` records which sources require a license or written permission before production use.
 
 Environment variables:
 
@@ -51,14 +55,15 @@ Required for production news delivery:
 
 - `VITE_NEWS_API_URL`
 
-Local development defaults to `http://localhost:8787` when `VITE_NEWS_API_URL` is unset. Production should always configure the API URL; when it is missing or unavailable, the RSS proxy fallback is used.
+Local development defaults to `http://localhost:8787` when `VITE_NEWS_API_URL` is unset and permits mocked RSS fallback. Production should always configure the API URL; production fallback remains off unless separately approved and enabled.
 
 Optional RSS fallback endpoint overrides:
 
+- `VITE_ENABLE_RSS_FALLBACK`
 - `VITE_RSS_PROVIDER_URL`
 - `VITE_RSS_RAW_PROXY_URL`
 
-The built-in defaults are RSS2JSON and AllOrigins. Overrides must be valid HTTP(S) endpoints; they are browser-only availability fallbacks, not replacements for `VITE_NEWS_API_URL`.
+Production defaults `VITE_ENABLE_RSS_FALLBACK` to false. The built-in development defaults are RSS2JSON and AllOrigins. Overrides must be valid HTTP(S) endpoints; they are browser-only availability fallbacks, not replacements for `VITE_NEWS_API_URL`. Review `rss_source_compliance.md` before enabling production fallback.
 
 Required for the contact form through EmailJS:
 
@@ -89,7 +94,10 @@ npm run test:e2e
 - Verify selecting a county shows county-specific articles first and statewide Texas articles beneath.
 - With the API mocked offline, verify a sparse rural county shows labeled market and nearby stories without county-specific links or claims.
 - Verify external news article links open in a new tab.
-- Verify sponsor cards route to `/advertise`.
+- Verify every sponsor placement visibly says `Advertisement` and `Paid sponsor`, identifies the advertiser, and uses a sponsored external link.
+- Verify article cards do not render publisher images or feed excerpts.
+- Verify optional ticker vendors do not load before the reader allows them.
+- Smoke-check `/methodology` and `/advertising-standards`.
 
 ## Deployment
 
@@ -122,11 +130,18 @@ AWS Amplify environment variables needed for production news and contact support
 
 ```text
 VITE_NEWS_API_URL
+VITE_ENABLE_RSS_FALLBACK
 VITE_EMAILJS_SERVICE_ID
 VITE_EMAILJS_TEMPLATE_ID
 VITE_EMAILJS_PUBLIC_KEY
 ```
 
-The optional RSS fallback override variables may also be configured when a managed proxy endpoint is preferred.
+Keep `VITE_ENABLE_RSS_FALLBACK=false` until the source-rights and proxy launch gate in `rss_source_compliance.md` is complete. The optional RSS proxy override variables may then be configured for an approved managed endpoint.
 
 For current API readiness, verified county-coverage evidence, launch criteria, known fallback limitations, and the phased roadmap, see `/PIA/txbiz-api/docs/status-and-roadmap.md`.
+
+## Compliance Documents
+
+- `rss_source_compliance.md` — source-by-source RSS, API, image, excerpt, cache, and proxy rights audit.
+- `advertising_compliance.md` — paid-placement controls, preflight, records, complaint handling, and launch blockers.
+- `advertiser_insertion_order_template.md` — counsel-review advertiser agreement and campaign order template.

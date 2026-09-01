@@ -2,10 +2,12 @@ import emailjs from "@emailjs/browser";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
 import { AdSlot, SponsorBadge } from "./components/AdSlot";
+import { PrivacyPreferencesProvider } from "./components/PrivacyPreferences";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
 import { featuredTopicSlugs, getTopicBySlug, heroTopicSlugs, isTopicSlug, topicCatalog, type TopicSlug } from "./data/topics";
 import { fetchHomePage, type HomePageQuery, type HomePageResponse, type NewsItem } from "./lib/news-api";
+import { usePrivacyPreferences } from "./lib/privacy-preferences";
 
 const siteName = "TexasBusiness.News";
 const mission =
@@ -19,9 +21,16 @@ const maxRegionFilters = 4;
 const maxTopicFilters = 4;
 const maxFilterCombinations = 8;
 const noNewsItems: NewsItem[] = [];
-const fallbackNewsImage = "https://placehold.co/720x460/07111f/e9f8ef?text=TexasBusiness.News";
 
 function App() {
+  return (
+    <PrivacyPreferencesProvider>
+      <AppContent />
+    </PrivacyPreferencesProvider>
+  );
+}
+
+function AppContent() {
   return (
     <>
       <TickerStack />
@@ -33,6 +42,8 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/methodology" element={<MethodologyPage />} />
+        <Route path="/advertising-standards" element={<AdvertisingStandardsPage />} />
         <Route path="/topic/:topicSlug" element={<TopicPage />} />
         <Route path="/industry/:topicSlug" element={<TopicPage />} />
         <Route path="/region/:regionSlug" element={<RegionPage />} />
@@ -299,20 +310,22 @@ function AdvertisePage() {
         <p>Sponsor statewide, regional, county-specific, or topic-specific placements across {siteName}. Every placement sits beside constructive opportunity signals, not outrage cycles.</p>
       </section>
       <section className="feature-grid">
-        <InfoCard title="County Spotlights" body="Own a county or corridor placement for business development, hiring, launches, tourism, and infrastructure audiences across Texas." />
-        <InfoCard title="Topic Targeting" body="Align campaigns to AI, data centers, jobs, manufacturing, energy, or small business stories as the feed updates." />
-        <InfoCard title="Clean Measurement" body="Impression and click events are pushed to dataLayer with campaign, slot, county, and region metadata." />
+        <InfoCard title="Contextual Placements" body="Choose statewide, regional, county, or industry context. TexasBusiness.News does not currently build behavioral advertising profiles or target readers using sensitive personal data." />
+        <InfoCard title="Unmistakable Disclosure" body="Every paid placement displays Advertisement and Paid sponsor labeling, remains visually separate from editorial links, and identifies the paying advertiser." />
+        <InfoCard title="Minimal Measurement" body="Impression and click events are held in the page's in-memory dataLayer with campaign and slot fields. No analytics recipient is currently connected." />
       </section>
       <section className="advertise-panel">
         <div>
           <p className="eyebrow">Launch packages</p>
           <h2>Built for sponsors with a Texas growth story.</h2>
-          <p>Use hero, sidebar, inline feed, and footer placements to reach readers while they are actively exploring where Texas is moving next.</p>
+          <p>Use hero, sidebar, inline feed, and footer placements to reach readers while they explore Texas business coverage. Placement does not buy favorable coverage, editorial review, or publisher endorsement.</p>
+          <p><Link to="/advertising-standards">Review the advertising standards, restricted categories, creative requirements, and preflight process.</Link></p>
         </div>
         <div className="package-list">
           <InfoCard title="Statewide Launch Partner" body="Broad Texas visibility across hero and footer placements." />
           <InfoCard title="Regional Growth Partner" body="Target metros, regions, or county clusters where your work is creating opportunity." />
           <InfoCard title="Topic Partner" body="Sponsor focused areas such as AI infrastructure, jobs, energy, or small business expansion." />
+          <InfoCard title="Human Approval Required" body="Campaigns are not self-serve. Creative, claims, rights, regulated-industry disclosures, and HTTPS destinations must be reviewed before publication." />
         </div>
       </section>
       <AdSlot slot="footer" limit={3} />
@@ -354,6 +367,7 @@ function ContactPage() {
           from_name: name,
           reply_to: email,
           message,
+          submission_type: "general_contact",
         },
         { publicKey },
       );
@@ -377,16 +391,20 @@ function ContactPage() {
         <form className="contact-form" onSubmit={handleContactSubmit}>
           <label>
             <span>Name</span>
-            <input name="name" placeholder="Your name" required type="text" />
+            <input autoComplete="name" maxLength={120} name="name" placeholder="Your name" required type="text" />
           </label>
           <label>
             <span>Email</span>
-            <input name="email" placeholder="you@example.com" required type="email" />
+            <input autoComplete="email" maxLength={254} name="email" placeholder="you@example.com" required type="email" />
           </label>
           <label>
             <span>Message</span>
-            <textarea name="message" placeholder="How can we help?" required rows={6} />
+            <textarea maxLength={5_000} name="message" placeholder="How can we help?" required rows={6} />
           </label>
+          <p className="form-privacy-notice">
+            We send these fields to EmailJS to deliver your request to our inbox. Do not submit sensitive personal
+            information. See the <Link to="/privacy">Privacy Statement</Link>.
+          </p>
           <button className="button" disabled={status === "submitting"} type="submit">
             {status === "submitting" ? "Sending..." : "Send to admin@texasbusiness.news"}
           </button>
@@ -406,18 +424,61 @@ function TermsPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Terms of service</p>
         <h1>Terms for using {siteName}.</h1>
-        <p>{siteName} is provided for general informational and business-discovery purposes only. By using the site, you agree to use it responsibly and understand that third-party feeds, sponsor placements, market widgets, and publisher links may change or become unavailable.</p>
+        <p>Effective August 31, 2026. These terms govern access to this independent news-discovery service, its filters, sponsor placements, contact form, and optional third-party widgets.</p>
       </section>
-      <section className="legal-grid">
-        <InfoCard title="No Professional Advice" body="Content on this site does not provide legal, investment, medical, tax, insurance, or other professional advice. Always verify information with original publishers and qualified professionals before making decisions." />
-        <InfoCard title="Third-Party Sources" body="News items, market data, crypto widgets, sponsor destinations, and external publisher pages are operated by third parties. We are not responsible for their availability, accuracy, practices, or content." />
-        <InfoCard title="Permitted Use" body="You may browse and share public links from this site. Do not misuse the service, interfere with its operation, scrape it abusively, or present sponsor or publisher content as your own." />
+      <section className="legal-document">
+        <LegalSection title="1. Acceptance and eligibility">
+          <p>By accessing {siteName}, you accept these terms and the <Link to="/privacy">Privacy Statement</Link>. If you do not accept them, do not use the service. The service is intended for a general audience and is not directed to children under 13.</p>
+        </LegalSection>
+        <LegalSection title="2. News-discovery service">
+          <p>{siteName} organizes links to positive Texas business reporting using statewide, regional, county, and industry filters. It is not the original publisher of linked reporting. Automated relevance and topic labels can be incomplete or wrong; verify the original article before relying on a result. Our process is described in the <Link to="/methodology">Editorial and Source Methodology</Link>.</p>
+        </LegalSection>
+        <LegalSection title="3. Publisher content and attribution">
+          <p>Publishers and other licensors retain all rights in their articles, headlines, photographs, marks, and feeds. A public RSS endpoint does not by itself grant republication rights. Until source-specific rights are confirmed, this site limits article cards to factual metadata such as a title, source, date, topic, and a direct link and does not display publisher images or excerpts.</p>
+          <p>Do not use {siteName} to evade a publisher paywall, reproduce full articles, remove attribution, or imply that a publisher endorses this service or an advertiser.</p>
+        </LegalSection>
+        <LegalSection title="4. Advertising and editorial independence">
+          <p>Paid placements are labeled “Advertisement” and “Paid sponsor,” identify the advertiser, and are technically separated from editorial cards. Advertising does not purchase coverage, favorable treatment, or influence over source selection. Advertisers are responsible for their claims, rights, offers, and destination pages and must follow our <Link to="/advertising-standards">Advertising Standards</Link>.</p>
+        </LegalSection>
+        <LegalSection title="5. No professional advice">
+          <p>Nothing on the site is legal, investment, securities, tax, medical, health, insurance, employment, or other professional advice. Market and crypto information may be delayed or inaccurate. Consult the original source and a qualified professional before making decisions.</p>
+        </LegalSection>
+        <LegalSection title="6. Third-party services and links">
+          <p>The news API, RSS providers, EmailJS, LiveCoinWatch, TradingView, sponsors, and linked publishers are independent third parties. Their content, availability, security, accessibility, and privacy practices are governed by their own terms. A link or adjacent advertisement does not constitute endorsement, partnership, or verification.</p>
+        </LegalSection>
+        <LegalSection title="7. Acceptable use">
+          <p>You may browse the service and share links to public pages. You may not disrupt the site, bypass security or rate limits, introduce malicious code, scrape at a volume that harms the service, misrepresent affiliation, copy protected third-party content, use the service unlawfully, or use automated output to make high-impact decisions about another person.</p>
+        </LegalSection>
+        <LegalSection title="8. Our materials">
+          <p>The {siteName} name, original interface, taxonomy, arrangement, and original policy text are protected to the extent allowed by law. No license is granted to third-party publisher or advertiser marks. Reasonable linking to public pages is permitted if it does not imply endorsement.</p>
+        </LegalSection>
+        <LegalSection title="9. Corrections and copyright concerns">
+          <p>Send corrections, source opt-out requests, and copyright concerns through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. Include the affected URL, the work or statement at issue, your authority to act, a clear explanation, and reliable contact information. We may remove or disable material while reviewing a request.</p>
+          <p>This contact process is not a representation that the operator has registered a designated agent or currently claims every safe harbor under the Digital Millennium Copyright Act. Counsel should complete any formal DMCA registration and notice process before the site represents otherwise.</p>
+        </LegalSection>
+        <LegalSection title="10. Disclaimers">
+          <p>The service is provided “as is” and “as available.” To the maximum extent permitted by law, the operator disclaims warranties of accuracy, completeness, merchantability, fitness for a particular purpose, title, non-infringement, uninterrupted availability, and error-free operation. Some jurisdictions do not allow every disclaimer.</p>
+        </LegalSection>
+        <LegalSection title="11. Limitation of liability">
+          <p>To the maximum extent permitted by law, the operator will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, lost profits, lost data, decisions based on linked content, third-party conduct, or service interruption. Rights that cannot legally be limited remain unaffected.</p>
+        </LegalSection>
+        <LegalSection title="12. Changes, severability, and Texas law">
+          <p>We may update the service or these terms by posting a new effective date. If one provision is unenforceable, the remaining provisions continue. These terms are governed by Texas law, without overriding mandatory consumer protections that apply where you live.</p>
+        </LegalSection>
+        <LegalSection title="13. Contact">
+          <p>Questions about these terms may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+        </LegalSection>
       </section>
     </Shell>
   );
 }
 
 function PrivacyPage() {
+  const {
+    allowOptionalWidgets,
+    declineOptionalWidgets,
+    optionalWidgetChoice,
+  } = usePrivacyPreferences();
   usePageTitle("Privacy Statement");
 
   return (
@@ -425,13 +486,149 @@ function PrivacyPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Privacy statement</p>
         <h1>Privacy-first by design.</h1>
-        <p>{siteName} is designed as a lightweight experience that avoids account creation and avoids collecting sensitive personal information. We use minimal browser-side preferences and link to third-party sources that may have their own privacy practices.</p>
+        <p>Effective August 31, 2026. This statement explains the limited data used by {siteName}, the vendors involved, your choices, and how to make a privacy request.</p>
       </section>
-      <section className="legal-grid">
-        <InfoCard title="Local Preferences" body="County, region, and industry filters are kept only for the current page session. Opening the home page starts with statewide Texas stories and no default county." />
-        <InfoCard title="Sponsor Measurement" body="Sponsor impressions and clicks may be measured as anonymous interaction events. We do not use those events to create account profiles because this site does not currently have accounts." />
-        <InfoCard title="Third-Party Widgets" body="Market widgets, crypto widgets, news sources, sponsors, and linked publishers may receive technical information when their content loads or when you click through to them. Review their privacy terms for details." />
-        <InfoCard title="Privacy Contact" body="Use the contact form or admin@texasbusiness.news for privacy questions and requests. No street address or phone contact is listed for this site." />
+      <section className="legal-document">
+        <LegalSection title="1. Scope and operator contact">
+          <p>This statement applies to the {siteName} website. The site currently has no user accounts, subscriptions, or direct payment processing. Contact the operator through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+        </LegalSection>
+        <LegalSection title="2. Information you provide">
+          <p>The contact form collects the name, email address, and message you choose to submit. Do not include sensitive personal data. EmailJS transmits the submission to our inbox. Linked publishers, sponsors, and future advertiser intake forms collect information under their own notices.</p>
+        </LegalSection>
+        <LegalSection title="3. Browser preferences and RSS cache">
+          <ul>
+            <li>Selected county slugs are stored under <code>texasbusiness-news:selected-counties</code> until you clear them or browser storage.</li>
+            <li>Your optional-widget choice is stored under <code>texasbusiness-news:optional-widgets</code>.</li>
+            <li>During an eligible API outage, normalized RSS fallback metadata may be cached under keys beginning <code>texaseconews:rss-fallback:v3:</code>. Entries expire after 45 minutes and are removed when next checked.</li>
+            <li>Region and industry choices otherwise remain in React page state.</li>
+          </ul>
+        </LegalSection>
+        <LegalSection title="4. Technical data">
+          <p>AWS Amplify Hosting, the news API, and security infrastructure may process IP address, request time, requested URL, user-agent or browser details, referring page, device and network information, and error or security logs. Retention and access depend on the configured AWS and API logging settings.</p>
+        </LegalSection>
+        <LegalSection title="5. Sponsor measurement">
+          <p>Visible sponsor impressions and sponsor-link clicks create limited events containing event type, campaign ID, sponsor name, and placement slot in the current page’s in-memory <code>dataLayer</code>. County, region, account, cross-site identifier, and sensitive data are not included. No analytics recipient is currently connected, and the in-memory events end with the page session.</p>
+        </LegalSection>
+        <LegalSection title="6. Optional market widgets">
+          <p>LiveCoinWatch and TradingView scripts are blocked unless you allow optional tickers. If allowed, those vendors may receive IP address, browser and device details, page-request information, and may use storage or other technologies under their own policies. You can change your choice below at any time.</p>
+          <div className="privacy-inline-controls">
+            <span>Current choice: <strong>{optionalWidgetChoice}</strong></span>
+            <button className="button" onClick={allowOptionalWidgets} type="button">Allow optional tickers</button>
+            <button className="button ghost" onClick={declineOptionalWidgets} type="button">Keep optional tickers off</button>
+          </div>
+        </LegalSection>
+        <LegalSection title="7. News delivery and RSS proxies">
+          <p>The primary news API receives selected county, region, and industry slugs plus a result limit. Browser RSS fallback is off by default in production and should be enabled only after source rights and proxy terms are approved. When enabled after an eligible API failure, RSS2JSON or AllOrigins receives the public feed URL and normal network request data. Those services do not receive contact-form content from this site and do not grant rights to publisher content.</p>
+        </LegalSection>
+        <LegalSection title="8. Uses and legal bases">
+          <p>We use information to deliver requested pages, remember choices, route contact messages, secure and debug the service, prevent abuse, measure sponsor placement within the page, comply with law, and handle corrections or rights requests. Depending on the activity and applicable law, processing is based on providing the requested service, legitimate operational interests, consent for optional widgets, or legal obligations.</p>
+        </LegalSection>
+        <LegalSection title="9. Disclosure and sale">
+          <p>Information may be processed by AWS Amplify, the news API operator, EmailJS, and vendors you choose to load, and may be disclosed when legally required or in a business transfer subject to appropriate protections. {siteName} does not currently sell personal data, share it for cross-context behavioral advertising, or use it for targeted advertising as those terms are commonly defined. Current sponsor placement is contextual.</p>
+        </LegalSection>
+        <LegalSection title="10. Retention and security">
+          <p>Browser preferences remain until cleared or changed. RSS fallback cache entries expire after 45 minutes. Page-memory ad events end when the page session ends. Contact messages and infrastructure logs are retained only as reasonably needed for the request, security, records, and legal obligations under operator and vendor settings. We use reasonable safeguards, but no internet system is completely secure.</p>
+        </LegalSection>
+        <LegalSection title="11. Texas privacy rights">
+          <p>Where the Texas Data Privacy and Security Act or another law applies, you may request access, correction, deletion, or a portable copy of covered personal data, and may opt out of covered targeted advertising, sale, or certain profiling. You may also appeal a denied request. Submit requests through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. We may verify your identity and authority and will respond within the period required by applicable law.</p>
+        </LegalSection>
+        <LegalSection title="12. Children and sensitive data">
+          <p>The site is not directed to children under 13 and does not knowingly collect children’s personal information. We do not ask for precise geolocation, government identifiers, health records, account credentials, or other sensitive data. Do not place sensitive data in the contact form.</p>
+        </LegalSection>
+        <LegalSection title="13. External sites and transfers">
+          <p>Publishers, sponsors, and widgets have separate privacy practices. Their processing may occur outside Texas or the United States. Review their notices before enabling a widget or following an external link.</p>
+        </LegalSection>
+        <LegalSection title="14. Changes and complaints">
+          <p>We may update this statement by changing its effective date. Send questions, complaints, requests, or appeals through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+        </LegalSection>
+      </section>
+    </Shell>
+  );
+}
+
+function MethodologyPage() {
+  usePageTitle("Editorial and Source Methodology");
+
+  return (
+    <Shell>
+      <section className="page-hero legal-page">
+        <p className="eyebrow">Editorial and source methodology</p>
+        <h1>How the Texas business feed is built.</h1>
+        <p>Effective August 31, 2026. TexasBusiness.News is a discovery layer, not the original publisher of the linked reporting.</p>
+      </section>
+      <section className="legal-document">
+        <LegalSection title="Scope and selection">
+          <p>The service looks for constructive Texas business signals involving jobs, investment, openings, infrastructure, technology, energy, workforce, tourism, agriculture, and related industries. Automated rules de-emphasize crime, tragedy, violence, and other topics outside the stated product scope. Inclusion is not an endorsement, and omission is not a judgment about a story’s importance.</p>
+        </LegalSection>
+        <LegalSection title="Geographic confidence">
+          <p>County results require evidence in the article title or machine-readable description. Sparse county feeds may include clearly labeled nearby-market or nearby-county context. Those expanded items do not claim a county association and do not receive county-specific topic links.</p>
+        </LegalSection>
+        <LegalSection title="Primary API and outage fallback">
+          <p>A read-only page API is the primary delivery path. Browser-side Google News and direct RSS retrieval through RSS2JSON or AllOrigins is an emergency fallback only. Production fallback is disabled by default and must not be enabled until the operator has approved the relevant source rights and proxy terms.</p>
+        </LegalSection>
+        <LegalSection title="Rights-conscious article cards">
+          <p>Article cards identify the actual publisher when the feed provides it and link readers to the original page. The launch-safe display is limited to headline, publisher/source, publication date, coverage label, and automated industry tags. Publisher photographs and feed excerpts are not displayed unless a documented license or source policy permits that exact commercial use.</p>
+        </LegalSection>
+        <LegalSection title="Automation limits">
+          <p>Topic extraction, source identity, dates, deduplication, and place matching can be incorrect. Tags describe automated matching, not publisher classifications. Market widgets are separate third-party data products and are not reporting produced by this site.</p>
+        </LegalSection>
+        <LegalSection title="Advertising separation">
+          <p>Advertising is selected independently of article inclusion and uses separate components and unmistakable labels. A sponsor does not approve coverage, and an ad beside a story does not imply endorsement by the publisher, subject, county, or public entity.</p>
+        </LegalSection>
+        <LegalSection title="Corrections, source requests, and opt-outs">
+          <p>Send a correction, source suggestion, source opt-out, or rights concern through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. Include the page URL and supporting information. We may remove a result while reviewing it.</p>
+        </LegalSection>
+      </section>
+    </Shell>
+  );
+}
+
+function AdvertisingStandardsPage() {
+  usePageTitle("Advertising Standards");
+
+  return (
+    <Shell>
+      <section className="page-hero legal-page">
+        <p className="eyebrow">Advertising standards</p>
+        <h1>Paid placements must earn reader trust.</h1>
+        <p>Effective August 31, 2026. Every campaign requires human approval and a signed insertion order or advertiser agreement before activation.</p>
+      </section>
+      <section className="legal-document">
+        <LegalSection title="Disclosure and separation">
+          <p>Every placement must show “Advertisement” and “Paid sponsor” next to the advertiser’s identity on every device. Ads must remain visually and technically distinct from article cards and may not mimic newsroom controls, system alerts, or publisher branding.</p>
+        </LegalSection>
+        <LegalSection title="Editorial independence and false association">
+          <p>Payment does not guarantee coverage, placement near a specific publisher, favorable treatment, or editorial influence. Creative may not imply endorsement by {siteName}, a linked publisher, article subject, county, university, public agency, or other third party without documented permission.</p>
+        </LegalSection>
+        <LegalSection title="Prohibited advertising">
+          <ul>
+            <li>Illegal products, services, activity, or evasion of law.</li>
+            <li>Deceptive claims, fabricated endorsements, impersonation, counterfeit goods, malware, phishing, or unsafe downloads.</li>
+            <li>Discriminatory housing, employment, credit, insurance, or other unlawful audience exclusions.</li>
+            <li>Adult sexual content, exploitation, hate, harassment, graphic violence, or content designed for children using manipulative practices.</li>
+            <li>Tobacco, vaping, unapproved controlled substances, or products unlawfully marketed in Texas.</li>
+            <li>Creative that infringes copyright, trademark, privacy, publicity, or other rights.</li>
+          </ul>
+        </LegalSection>
+        <LegalSection title="Restricted categories">
+          <p>Securities, investments, crypto, lending, insurance, health products, medical services, pharmaceuticals, political advocacy, ballot measures, gambling, sweepstakes, alcohol, firearms, hunting products, CBD or hemp, testimonials, environmental claims, and government or military themes require category-specific legal review and substantiation. The operator may decline these categories entirely.</p>
+        </LegalSection>
+        <LegalSection title="Claims and offers">
+          <p>Advertisers must provide written support for objective claims, prices, comparisons, testimonials, results, origin claims, and environmental or health representations. Material limitations must be clear and close to the claim. The overall net impression, not fine print alone, must be truthful under FTC and applicable Texas standards.</p>
+        </LegalSection>
+        <LegalSection title="Creative and destination requirements">
+          <p>Advertisers must own or license every logo, image, font, testimonial, and statement. Destinations must use HTTPS, match the offer, identify the advertiser, avoid forced downloads and deceptive interfaces, and maintain an appropriate privacy notice. Redirects and landing pages are reviewed before launch and may be rechecked.</p>
+        </LegalSection>
+        <LegalSection title="Privacy and targeting">
+          <p>Current placements are contextual. Campaigns may not use sensitive data, precise location, children’s data, health conditions, financial hardship, or protected-class inferences. Behavioral targeting, pixels, audience matching, and data sharing require a separate privacy assessment, contract, disclosure, and any legally required opt-out or consent before implementation.</p>
+        </LegalSection>
+        <LegalSection title="Preflight, records, and enforcement">
+          <p>Before activation, the operator must record advertiser identity, signed agreement, final creative, destination and redirects, claim support, rights evidence, category disclosures, approval date, placement, campaign dates, and reviewer. Keep versions, invoices, disclosure screenshots, measurement methodology, complaints, and takedown history under a documented retention schedule.</p>
+          <p>The operator may reject, pause, relabel, or remove a campaign at any time for legal, safety, quality, or trust concerns. Material changes require re-review. Advertisers remain responsible for their content and must promptly cooperate with complaints and investigations.</p>
+        </LegalSection>
+        <LegalSection title="Request review">
+          <p>Send campaign inquiries through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. No campaign is accepted and no inventory is guaranteed until written approval and a signed agreement are complete.</p>
+        </LegalSection>
       </section>
     </Shell>
   );
@@ -743,6 +940,7 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
 function NewsCard({ item }: { item: NewsItem }) {
   const matchedTopics = item.topics.filter(isTopicSlug);
   const publishedDate = formatPublishedDate(item.publishedAt);
+  const publisherName = item.source || publisherHostname(item.sourceUrl || item.link) || item.feedLabel || "Original publisher";
   const topicCounty = item.coverageTier === "county"
     ? getCountyBySlug(item.countySlug)
     : undefined;
@@ -754,13 +952,11 @@ function NewsCard({ item }: { item: NewsItem }) {
         : "";
 
   return (
-    <article className="news-card">
-      <a aria-label={`Open article: ${item.title}`} className="news-image" href={item.link} rel="noopener noreferrer" target="_blank">
-        <img alt="" decoding="async" height="460" loading="lazy" src={item.imageUrl || fallbackNewsImage} width="720" />
-      </a>
+    <article className="news-card rights-safe-card">
       <div className="news-body">
+        <span className="editorial-label">Publisher link</span>
         <div className="meta-row">
-          <span>{item.feedLabel || item.source || "Texas business news"}</span>
+          <span>{publisherName}</span>
           {expandedCoverageLabel ? (
             <span className={`coverage-chip ${item.coverageTier}`}>
               {expandedCoverageLabel}
@@ -773,7 +969,7 @@ function NewsCard({ item }: { item: NewsItem }) {
           ) : null}
         </div>
         <h3><a href={item.link} rel="noopener noreferrer" target="_blank">{item.title}</a></h3>
-        {item.description ? <p>{item.description}</p> : null}
+        <p className="rights-safe-note">Headline and metadata only. Read the reporting on the original publisher’s site.</p>
         {matchedTopics.length ? (
           <div className="tag-row" aria-label="Matching industry tags">
             {matchedTopics.map((topic) => (
@@ -781,9 +977,21 @@ function NewsCard({ item }: { item: NewsItem }) {
             ))}
           </div>
         ) : null}
+        <a className="read-source-link" href={item.link} referrerPolicy="strict-origin-when-cross-origin" rel="noopener noreferrer" target="_blank">
+          Read at {publisherName} <span aria-hidden="true">↗</span>
+        </a>
       </div>
     </article>
   );
+}
+
+function publisherHostname(value?: string) {
+  if (!value) return "";
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
 
 function formatPublishedDate(value?: string) {
@@ -798,6 +1006,7 @@ function formatPublishedDate(value?: string) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const { showPrivacyChoices } = usePrivacyPreferences();
 
   return (
     <>
@@ -836,11 +1045,14 @@ function Shell({ children }: { children: React.ReactNode }) {
           <h2>Legal</h2>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/privacy">Privacy Statement</Link>
+          <Link to="/methodology">Editorial Methodology</Link>
+          <Link to="/advertising-standards">Advertising Standards</Link>
           <Link to="/contact">Contact</Link>
+          <button className="footer-link-button" onClick={showPrivacyChoices} type="button">Manage privacy choices</button>
         </section>
         <section className="footer-card">
           <h2>Site Notes</h2>
-          <p>No accounts. News is delivered through a read-only API. Official contact paths are the contact form and admin@texasbusiness.news.</p>
+          <p>No accounts. News is delivered through a read-only API. Article cards use headline and factual metadata only unless source-specific commercial rights are documented.</p>
         </section>
         <AdSlot slot="footer" limit={1} />
       </footer>
@@ -849,6 +1061,20 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function TickerStack() {
+  const {
+    optionalWidgetsAllowed,
+    showPrivacyChoices,
+  } = usePrivacyPreferences();
+
+  if (!optionalWidgetsAllowed) {
+    return (
+      <aside className="ticker-choice-placeholder" aria-label="Optional market tickers are off">
+        <span>Optional LiveCoinWatch and TradingView tickers are off.</span>
+        <button onClick={showPrivacyChoices} type="button">Review privacy choices</button>
+      </aside>
+    );
+  }
+
   return (
     <div className="ticker-stack" aria-label="Market tickers">
       <CryptoTicker />
@@ -950,6 +1176,15 @@ function InfoCard({ title, body }: { title: string; body: string }) {
     <article className="info-card">
       <h2>{title}</h2>
       <p>{body}</p>
+    </article>
+  );
+}
+
+function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <article className="legal-section">
+      <h2>{title}</h2>
+      {children}
     </article>
   );
 }

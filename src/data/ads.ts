@@ -31,7 +31,7 @@ export const ads: AdCreative[] = [
     title: "Premium ranch products from Double B Ranch",
     body: "Explore ranch offerings rooted in Texas land, wildlife, and premium outdoor living.",
     cta: "Visit Double B Ranch",
-    href: "http://grandevistaranch.com/",
+    href: "https://grandevistaranch.com/",
     imageUrl: doubleBRanchLogo,
     active: true,
     priority: 100,

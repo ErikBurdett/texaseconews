@@ -22,7 +22,7 @@ export function resolveAds({ slot, county, topics = [], limit = 1, catalog = ads
     .slice(0, limit);
 }
 
-export function trackAdEvent(eventName: "ad_impression" | "ad_click", ad: AdCreative, slot: AdSlotId, county?: TexasCounty) {
+export function trackAdEvent(eventName: "ad_impression" | "ad_click", ad: AdCreative, slot: AdSlotId) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({
     event: eventName,
@@ -30,8 +30,7 @@ export function trackAdEvent(eventName: "ad_impression" | "ad_click", ad: AdCrea
     campaign_id: ad.campaignId,
     sponsor: ad.sponsor,
     slot,
-    county: county?.slug,
-    region: county?.region,
+    measurement: "page-memory-only",
   });
 }
 

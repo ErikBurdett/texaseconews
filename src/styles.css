@@ -77,12 +77,14 @@ textarea:focus-visible {
 
 .site-header,
 .ticker-stack,
+.ticker-choice-placeholder,
 .market-ticker,
 .site-tagline,
 .footer,
 .hero,
 .workspace,
 .page-hero,
+.legal-document,
 .mission-grid,
 .feature-grid,
 .directory-grid,
@@ -188,6 +190,32 @@ textarea:focus-visible {
   isolation: isolate;
 }
 
+.ticker-choice-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--muted);
+  background: #071329;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.ticker-choice-placeholder button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(115, 167, 223, 0.4);
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  color: #ffffff;
+  background: var(--accent-soft);
+  font: inherit;
+  font-weight: 900;
+}
+
 .crypto-ticker,
 .market-ticker {
   height: 50px;
@@ -264,6 +292,7 @@ textarea:focus-visible {
 .news-card,
 .status-card,
 .info-card,
+.legal-section,
 .ad-card,
 .page-hero,
 .directory-section,
@@ -709,6 +738,30 @@ textarea:focus-visible {
   overflow: clip;
 }
 
+.rights-safe-card .news-body {
+  min-height: 270px;
+}
+
+.editorial-label,
+.ad-disclosure {
+  width: fit-content;
+  border: 1px solid rgba(115, 167, 223, 0.38);
+  border-radius: 999px;
+  padding: 0.3rem 0.5rem;
+  color: #d8e9fb;
+  background: rgba(73, 127, 184, 0.14);
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ad-disclosure {
+  border-color: rgba(255, 255, 255, 0.72);
+  color: #071329;
+  background: #ffffff;
+}
+
 .news-image {
   display: grid;
   width: 100%;
@@ -757,6 +810,11 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.news-body .rights-safe-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .meta-row,
 .tag-row {
   color: var(--muted);
@@ -792,6 +850,15 @@ textarea:focus-visible {
 .news-body .tag-row {
   margin-top: auto;
   padding-top: 0.75rem;
+}
+
+.read-source-link {
+  width: fit-content;
+  margin-top: 1rem;
+  color: #ffffff;
+  font-weight: 900;
+  text-decoration-color: rgba(115, 167, 223, 0.7);
+  text-underline-offset: 0.25em;
 }
 
 .status-card,
@@ -935,6 +1002,10 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
+.ad-card .ad-disclosure {
+  margin-bottom: 0.1rem;
+}
+
 .load-more {
   display: flex;
   justify-content: center;
@@ -1041,6 +1112,18 @@ textarea:focus-visible {
   opacity: 0.72;
 }
 
+.form-privacy-notice {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.form-privacy-notice a {
+  color: #ffffff;
+  font-weight: 900;
+}
+
 .form-status {
   margin: 0;
   padding: 0.8rem 1rem;
@@ -1077,6 +1160,106 @@ textarea:focus-visible {
 .package-list {
   display: grid;
   gap: 1rem;
+}
+
+.legal-document {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.legal-section {
+  padding: clamp(1.1rem, 2.4vw, 1.8rem);
+}
+
+.legal-section h2 {
+  margin: 0 0 0.75rem;
+  color: #ffffff;
+  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+}
+
+.legal-section p,
+.legal-section li {
+  color: var(--muted);
+  line-height: 1.68;
+}
+
+.legal-section p:last-child,
+.legal-section ul:last-child {
+  margin-bottom: 0;
+}
+
+.legal-section a {
+  color: #ffffff;
+  font-weight: 850;
+}
+
+.legal-section code {
+  overflow-wrap: anywhere;
+  color: #d8e9fb;
+}
+
+.privacy-inline-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.privacy-inline-controls .button {
+  width: auto;
+}
+
+.privacy-choices {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  width: min(920px, calc(100% - 2rem));
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid rgba(115, 167, 223, 0.45);
+  border-radius: 22px;
+  background: rgba(7, 19, 41, 0.98);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+}
+
+.privacy-choices h2,
+.privacy-choices p {
+  margin: 0;
+}
+
+.privacy-choices h2 {
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+}
+
+.privacy-choices p:not(.eyebrow) {
+  margin-top: 0.45rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.privacy-choices a {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.privacy-choice-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.privacy-choice-actions .button {
+  width: 100%;
+}
+
+.privacy-current-choice {
+  font-size: 0.82rem;
+  text-transform: capitalize;
 }
 
 .hero-actions {
@@ -1130,6 +1313,17 @@ textarea:focus-visible {
   color: #ffffff;
   font-weight: 900;
   text-decoration: none;
+}
+
+.footer-link-button {
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  color: #ffffff;
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  text-align: left;
 }
 
 .footer p {
@@ -1217,6 +1411,24 @@ textarea:focus-visible {
 }
 
 @media (max-width: 680px) {
+  .privacy-choices {
+    right: 0.65rem;
+    bottom: 0.65rem;
+    grid-template-columns: 1fr;
+    width: calc(100% - 1.3rem);
+    max-height: calc(100vh - 1.3rem);
+    overflow: auto;
+  }
+
+  .ticker-choice-placeholder {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ticker-choice-placeholder button {
+    width: 100%;
+  }
+
   .hero {
     position: relative;
     z-index: 1;

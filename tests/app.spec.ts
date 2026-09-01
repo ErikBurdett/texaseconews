@@ -140,6 +140,9 @@ async function openResponsiveFilters(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("texasbusiness-news:optional-widgets", "declined");
+  });
   await mockNetworkDependencies(page);
   await page.goto("/");
 });
@@ -233,10 +236,14 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("heading", { name: "Build your Texas feed" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
-  await expect(page.getByText("Sponsored by Double B Ranch").first()).toBeVisible();
-  await expect(page.locator(".controls-card").getByRole("link", { name: "Sponsored by Double B Ranch" })).toBeVisible();
+  await expect(page.getByText("Paid sponsor: Double B Ranch").first()).toBeVisible();
+  const sponsorLink = page.locator(".controls-card").getByRole("link", { name: /Advertisement paid for by Double B Ranch/ });
+  await expect(sponsorLink).toBeVisible();
+  await expect(sponsorLink).toHaveAttribute("rel", /sponsored/);
   await expect(page.locator(".controls-card").getByText("Premium ranch products from Double B Ranch")).toHaveCount(0);
-  await expect(page.locator(".news-image img").first()).toHaveCSS("object-fit", "contain");
+  await expect(page.locator(".news-card img")).toHaveCount(0);
+  await expect(page.locator(".news-card").first()).toContainText("Headline and metadata only");
+  await expect(page.locator(".news-card").first()).not.toContainText("Texas statewide manufacturing and AI infrastructure investment");
   await expect(page.getByRole("link", { name: "TX TexasBusiness.News", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
@@ -529,7 +536,16 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
 
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { name: "Privacy-first by design." })).toBeVisible();
-  await expect(page.getByText("Local Preferences")).toBeVisible();
+  await expect(page.getByText("Browser preferences and RSS cache")).toBeVisible();
+  await expect(page.getByText("Texas privacy rights")).toBeVisible();
+
+  await page.goto("/methodology");
+  await expect(page.getByRole("heading", { name: "How the Texas business feed is built." })).toBeVisible();
+  await expect(page.getByText("Rights-conscious article cards")).toBeVisible();
+
+  await page.goto("/advertising-standards");
+  await expect(page.getByRole("heading", { name: "Paid placements must earn reader trust." })).toBeVisible();
+  await expect(page.getByText("Prohibited advertising")).toBeVisible();
 
   await page.goto("/contact");
   await expect(page.getByRole("heading", { name: "Reach TexasBusiness.News." })).toBeVisible();
@@ -541,9 +557,24 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
   await expect(page.getByRole("link", { name: "Browse counties" })).toBeVisible();
 });
 
+test("loads optional market vendors only after the reader allows them", async ({ page }) => {
+  await expect(page.getByText("Optional LiveCoinWatch and TradingView tickers are off.")).toBeVisible();
+  await page.goto("/privacy");
+  await page.getByRole("button", { name: "Allow optional tickers" }).click();
+
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & {
+    __liveCoinWatchMocked?: boolean;
+    __tradingViewMocked?: boolean;
+  }).__liveCoinWatchMocked))).toBe(true);
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & {
+    __liveCoinWatchMocked?: boolean;
+    __tradingViewMocked?: boolean;
+  }).__tradingViewMocked))).toBe(true);
+});
+
 test("does not expose unlabeled interactive controls", async ({ page }) => {
   const issues = await page.evaluate(() => {
-    return Array.from(document.querySelectorAll("button, a, input"))
+    return Array.from(document.querySelectorAll("button, a, input, select, textarea"))
       .map((element) => ({
         html: element.outerHTML.slice(0, 140),
         name:

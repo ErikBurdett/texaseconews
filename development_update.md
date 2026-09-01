@@ -1,12 +1,43 @@
 # TexasBusiness.News Development Update
 
-Last updated: August 22, 2026
+Last updated: August 31, 2026
 
 ## Executive Summary
 
 TexasBusiness.News is currently a lightweight React SPA for positive Texas business news. It has a working Vite/React foundation, client-side routing, county and topic filters, sponsor placements, a typed integration with the TexasBusiness.News page API, an outage-only RSS proxy fallback, and AWS Amplify deployment notes. The product still has no accounts, authentication, CMS, or editorial workflow.
 
-The current app is a substantial lightweight MVP: the expanded Texas business taxonomy, region and industry filtering, legal pages, EmailJS contact flow, sponsor system, responsive layouts, and deterministic browser-test coverage are implemented. Production readiness still requires better SEO/share metadata, CI execution of the browser suite, deployed-device performance validation, content-source governance, and Amplify security hardening.
+The current app is a substantial lightweight MVP: the expanded Texas business taxonomy, region and industry filtering, comprehensive legal pages, EmailJS contact flow, sponsor system, responsive layouts, and deterministic browser-test coverage are implemented. The August 31 compliance pass adds explicit paid-ad labels, a public advertising policy, optional-widget choice, a conservative metadata-only article format, a source-by-source RSS rights audit, and a draft advertiser agreement. Production readiness still requires counsel approval, signed source and advertiser agreements, reviewed vendor terms, CI execution, SEO/share metadata, deployed-device performance validation, and Amplify security hardening.
+
+## August 31, 2026 Compliance Update
+
+### Paid Advertising
+
+- Every `AdSlot` and compact sponsor badge visibly displays `Advertisement` and `Paid sponsor`, identifies Double B Ranch, and has an accessible paid-ad name.
+- External sponsor links now use HTTPS plus `rel="sponsored nofollow noopener noreferrer"` and a strict-origin referrer policy.
+- Ad measurement was minimized to event type, campaign, sponsor, and slot in an in-memory `dataLayer`; county and region fields were removed and no analytics recipient is connected.
+- `/advertising-standards` publishes disclosure, prohibited-category, restricted-category, substantiation, rights, destination, privacy, review, and enforcement rules.
+- `advertising_compliance.md` defines campaign preflight, disclosure screenshots, claim files, records, complaints, retention questions, and a paid-launch gate.
+- `advertiser_insertion_order_template.md` provides a counsel-review contract and campaign order. It is not approved for signing until the legal operator identity and final clauses are completed.
+- Paid launch remains blocked until counsel approves the policy stack, the active campaign has a signed agreement, source rights are complete, vendor contracts are reviewed, and responsible human reviewers are assigned.
+
+### RSS And Publisher Rights
+
+- `rss_source_compliance.md` audits all 24 direct feed endpoints across 21 publisher organizations, Google News RSS, RSS2JSON, AllOrigins, GovDelivery, and the page API rights dependency.
+- No source is cleared for the former default publisher-image and excerpt format.
+- Texas Comptroller, AgriLife Today, and El Paso Matters provide affirmative reuse pathways with material attribution, asset, partner-story, or commercial-context conditions.
+- The other direct sources require permission, a commercial license, or specific legal approval before excerpts, images, or expressive content are used in a monetized product.
+- Article cards now render headline, actual source, date, automated coverage/topic labels, and a direct publisher link. Publisher images and feed excerpts are not rendered.
+- RSS fallback strips descriptions and image URLs before returning or caching items. Descriptions may still be inspected transiently for relevance filtering.
+- Production browser RSS fallback defaults off. `VITE_ENABLE_RSS_FALLBACK=true` must not be configured until the documented rights and proxy launch gate is complete.
+
+### Privacy, Terms, And Vendor Choice
+
+- `/terms` now covers aggregation, source ownership, advertising separation, acceptable use, external vendors, correction/copyright requests, disclaimers, liability, changes, and Texas law.
+- `/privacy` now identifies contact-form fields, localStorage keys, infrastructure data, EmailJS, in-memory sponsor events, optional widgets, the API, RSS proxies, purposes, disclosures, retention, TDPSA-oriented rights, children, sensitive data, and external transfers.
+- `/methodology` documents source selection, county confidence, API/fallback behavior, rights-conscious cards, automation limits, advertising separation, corrections, and source opt-outs.
+- LiveCoinWatch and TradingView do not load until the reader allows optional tickers. The footer and Privacy page let the reader revisit the choice.
+- Contact fields have length limits and a just-in-time EmailJS/privacy notice.
+- The site does not claim DMCA designated-agent status. Formal registration and statutory notice language remain a counsel/operator decision.
 
 ## August 22, 2026 Development Status
 
@@ -24,7 +55,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 ### All-County RSS Resilience
 
 - Browser fallback definitions now cover all 254 Texas counties using the browser-safe geography helpers and exhaustive county centroids.
-- Each county starts with strict growth/sector or selected-topic queries plus up to four applicable reviewed direct feeds. Inventory below 12 expands through one combined two-market query, up to two reviewed feeds mapped to those markets, and one combined three-nearby-county query in parallel.
+- Each county fallback plan starts with strict growth/sector or selected-topic queries plus up to four applicable cataloged direct feeds. Inventory below 12 expands through one combined two-market query, up to two feeds mapped to those markets, and one combined three-nearby-county query in parallel. Catalog inclusion is not legal approval; production use is controlled by `rss_source_compliance.md`.
 - Primary items require article-level county/place evidence and carry a county slug. Market and nearby items are explicitly labeled, omit county slugs, and therefore cannot create false county-topic links.
 - Location evidence comes only from article titles and plain-text descriptions, never from publisher identity, feed scope, or hidden query terms.
 - Statewide direct sources now include Texas Tribune Economy, Dallas Fed Updates, Texas Comptroller News, Texas Real Estate Research Center, AgriLife Today, Texas Energy & Power, Texas Border Business, and KETK Local.
@@ -41,7 +72,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 
 ### Ticker Performance Refinement
 
-- LiveCoinWatch and TradingView now mount once at the application root instead of remounting on route changes.
+- LiveCoinWatch and TradingView can mount once at the application root after the reader allows optional widgets, instead of remounting on route changes.
 - Third-party ticker scripts initialize after the critical React render.
 - The LiveCoinWatch marquee was reduced from 20 to 12 items to lower animation and DOM workload.
 - The ticker stack is no longer sticky, avoiding continuous repaint/compositing work while the page scrolls.
@@ -59,7 +90,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 ### API Delivery Readiness
 
 - The API and frontend are an integrated pre-production MVP, estimated at roughly 70% overall launch readiness.
-- API lint, typecheck, build, and 51 deterministic tests pass; frontend lint, build, and 28 desktop/mobile Playwright checks pass.
+- API lint, typecheck, build, and 51 deterministic tests pass; frontend lint, build, and 30 desktop/mobile Playwright checks pass.
 - Exhaustive tests prove that all 254 counties have centroid-backed primary, market, and nearby plans.
 - Representative live API checks returned 16–20 items for Loving, King, Anderson, Harris, Starr, and Potter counties, with 9–13 distinct publishers in the first 20 where 20 items were available.
 - Those samples do not replace a rate-limited live acceptance audit across all 254 counties.
@@ -74,7 +105,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 - React Router for client-side routes.
 - CSS in `src/styles.css`; no component library.
 - County data from `@nickgraffis/us-counties` plus local Texas region, metro, and city aliases.
-- Typed client-side fetching from `GET /v1/pages/home`, including runtime validation for coverage tiers, labels, and optional coverage mixes, with county and statewide results returned together and focused Google News plus reviewed direct-feed proxy fetching reserved for API outages.
+- Typed client-side fetching from `GET /v1/pages/home`, including runtime validation for coverage tiers, labels, and optional coverage mixes, with county and statewide results returned together. Cataloged Google News and direct-feed proxy fetching is reserved for development outages and explicitly approved production fallback.
 - Sponsor/ad placements use static local data; the sole active Double B Ranch creative opens its approved external destination.
 - Deployment target is AWS Amplify Hosting through a GitHub connection.
 
@@ -157,17 +188,18 @@ Local development uses `http://localhost:8787` when this variable is unset. Prod
 
 Optional RSS fallback overrides:
 
+- `VITE_ENABLE_RSS_FALLBACK`
 - `VITE_RSS_PROVIDER_URL`
 - `VITE_RSS_RAW_PROXY_URL`
 
-Built-in RSS2JSON and AllOrigins endpoints are used when these are unset.
+Production defaults fallback off. Built-in RSS2JSON and AllOrigins endpoints are development defaults only and are used when fallback is enabled without approved override endpoints.
 
 ### Browser Test Status
 
 The Playwright suite now runs successfully in this WSL environment:
 
 ```text
-28 passed
+30 passed
 ```
 
 Coverage passes in desktop Chromium and mobile Chrome. CI should still install the Playwright browser and native dependencies before running `npm run test:e2e`.
@@ -369,8 +401,8 @@ Because the site is Texas-focused and may serve Texas residents, treat the Texas
 
 Recommended changes before launch:
 
-- Add Privacy Policy and Terms pages.
-- Document analytics, ad measurement, third-party embeds, and RSS providers.
+- Keep the implemented Privacy, Terms, Methodology, and Advertising Standards pages synchronized with actual vendors and practices.
+- Re-audit analytics, ad measurement, third-party embeds, and RSS providers before any data-flow change.
 - If analytics or ad pixels are added, collect the minimum data needed and avoid sensitive data.
 - Add a cookie/consent approach if using non-essential tracking technologies.
 - Provide contact forms and `admin@texasbusiness.news` for privacy requests. Do not list phone numbers or street addresses.
@@ -391,7 +423,7 @@ Recommended changes:
 - Confirm image usage from RSS thumbnails is acceptable or switch to neutral fallback images.
 - Add a takedown/contact process through contact forms and `admin@texasbusiness.news`.
 - Preserve publisher attribution.
-- Consider using only source-provided thumbnails or internal generic topic art.
+- Keep publisher thumbnails off until item-level commercial display rights and required credits are documented; use original internal art only if imagery is reintroduced.
 
 ### SEO And Discoverability
 
