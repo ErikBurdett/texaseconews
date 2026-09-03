@@ -24,13 +24,37 @@ frontend:
   cache:
     paths:
       - .npm/**/*
+# IMPORTANT: this customHeaders block is NOT what production serves.
+#
+# The Amplify app has a buildSpec stored in the console, and a stored buildSpec
+# takes precedence over this file -- which is why these headers did not apply on
+# the first deploy even though the build succeeded. The console buildSpec cannot
+# be cleared through the CLI either (update-app rejects an empty --build-spec).
+#
+# The live headers are set on the app's own customHeaders field:
+#
+#   aws amplify update-app --app-id d3ovdx20nkkza2 \
+#     --custom-headers "$(sed -n '/^customHeaders:/,$p' amplify.yml | grep -v '^\s*#')" \
+#     --region us-west-2 --profile dharma
+#
+# Keep this block as the source of truth and re-run that command after editing,
+# or the file and production will drift apart. Pass ONLY --custom-headers:
+# update-app replaces the whole environment-variable map if you pass that too.
 customHeaders:
   - pattern: '**'
     headers:
       # The site loads no third-party script of its own. The two exceptions are
-      # the LiveCoinWatch and TradingView tickers, which load only after a
-      # reader opts in; naming them here means anything else is blocked outright
-      # rather than silently permitted.
+      # the LiveCoinWatch and TradingView ticker widgets; naming them here means
+      # anything else is blocked outright rather than silently permitted.
+      #
+      # TradingView serves its script from s3.tradingview.com but renders into an
+      # iframe on tradingview-widget.com, and that iframe calls a sheriff
+      # subdomain. Both are needed or the market ticker silently fails to draw --
+      # confirmed against production, not assumed. LiveCoinWatch likewise pulls
+      # its prices from http-api.livecoinwatch.com, which is not the api.
+      # subdomain its docs mention. Both vendors were found by watching what
+      # production actually blocked, including the coin icons LiveCoinWatch
+      # serves from a DigitalOcean Spaces bucket.
       - key: Content-Security-Policy
         value: >-
           default-src 'self';
@@ -40,11 +64,15 @@ customHeaders:
           form-action 'self';
           script-src 'self' https://s3.tradingview.com https://www.livecoinwatch.com;
           style-src 'self' 'unsafe-inline';
-          img-src 'self' data: https://www.livecoinwatch.com https://s3.tradingview.com;
+          img-src 'self' data: https://www.livecoinwatch.com https://s3.tradingview.com
+          https://lcw.nyc3.cdn.digitaloceanspaces.com;
           font-src 'self' data:;
           connect-src 'self' https://ql3mj2hit5lv7p4bb7cm2unxoy0kopsi.lambda-url.us-west-2.on.aws
-          https://api.emailjs.com https://api.livecoinwatch.com https://www.livecoinwatch.com;
-          frame-src https://s.tradingview.com https://www.tradingview.com https://www.livecoinwatch.com;
+          https://api.emailjs.com https://api.livecoinwatch.com https://www.livecoinwatch.com
+          https://http-api.livecoinwatch.com https://*.tradingview-widget.com;
+          frame-src https://s.tradingview.com https://www.tradingview.com
+          https://www.tradingview-widget.com https://*.tradingview-widget.com
+          https://www.livecoinwatch.com;
           upgrade-insecure-requests
       - key: Strict-Transport-Security
         value: 'max-age=63072000; includeSubDomains; preload'
