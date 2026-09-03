@@ -1254,15 +1254,28 @@ function MarketTicker() {
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
       script.textContent = JSON.stringify({
         symbols: [
-          { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
-          { proName: "TVC:DJI", title: "Dow" },
-          { proName: "NASDAQ:IXIC", title: "Nasdaq" },
+          // The Texas Stock Exchange itself cannot appear here: TXSE Group is
+          // privately held, so there is no symbol to quote, and the exchange
+          // began trading in July 2026 with National Market System symbols
+          // rather than listings of its own. TXS is the closest real proxy for
+          // a Texas market line -- an index ETF of Texas-headquartered public
+          // companies -- so it leads, followed by the largest Texas employers
+          // and the two commodities that move this state's economy.
+          { proName: "AMEX:TXS", title: "Texas Index" },
           { proName: "NASDAQ:TXN", title: "Texas Instruments" },
           { proName: "NYSE:XOM", title: "Exxon Mobil" },
           { proName: "NYSE:CVX", title: "Chevron" },
+          { proName: "NYSE:T", title: "AT&T" },
           { proName: "NASDAQ:TSLA", title: "Tesla" },
+          { proName: "NYSE:COP", title: "ConocoPhillips" },
+          { proName: "NASDAQ:FANG", title: "Diamondback" },
+          { proName: "NYSE:SCHW", title: "Charles Schwab" },
+          { proName: "NYSE:LUV", title: "Southwest" },
+          { proName: "NYSE:DHI", title: "D.R. Horton" },
           { proName: "NYMEX:CL1!", title: "Crude Oil" },
           { proName: "NYMEX:NG1!", title: "Natural Gas" },
+          { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
+          { proName: "TVC:DJI", title: "Dow" },
         ],
         showSymbolLogo: true,
         isTransparent: false,
