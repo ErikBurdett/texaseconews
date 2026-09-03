@@ -12,14 +12,18 @@
   --blue: #4f8ccc;
   --red: #d35d68;
   /*
-   * Texas red. Two values because they do different jobs: --texas-red is for
-   * rules, bars and borders, where contrast rules do not apply; --texas-red-ink
-   * is lightened so it still clears 4.5:1 as small text on the navy panels.
+   * Texas red, matched to the flag in the .brand-mark (#c92032).
+   *
+   * Two values because they do different jobs. --texas-red is the flag red
+   * exactly, used for bars, rules, ticks and borders, where contrast minimums
+   * do not apply. --texas-red-ink is the same hue (354deg) lightened for text:
+   * the flag red itself only reaches 2.98:1 on the navy panels, short of the
+   * 4.5:1 small text needs, while this tint clears it at 6.55:1.
    */
-  --texas-red: #e23d4d;
-  --texas-red-ink: #ff8d95;
-  --texas-red-line: rgba(226, 61, 77, 0.45);
-  --texas-red-soft: rgba(226, 61, 77, 0.13);
+  --texas-red: #c92032;
+  --texas-red-ink: #eb848e;
+  --texas-red-line: rgba(201, 32, 50, 0.62);
+  --texas-red-soft: rgba(201, 32, 50, 0.17);
   /* Hairline used for the divisions inside a card. */
   --line-soft: rgba(191, 213, 238, 0.11);
   --accent: #73a7df;
@@ -781,7 +785,7 @@ textarea:focus-visible {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: linear-gradient(180deg, var(--texas-red), rgba(226, 61, 77, 0.15));
+  background: linear-gradient(180deg, var(--texas-red), rgba(201, 32, 50, 0.18));
 }
 
 .news-card:hover,
