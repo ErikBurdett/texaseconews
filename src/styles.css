@@ -12,18 +12,17 @@
   --blue: #4f8ccc;
   --red: #d35d68;
   /*
-   * Texas red, matched to the flag in the .brand-mark (#c92032).
+   * Texas flag red, used at full strength everywhere.
    *
-   * Two values because they do different jobs. --texas-red is the flag red
-   * exactly, used for bars, rules, ticks and borders, where contrast minimums
-   * do not apply. --texas-red-ink is the same hue (354deg) lightened for text:
-   * the flag red itself only reaches 2.98:1 on the navy panels, short of the
-   * 4.5:1 small text needs, while this tint clears it at 6.55:1.
+   * The one rule to keep: this red never sits as text on the navy panels. It
+   * reaches only 2.94:1 there, under the 4.5:1 small text needs, and the way
+   * to fix that is a lighter background, not a lighter red -- lightening this
+   * red turns it pink. Red text therefore goes on a light pill (5.69:1 on
+   * white), and red on dark is a bar, rule or border rather than a letterform.
    */
-  --texas-red: #c92032;
-  --texas-red-ink: #eb848e;
-  --texas-red-line: rgba(201, 32, 50, 0.62);
-  --texas-red-soft: rgba(201, 32, 50, 0.17);
+  --texas-red: #c72132;
+  --texas-red-line: rgba(199, 33, 50, 0.66);
+  --texas-red-soft: rgba(199, 33, 50, 0.17);
   /* Hairline used for the divisions inside a card. */
   --line-soft: rgba(191, 213, 238, 0.11);
   --accent: #73a7df;
@@ -156,7 +155,7 @@ textarea:focus-visible {
   border-radius: 14px;
   background:
     linear-gradient(90deg, #1f5faa 0 38%, transparent 38%),
-    linear-gradient(180deg, #ffffff 0 50%, #c92032 50% 100%);
+    linear-gradient(180deg, #ffffff 0 50%, var(--texas-red) 50% 100%);
   color: white;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.72);
   box-shadow: 0 0 28px rgba(31, 95, 170, 0.34);
@@ -354,12 +353,22 @@ textarea:focus-visible {
  * class+element selectors, so they outrank a bare `.eyebrow` and were leaving
  * the hero kickers grey while every other kicker went red.
  */
+.eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 1.5rem;
+  height: 2px;
+  margin-right: 0.6rem;
+  vertical-align: middle;
+  background: var(--texas-red);
+}
+
 .eyebrow,
 .hero-copy .eyebrow,
 .page-hero .eyebrow,
 .hero-panel .eyebrow {
   margin: 0 0 0.65rem;
-  color: var(--texas-red-ink);
+  color: #eaf1fb;
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.22em;
@@ -785,7 +794,7 @@ textarea:focus-visible {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: linear-gradient(180deg, var(--texas-red), rgba(201, 32, 50, 0.18));
+  background: linear-gradient(180deg, var(--texas-red), rgba(199, 33, 50, 0.2));
 }
 
 .news-card:hover,
@@ -848,9 +857,9 @@ textarea:focus-visible {
 }
 
 .news-card .editorial-label {
-  border-color: var(--texas-red-line);
-  color: var(--texas-red-ink);
-  background: var(--texas-red-soft);
+  border-color: var(--texas-red);
+  color: var(--texas-red);
+  background: #ffffff;
 }
 
 .news-body h3 {
