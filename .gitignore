@@ -6,3 +6,6 @@ dist
 *.local
 test-results
 playwright-report
+
+# Generated at build time by scripts/generate-sitemap.ts (npm run prebuild).
+public/sitemap.xml

@@ -1,13 +1,13 @@
 # TexasBusiness.News Advertiser Agreement And Insertion Order Template
 
 Draft date: August 31, 2026  
-Status: Counsel-review template only; do not use for a live campaign until the operator's legal identity and governing terms are completed
+Status: Counsel-review template only. The operating entity is now formed (Texas Business News, LLC, a Texas limited liability company); counsel review of this template's commercial terms is still outstanding, so do not use it for a live campaign until that review is complete.
 
 This template is not legal advice. Bracketed fields must be completed, and Texas media/advertising counsel should approve the final agreement.
 
 ## Parties
 
-Operator legal name: `[INSERT LEGAL ENTITY]`  
+Operator legal name: Texas Business News, LLC, a Texas limited liability company  
 Operator brand: TexasBusiness.News  
 Operator contact: admin@texasbusiness.news  
 Advertiser legal name: `[INSERT]`  
@@ -135,7 +135,11 @@ The advertiser remains responsible for approved work and delivery completed befo
 
 The advertiser will defend, indemnify, and hold harmless the operator and its personnel from third-party claims, losses, and reasonable costs arising from advertiser-provided creative, claims, products, services, targeting, destination, infringement, privacy violations, or breach of this agreement, subject to counsel-approved notice, control, cooperation, and applicable-law limitations.
 
-The final clause must be reviewed by counsel and conformed to the operator's entity and insurance.
+Texas Business News, LLC will defend, indemnify, and hold harmless the advertiser from third-party claims arising from Texas Business News, LLC's own material, its operation of the site apart from the advertiser's creative, or its breach of this agreement. This obligation does not extend to any claim arising from advertiser-provided creative, claims, products, services, targeting, or destination.
+
+Each party will notify the other promptly of a claim, allow the indemnifying party to control the defence, and cooperate reasonably. Neither party will settle a claim in a way that imposes an obligation on the other without written consent.
+
+Both clauses must be reviewed by counsel and conformed to the operator's entity and insurance.
 
 ## Disclaimers And Liability
 
@@ -155,8 +159,15 @@ Public case-study permission: `[YES / NO / SEPARATE APPROVAL]`
 
 Operator notice email: admin@texasbusiness.news  
 Advertiser notice email: `[INSERT]`  
-Governing law: Texas  
-Venue, dispute process, attorneys' fees, and any arbitration terms: `[INSERT COUNSEL-APPROVED TERMS]`
+Governing law: Texas
+
+Dispute process. Before filing a claim, the party raising it will send the other a written description of the dispute and the relief sought to the notice email above, and the parties will attempt in good faith to resolve it informally for 30 days from that notice.
+
+Venue. A dispute not resolved informally must be brought exclusively in the state or federal courts located in the State of Texas, and both parties consent to the personal jurisdiction of those courts. Either party may seek injunctive relief in any court of competent jurisdiction to protect its intellectual property or confidential information.
+
+Attorneys' fees: each party bears its own, except where a statute or the indemnity section above provides otherwise.
+
+Arbitration: none. The parties have not agreed to arbitrate. These terms mirror the dispute-resolution section of the public Terms of Service so the two documents cannot diverge; counsel should confirm both together, including whether to add an arbitration clause.
 
 ## Entire Agreement
 

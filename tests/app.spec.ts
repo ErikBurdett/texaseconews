@@ -140,9 +140,6 @@ async function openResponsiveFilters(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("texasbusiness-news:optional-widgets", "declined");
-  });
   await mockNetworkDependencies(page);
   await page.goto("/");
 });
@@ -236,8 +233,11 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.getByRole("heading", { name: "Build your Texas feed" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
-  await expect(page.getByText("Paid sponsor: Double B Ranch").first()).toBeVisible();
-  const sponsorLink = page.locator(".controls-card").getByRole("link", { name: /Advertisement paid for by Double B Ranch/ });
+  await expect(page.locator(".ad-disclosure").first()).toHaveText("Advertisement");
+  await expect(page.locator(".ad-label").first()).toHaveText("Double B Ranch");
+  await expect(page.getByText("Paid sponsor")).toHaveCount(0);
+  await expect(page.getByText("House ad")).toHaveCount(0);
+  const sponsorLink = page.locator(".controls-card").getByRole("link", { name: /^Advertisement for Double B Ranch/ });
   await expect(sponsorLink).toBeVisible();
   await expect(sponsorLink).toHaveAttribute("rel", /sponsored/);
   await expect(page.locator(".controls-card").getByText("Premium ranch products from Double B Ranch")).toHaveCount(0);
@@ -557,19 +557,17 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
   await expect(page.getByRole("link", { name: "Browse counties" })).toBeVisible();
 });
 
-test("loads optional market vendors only after the reader allows them", async ({ page }) => {
-  await expect(page.getByText("Optional LiveCoinWatch and TradingView tickers are off.")).toBeVisible();
-  await page.goto("/privacy");
-  await page.getByRole("button", { name: "Allow optional tickers" }).click();
-
-  await expect.poll(() => page.evaluate(() => Boolean((window as Window & {
-    __liveCoinWatchMocked?: boolean;
-    __tradingViewMocked?: boolean;
-  }).__liveCoinWatchMocked))).toBe(true);
-  await expect.poll(() => page.evaluate(() => Boolean((window as Window & {
-    __liveCoinWatchMocked?: boolean;
-    __tradingViewMocked?: boolean;
-  }).__tradingViewMocked))).toBe(true);
+test("loads the market ticker vendors on every page", async ({ page }) => {
+  // The consent gate was removed: both vendors now load for every reader, and
+  // the Privacy Statement says so rather than promising they are blocked.
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__tradingViewMocked)))
+    .toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__liveCoinWatchMocked)))
+    .toBe(true);
+  await expect(page.getByText("Optional LiveCoinWatch and TradingView tickers are off.")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Manage privacy choices" })).toHaveCount(0);
 });
 
 test("does not expose unlabeled interactive controls", async ({ page }) => {
@@ -590,4 +588,64 @@ test("does not expose unlabeled interactive controls", async ({ page }) => {
   });
 
   expect(issues).toEqual([]);
+});
+
+test("keeps loading more stories as the reader scrolls", async ({ page }) => {
+  const requestedOffsets: string[] = [];
+  const pageLength = 60;
+  const total = 180;
+
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", (route) => {
+    const url = new URL(route.request().url());
+    const offset = Number(url.searchParams.get("offset") ?? "0");
+    requestedOffsets.push(String(offset));
+    const items = Array.from({ length: Math.max(0, Math.min(pageLength, total - offset)) }, (_, index) => ({
+      id: `paged-${offset + index}`,
+      title: `Texas manufacturer ${offset + index} expands and adds jobs`,
+      link: `https://publisher.example/story-${offset + index}`,
+      source: "Example Texas Business Journal",
+      publishedAt: fetchedAt,
+      topics: ["jobs"],
+      coverageTier: "statewide",
+      feedLabel: "Texas Business",
+    }));
+    const feed = {
+      items,
+      meta: {
+        count: items.length,
+        total,
+        hasMore: offset + items.length < total,
+        sourcesUsed: ["Example Texas Business Journal"],
+        fetchedAt,
+        cacheTtlSeconds: 900,
+        stale: false,
+        partialFailures: 0,
+      },
+    };
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({ county: null, statewide: feed, meta: { fetchedAt } }),
+    });
+  });
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
+  await expect(page.locator(".news-card").first()).toBeVisible();
+
+  // Scroll until the feed reports every story, or we run out of patience.
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    if ((await page.locator(".news-card").count()) >= total) break;
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(220);
+  }
+
+  expect(await page.locator(".news-card").count()).toBe(total);
+  expect(requestedOffsets).toContain("60");
+  expect(requestedOffsets).toContain("120");
+  // Nothing is requested past the end of the feed.
+  expect(requestedOffsets).not.toContain(String(total));
+  await expect(page.locator(".load-more")).toHaveAttribute("data-can-fetch-more", "false");
 });

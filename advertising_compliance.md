@@ -1,8 +1,9 @@
 # TexasBusiness.News Paid Advertising Compliance Program
 
-Effective: August 31, 2026  
+Effective: August 31, 2026 (revised September 3, 2026)  
+Operating entity: Texas Business News, LLC, a Texas limited liability company  
 Owner contact: admin@texasbusiness.news  
-Status: Pre-launch controls; counsel and operator approvals remain required  
+Status: Pre-launch controls; counsel approval and a named accountable person remain required  
 Related: `advertiser_insertion_order_template.md`, `rss_source_compliance.md`, `/advertising-standards`, `/terms`, and `/privacy`
 
 This document turns the paid-advertising checklist into an operating procedure. It is not legal advice.
@@ -16,8 +17,14 @@ This document turns the paid-advertising checklist into an operating procedure. 
 - Ads do not imitate publisher cards, newsroom controls, or system notices.
 - Sponsor interaction events contain event type, campaign ID, sponsor, slot, and a `page-memory-only` marker. County and region fields were removed.
 - No analytics recipient, ad network, pixel, account identifier, or behavioral profile is connected.
-- LiveCoinWatch and TradingView remain off until the reader allows optional widgets.
-- Publisher images and feed excerpts are not displayed in article cards under the launch-safe rights posture.
+- LiveCoinWatch and TradingView ticker widgets load on every page. The Privacy Statement discloses what those vendors receive and states that the news feed, filters and sponsor labels do not depend on them.
+- Publisher images and feed excerpts are not displayed in article cards under the launch-safe rights posture, and the news API strips `description` and `imageUrl` from every public response (`txbiz-api/src/public-view.ts`, asserted by `txbiz-api/tests/compliance.test.ts`).
+- Discovery transports are filtered against a publisher rights registry, so no item is served beside paid inventory from an outlet outside the register (`txbiz-api/src/publisher-registry.ts`).
+- Every placement declares a `disclosure` of `advertisement` or `house`, and the reader-facing label is derived from that field rather than written into the creative, so a placement cannot assert a relationship that does not exist. A house placement names the common ownership in its own label (`texaseconews/src/data/ads.ts`, `src/lib/ads.ts`).
+- Each creative carries a `consideration` note recording what the advertiser gave for the placement, so a barter arrangement cannot go unrecorded.
+- Security headers, including a Content-Security-Policy that allowlists only the consent-gated ticker vendors, ship with the build in `amplify.yml`.
+- Automated WCAG 2.1 A/AA checks run against the main templates in `tests/accessibility.spec.ts`, and an Accessibility Statement is published at `/accessibility`.
+- The contact form — the published intake path for privacy, correction, and copyright requests — carries a honeypot field, a minimum fill time, and a per-browser cooldown.
 - Terms, Privacy, Editorial Methodology, and Advertising Standards pages disclose the material practices and contact path.
 
 ## Controls That Cannot Be Completed In Code
@@ -25,12 +32,13 @@ This document turns the paid-advertising checklist into an operating procedure. 
 The operator must not mark these complete until evidence exists:
 
 - Texas media/privacy counsel approves the final terms, privacy statement, aggregation posture, and advertiser contract.
-- The legal operator name is inserted in contracts and any legally required notices.
+- The legal operator name is inserted in contracts and any legally required notices. **Done:** Texas Business News, LLC is named in the Terms, the Privacy Statement, and the insertion order template.
+- Media liability / errors-and-omissions insurance covering advertising injury, copyright infringement, and defamation is bound. General liability policies exclude these perils.
 - A signed advertiser agreement or insertion order exists for every campaign.
 - Source licenses and production RSS proxy terms are approved before production fallback is enabled.
 - Vendor contracts and data processing terms are reviewed for AWS, EmailJS, the page API, and any optional widget retained for launch.
 - The operator decides whether to seek DMCA safe-harbor protection. If yes, register a designated agent and publish the exact statutory notice process before claiming that protection.
-- A responsible person is assigned to privacy, copyright, corrections, ad complaints, and regulator inquiries.
+- **Done:** the Texas Business News Team is the assigned owner for privacy, copyright, corrections, ad complaints, and regulator inquiries, reachable at admin@texasbusiness.news.
 
 ## Advertising Acceptance Standard
 
@@ -55,7 +63,7 @@ Restricted categories require category-specific counsel review or must be declin
 
 ## Campaign Preflight
 
-One named reviewer must complete and retain this checklist before publication:
+A reviewer from the Texas Business News Team must complete and retain this checklist before publication, recording the review date and the reviewing team:
 
 - [ ] Confirm the advertiser's legal name, public brand, authorized contact, billing contact, and authority to submit the campaign.
 - [ ] Obtain a signed `advertiser_insertion_order_template.md` or counsel-approved replacement.
@@ -167,17 +175,36 @@ Requests go to the contact form or admin@texasbusiness.news.
 6. Record the decision, changes, notice to advertiser, and closure date.
 7. Do not retaliate editorially against a complainant or source.
 
+## Disclosure Standard By Type Of Consideration
+
+Every placement carries the "Advertisement" label and identifies the advertiser. What varies is whether anything further must be said, and that turns on the relationship rather than on how the advertiser paid.
+
+**Ordinary advertisement.** An unaffiliated advertiser gave consideration for the placement. Consideration may be money or an exchange of advertising. Barter is consideration, so a trade placement is a genuine advertisement and is disclosed as one; the form of the consideration is not something the reader needs, and stating it wrongly is exactly how a placement ends up making a claim that is not true. No placement may assert that an advertiser paid money unless one did.
+
+**Reciprocal advertising (trade).** Where the consideration is an exchange of ad space, the arrangement still needs the same paperwork as a cash campaign: a written trade agreement naming both parties, the placements each side runs, the term, the value each side ascribes to the exchange, the right to reject or pull creative, and the termination terms. Record the exchange in the campaign file and in the creative's `consideration` field. An undocumented trade is the same evidence gap as an undocumented cash sale.
+
+**House placement.** A placement promoting a business that Texas Business News, LLC or its owners also own. Common ownership is a material connection under the FTC's endorsement guidance and is disclosed in the placement's own label, not in a policy page. There is no active house placement.
+
+The single active placement, Double B Ranch (`bbranchtexas.com`), is a reciprocal-advertising placement with a separate entity. It is labeled as an advertisement, identifies the advertiser, and links to the domain shown in the creative. The written trade agreement is outstanding.
+
+## Editorial Scope For Government And Public-Sector Stories
+
+Editorial coverage of government, defence and public-finance subjects is in scope where the story is economic: a contract, an installation, a budget, a tax measure, an appropriation or an infrastructure programme. This is an editorial scope decision and is separate from the advertising restricted-category list below, which continues to require category-specific legal review before any government, military or political *advertiser* is accepted. Covering a federal contract award is not the same as selling advertising to a defence contractor, and the two decisions stay independent.
+
 ## Release Gate
 
 Paid launch is blocked until all of the following are true:
 
-- [ ] Counsel-approved legal operator identity and governing documents.
+- [x] Legal operator identity formed and named in the public documents (Texas Business News, LLC). Counsel review of the governing documents is still outstanding.
 - [ ] Counsel-approved advertiser agreement and insertion order.
-- [ ] Signed agreement for the active Double B Ranch campaign.
+- [ ] Media liability / E&O insurance bound.
+- [x] Double B Ranch placement resolved: labeled as an ordinary advertisement identifying the advertiser, with the reciprocal-advertising consideration recorded on the creative.
+- [ ] Written trade agreement for the Double B Ranch reciprocal-advertising arrangement.
+- [x] Advertiser identity matches the destination: the creative reads `www.bbranchtexas.com` and the placement links to `bbranchtexas.com`.
 - [ ] Complete rights record for news sources displayed beside paid inventory.
 - [ ] Production RSS fallback disabled or fully licensed and proxy-approved.
 - [ ] Vendor/data-flow review completed.
-- [ ] Named human reviewer and complaint owner assigned.
+- [x] Reviewer and complaint owner assigned: the Texas Business News Team, contactable at admin@texasbusiness.news.
 - [ ] Campaign records location and retention schedule approved.
 - [ ] Desktop and mobile disclosure screenshots accepted.
 - [ ] Final destination, claim, and asset-rights evidence approved.

@@ -23,6 +23,13 @@ export type NewsItem = {
 
 export type FeedMeta = {
   count: number;
+  /**
+   * Items available in the complete feed before limit and offset, and whether
+   * any remain past this page. Both are optional so an older API, and the
+   * browser RSS fallback, still validate; absent means "this is everything".
+   */
+  total?: number;
+  hasMore?: boolean;
   sourcesUsed: string[];
   fetchedAt: string;
   cacheTtlSeconds: number;
@@ -49,6 +56,8 @@ export type HomePageQuery = {
   regions: readonly string[];
   topics: readonly string[];
   limit: number;
+  /** Items to skip, so a reader scrolling past the first page gets the next. */
+  offset?: number;
 };
 
 type RequestOptions = {
@@ -135,6 +144,10 @@ export function buildHomePageUrl(query: HomePageQuery) {
   if (!Number.isInteger(query.limit) || query.limit < 1) {
     throw new NewsApiError("News API query limit must be a positive integer.");
   }
+  const offset = query.offset ?? 0;
+  if (!Number.isInteger(offset) || offset < 0) {
+    throw new NewsApiError("News API query offset must be a non-negative integer.");
+  }
 
   const baseUrl = new URL(resolveApiUrl());
   baseUrl.search = "";
@@ -147,6 +160,7 @@ export function buildHomePageUrl(query: HomePageQuery) {
     regions: query.regions.join(","),
     topics: query.topics.join(","),
     limit: String(query.limit),
+    offset: String(offset),
   }).toString();
   return url;
 }
@@ -196,6 +210,8 @@ function isFeedResponse(value: unknown): value is FeedResponse {
     isNonNegativeInteger(meta.cacheTtlSeconds) &&
     typeof meta.stale === "boolean" &&
     isNonNegativeInteger(meta.partialFailures) &&
+    (meta.total === undefined || isNonNegativeInteger(meta.total)) &&
+    (meta.hasMore === undefined || typeof meta.hasMore === "boolean") &&
     (meta.coverageMix === undefined || isCoverageMix(meta.coverageMix))
   );
 }

@@ -1002,8 +1002,15 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
+/*
+ * `.ad-card span` sets the muted body colour and outranks `.ad-disclosure` on
+ * specificity, which left the "Advertisement" label at 1.68:1 against its white
+ * pill. The disclosure is the one label on a placement that must always be
+ * legible, so it is restated at matching specificity.
+ */
 .ad-card .ad-disclosure {
   margin-bottom: 0.1rem;
+  color: #071329;
 }
 
 .load-more {
@@ -1110,6 +1117,24 @@ textarea:focus-visible {
 .contact-form button:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+/*
+ * The honeypot is removed from the reader's experience without display:none,
+ * which some automated submitters check for. It is also aria-hidden and
+ * tabIndex -1, so assistive technology and keyboard users never reach it.
+ */
+.contact-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .form-privacy-notice {

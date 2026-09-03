@@ -24,6 +24,98 @@ The browser fallback may inspect a feed description in memory to perform Texas-l
 
 Production browser RSS fallback is disabled unless `VITE_ENABLE_RSS_FALLBACK=true`. Do not enable it merely for availability. Enable it only after the operator has approved the specific source rights, proxy contract, attribution behavior, and cache limits documented here.
 
+## Enforcement In The Deployed System
+
+Revised September 3, 2026. The controls this document describes are now enforced by the API rather than only by the frontend, because the API is a public, unauthenticated endpoint and anyone can read what it serves.
+
+### Withheld fields
+
+`txbiz-api/src/public-view.ts` removes `description` and `imageUrl` from every item in every public response, at the serialization boundary. The pipeline still holds both fields in memory for Texas-relevance, constructive-business, and safety filtering, exactly as this document contemplates. `txbiz-api/tests/compliance.test.ts` walks the serialized body of every route and fails if either key appears anywhere.
+
+### Publisher allowlist for discovery transports
+
+Direct sources in `txbiz-api/src/source-registry.ts` are the rights register: every entry has a catalogued posture below. Google News and Bing News are discovery transports and carry no rights posture of their own — they will surface any publisher matching the query, including out-of-state, foreign, and off-topic outlets.
+
+`txbiz-api/src/publisher-registry.ts` therefore drops any item arriving on a discovery transport whose resolved publisher is not in the registry. The registry has three tiers:
+
+1. **Registered sources** — derived automatically from the direct source registry, so the two cannot drift apart.
+2. **Texas newsroom and business publications** — a curated list of Texas outlets cleared for headline-plus-link display in the launch-safe format. **These are pending individual rights-register entries in this document and require the same source-terms review as the direct sources below.** They are allowed to display because they are Texas business/news publishers under the same headline-only format, not because a reuse pathway has been confirmed for each.
+3. **Texas public-sector and university domains** — matched by suffix (`texas.gov`, `tamu.edu`, `utexas.edu`, `txdot.gov`, `texasattorneygeneral.gov`), since agency subdomains are numerous and stable.
+
+`allowedPublisherDomains` is exported as the reconciliation surface: it is the complete list of domains the API will serve, and it should be diffed against this document whenever the source registry changes and at each six-month source-terms review.
+
+The allowlist can be disabled with `PUBLISHER_ALLOWLIST_ENABLED=false`. It is enabled by default and must stay enabled in production.
+
+### Attribution
+
+A discovery feed's channel title is the search query that produced it, not a publication. `txbiz-api/src/rss.ts` never uses a discovery feed's channel title for attribution, resolves the publisher from the item's `<source>` element or its title suffix, and omits the `source` field entirely when no publisher can be established. A query string can no longer occupy the publisher field. This is asserted in `txbiz-api/tests/compliance.test.ts`.
+
+## Source Expansion, September 2026
+
+The registry grew from 24 catalogued sources to 91 to give county, region and industry feeds real local depth. Every added feed was fetched and validated before it was written into the registry: it had to return a parseable RSS or Atom document with at least one item published in the last 30 days. Candidates that returned a 404, a non-feed page, or a feed whose newest item was months old were discarded rather than added hopefully.
+
+### Rights classification of the added sources
+
+**These are not cleared for anything beyond the launch-safe format.** They are catalogued under the same posture as the existing commercial sources: headline, publisher, date, topic labels and a direct link, with no excerpt and no publisher image, enforced in the API rather than by convention. Nothing below has an affirmative reuse pathway on file, and each still needs the source-terms review the audit specifies.
+
+Ranked by the strength of the underlying posture:
+
+1. **Texas state bodies.** Texas Workforce Commission and the Texas Economic Development Corporation. State agency material carries the strongest reuse posture and is exactly on topic — job training grants, employment growth, and site-selection announcements.
+2. **Public universities.** UT Austin, UT Dallas and Texas A&M newsrooms. Institutional research and campus economic news from public institutions.
+3. **Economic development corporations, chambers, ports and cities.** Dallas Regional Chamber, Fort Worth Chamber, Garland Chamber, Greater Waco Chamber, McKinney EDC, Develop Abilene, Lubbock EDA, Port Houston, Port of Galveston, and the cities of McKinney, San Marcos, Sugar Land, Abilene and Arlington. These publish press releases intended for redistribution, which is the most favourable footing short of an express licence, but "intended for redistribution" is not the same as a written grant and should be confirmed.
+4. **Commercial local newsrooms.** Television stations across the Tegna, Gray, Nexstar and Sinclair groups, plus Texas Standard, Texas Farm Bureau and the Texas Oil & Gas Association. Same posture as KETK, Everything Lubbock and the Midland Reporter-Telegram already in the register: permission or a commercial licence required for anything beyond headline-plus-link.
+
+### Statewide versus local scope
+
+A `localOnly` flag on a source keeps it out of the statewide feed and fetches it only for the regions and counties it is mapped to. Sixty local feeds on every statewide request would exhaust the upstream budget and surface a Beaumont city council item to a reader in Amarillo. County and region feeds get the depth; the statewide feed keeps the business- and economy-focused sources it had.
+
+### Feeds deliberately not added
+
+Sinclair's `/money.rss` endpoints were rejected after inspection: every station serves the same national business wire, so a "San Antonio" business feed and an "El Paso" business feed returned identical mortgage-rate stories. They would have added upstream cost and no Texas content. Several chamber and university feeds were rejected as abandoned, with newest items between 50 days and five years old.
+
+## Coverage Window And Feed Depth
+
+The article window moved from 30 days to **120 days**, and the county expansion threshold from 12 items to 72, so a county feed keeps pulling in nearby-market and nearby-county coverage instead of stopping as soon as its own newsroom produced a dozen stories. The serving cap rose from 100 items to 240.
+
+This is a product decision, not a rights one — the launch-safe format is unchanged and nothing about what is displayed per item has moved. Two things follow from it that are worth recording:
+
+- **Older items are now served.** A story can be up to four months old. Ranking still bands by freshness, so recent coverage leads, but a reader scrolling far enough will reach older material. Publication dates are displayed on every card, which is what keeps that honest.
+- **Upstream load rose.** More sources across a longer window means more requests per cold cache. `MAX_UPSTREAM_REQUESTS` still caps fan-out at 64 and the local-only scope rule keeps the statewide query from fetching every local feed.
+
+Measured across twenty counties and eight regions, the available pool went from 454 items to 1,276.
+
+## Feed Depth For Every County, Region And Filter
+
+The registry now holds **91 catalogued sources**. Four structural changes turned that into depth a reader can actually scroll through, taking the measured pool across twenty counties and eight regions from 454 items to 1,710.
+
+**Statewide sources reach local feeds.** A source with no region or county mapping — the Comptroller, the Workforce Commission, Farm Bureau, AgriLife — covers the whole state, and its stories are frequently *about* one county. Those sources are now fetched for county and region scopes too, and the relevance filter decides whether an individual item fits. Without this a Farm Bureau story about Lubbock cotton could never reach the Lubbock feed.
+
+**A third query angle: public finance.** Counties and regions are searched three ways — growth, sectors, and a civic set covering budgets, tax rates, bonds, capital improvement, road and water projects, incentive agreements and commissioners court. A small county rarely produces a corporate expansion story in a given month but almost always produces a budget or a road project, and that is economic news for the people who live there.
+
+**Region queries were rebuilt.** A region previously sent every constructive term in a single 3,700-character search. It is now the same three bounded angles the counties use.
+
+**Selecting a topic no longer narrows the fetch.** A topic filter used to replace the general queries rather than add to them, so a filtered feed drew from a smaller candidate pool than an unfiltered one. Both now run: the topic query finds stories the general ones miss, and the general queries supply the wider pool the topic filter cuts down.
+
+Two supporting changes: registered sources are now ordered ahead of discovery queries so that when the request budget truncates, what is dropped is a search rather than a source in the rights register; and the budget itself rose from 64 requests to 110, with concurrency from 8 to 12.
+
+**The cost is cold latency.** A county or region feed now takes roughly five to six seconds cold, against one to two before, because each one fetches substantially more upstreams. Warm requests are served from cache and are effectively instant for the five-minute TTL. This is the trade that buys the depth.
+
+## Editorial Filter Changes
+
+Two changes were made alongside the expansion, both affecting what reaches a reader rather than what rights are claimed.
+
+**The constructive-business test now reads the headline, not the headline plus the excerpt.** The headline is the only thing published, so it has to carry the business signal itself. Previously an item was admitted when its excerpt happened to contain a business word, which let a story about a college football coach being fired into a county business feed on the strength of a summary no reader ever sees. The negative screen still reads headline and excerpt together, because bad news anywhere in an item disqualifies it.
+
+**A registered source mapped to a county is trusted for geography.** A direct item is only ever tagged with a county its registered source is mapped to, so the outlet establishes the location and the copy need not repeat it — a Brenham newsroom writing for Brenham readers rarely says "Texas". The explicit Texas signal is still required for Google and Bing results, where the publisher could be anywhere and "Washington County" could be any of thirty.
+
+**Government, defence and public-finance stories are admitted on their economic impact.** Public spending is one of the largest drivers of regional Texas economies — a military installation, a federal contract, a city budget, a tax abatement or a road programme is often the only substantial business story a rural county produces in a month. The constructive vocabulary now covers that ground explicitly: defence and federal contracts, installations, appropriations, municipal budgets, bonds, tax base and incentives, transit, water, utilities and capital improvement. The terms stay economic rather than political — a headline qualifies by naming the contract, the installation or the funding, not by being about government. Detention and deportation are no longer blocked outright; a facility contract with a jobs number is economic news, and the operator has decided it is in scope.
+
+**Topic recognition was broadened across all 28 topics.** Topic aliases are extraction-only — they match text already held rather than building upstream queries — so breadth there is cheap. A Lubbock cotton story is agriculture whether or not it uses the word "agriculture".
+
+**The negative screen was extended to crime, litigation and suspicion, then narrowed back where it overreached.** Single-word matching meant "Trial begins for men accused in multimillion-dollar investment scheme" scored as a business story on the word "investment"; terms like accused, fraud, scheme, indictment and suspicion now let the subject of the sentence decide. A first pass also blocked "trial", "investigation", "probe" and "emergency", which removed a clinical trial, a research investigation and an emergency room expansion — all legitimate business stories — and cut the statewide feed nearly in half. Those were narrowed to specific phrases.
+
+**The editorial vocabulary was widened and the negative screen widened with it.** The constructive list gained the words real headlines use — breaks ground, relocates, adds jobs, economic development, distribution centre, apprenticeship. Because that also matches headlines about a project being fought or cancelled, the blocked list gained the opposing vocabulary: opposition, pushback, withdrawn, cancelled, halted, funding cuts, pollution, and personnel departures. Both lists are editorial policy rather than legal controls and should be reviewed as the site's voice settles.
+
 ## What RSS Does Not Grant
 
 An RSS endpoint is a delivery mechanism, not automatically a republication license. A public feed, a permissive `robots.txt`, or successful retrieval through a proxy does not waive copyright or a publisher's contract terms. A proxy cannot grant rights in upstream publisher material.

@@ -1,15 +1,28 @@
 import emailjs from "@emailjs/browser";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, NavLink, Route, Routes, useParams } from "react-router-dom";
+import { Link, NavLink, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { AdSlot, SponsorBadge } from "./components/AdSlot";
-import { PrivacyPreferencesProvider } from "./components/PrivacyPreferences";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
 import { featuredTopicSlugs, getTopicBySlug, heroTopicSlugs, isTopicSlug, topicCatalog, type TopicSlug } from "./data/topics";
-import { fetchHomePage, type HomePageQuery, type HomePageResponse, type NewsItem } from "./lib/news-api";
-import { usePrivacyPreferences } from "./lib/privacy-preferences";
+import { fetchHomePage, type FeedResponse, type HomePageQuery, type HomePageResponse, type NewsItem } from "./lib/news-api";
 
 const siteName = "TexasBusiness.News";
+/**
+ * The legal entity that operates the site. Named in the Terms, the Privacy
+ * Statement, and every advertising disclosure so a reader, an advertiser, or a
+ * rights holder always knows who they are dealing with and contracting with.
+ */
+const siteOperator = "Texas Business News, LLC";
+const legalEffectiveDate = "September 3, 2026";
+/**
+ * The one address this site is published at.
+ *
+ * The same build serves four domains on both apex and www. Every page declares
+ * a canonical URL on this origin so search engines and anyone asking "which
+ * domain does my placement run on" get a single answer.
+ */
+const canonicalOrigin = "https://texasbusiness.news";
 const mission =
   "Howdy. TexasBusiness.News gathers positive business news and opportunity signals from across the Lone Star State so citizens, builders, employers, investors, visitors, and future Texans can see where momentum is forming. We focus on growth, jobs, small business, innovation, data centers, AI advancement, infrastructure, workforce pathways, and local wins that help people make the most of opportunity close to home.";
 
@@ -24,13 +37,13 @@ const noNewsItems: NewsItem[] = [];
 
 function App() {
   return (
-    <PrivacyPreferencesProvider>
-      <AppContent />
-    </PrivacyPreferencesProvider>
+    <AppContent />
   );
 }
 
 function AppContent() {
+  useCanonicalUrl();
+
   return (
     <>
       <TickerStack />
@@ -44,6 +57,7 @@ function AppContent() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/methodology" element={<MethodologyPage />} />
         <Route path="/advertising-standards" element={<AdvertisingStandardsPage />} />
+        <Route path="/accessibility" element={<AccessibilityPage />} />
         <Route path="/topic/:topicSlug" element={<TopicPage />} />
         <Route path="/industry/:topicSlug" element={<TopicPage />} />
         <Route path="/region/:regionSlug" element={<RegionPage />} />
@@ -83,13 +97,30 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
   const hasError = Boolean(pageNews.error);
 
   usePageTitle(selectedTopicSlugs.length || selectedRegionSlugs.length ? `${scopeLabel} ${industryLabel || "News"}` : "Positive Texas Business News");
+  const countyHasHidden = Boolean(selectedCounties.length) && visibleCountyCount < countyItems.length;
+  const statewideHasHidden = visibleStatewideCount < statewideItems.length;
+
+  // Reveal what is already loaded first; only reach for the network once the
+  // reader has actually run out of stories on screen.
   useInfiniteScroll(() => {
-    if (selectedCounties.length && visibleCountyCount < countyItems.length) {
+    if (countyHasHidden) {
       setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length));
       return;
     }
-    setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length));
-  }, (selectedCounties.length && visibleCountyCount < countyItems.length) || visibleStatewideCount < statewideItems.length);
+    if (statewideHasHidden) {
+      setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length));
+      return;
+    }
+    pageNews.loadMore();
+  }, countyHasHidden || statewideHasHidden || pageNews.hasMore);
+
+  // A newly appended page is useless if the reveal counters stay put.
+  useEffect(() => {
+    if (!pageNews.loadingMore) {
+      setVisibleCountyCount((current) => Math.min(current + pageSize, Math.max(current, countyItems.length)));
+      setVisibleStatewideCount((current) => Math.min(current + pageSize, Math.max(current, statewideItems.length)));
+    }
+  }, [countyItems.length, pageNews.loadingMore, statewideItems.length]);
 
   useEffect(() => {
     setVisibleCountyCount(pageSize);
@@ -175,7 +206,9 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
               items={countyItems}
               title={countySectionTitle}
               visibleCount={visibleCountyCount}
-              onFetchMore={pageNews.refresh}
+              canFetchMore={pageNews.hasMore}
+              loadingMore={pageNews.loadingMore}
+              onFetchMore={pageNews.hasMore ? pageNews.loadMore : pageNews.refresh}
               onLoadMore={() => setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length))}
             />
           ) : null}
@@ -186,7 +219,9 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
             items={statewideItems}
             title={selectedCounties.length ? "Texas statewide articles" : "Texas statewide articles"}
             visibleCount={visibleStatewideCount}
-            onFetchMore={pageNews.refresh}
+            canFetchMore={pageNews.hasMore}
+            loadingMore={pageNews.loadingMore}
+            onFetchMore={pageNews.hasMore ? pageNews.loadMore : pageNews.refresh}
             onLoadMore={() => setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length))}
           />
         </main>
@@ -333,15 +368,59 @@ function AdvertisePage() {
   );
 }
 
+/**
+ * Abuse controls on the contact form.
+ *
+ * The form is the published intake path for privacy requests, corrections, and
+ * copyright complaints, so the concern is a legally significant channel being
+ * drowned in automated noise (and the EmailJS quota being exhausted), not spam
+ * for its own sake. A honeypot field and a minimum fill time reject scripted
+ * submissions; a per-browser cooldown caps the rate of genuine ones.
+ */
+const contactHoneypotField = "company_website";
+const contactMinimumFillMs = 3_000;
+const contactCooldownMs = 60_000;
+const contactCooldownKey = "texasbusiness-news:contact-last-sent";
+
 function ContactPage() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
+  const formLoadedAt = useRef(0);
   usePageTitle("Contact");
+
+  useEffect(() => {
+    formLoadedAt.current = Date.now();
+  }, []);
 
   async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+
+    // A bot fills every field it finds, including one no reader can see. Report
+    // success so an automated submitter learns nothing from the response.
+    if (String(formData.get(contactHoneypotField) || "").trim()) {
+      form.reset();
+      setStatus("success");
+      setStatusMessage("Message sent. We will review it at admin@texasbusiness.news.");
+      return;
+    }
+
+    if (Date.now() - formLoadedAt.current < contactMinimumFillMs) {
+      setStatus("error");
+      setStatusMessage("That was submitted a little too quickly. Please review your message and send again.");
+      return;
+    }
+
+    const cooldownRemaining = contactCooldownRemaining();
+    if (cooldownRemaining > 0) {
+      setStatus("error");
+      setStatusMessage(
+        `Please wait ${Math.ceil(cooldownRemaining / 1000)} seconds before sending another message, or email admin@texasbusiness.news.`,
+      );
+      return;
+    }
+
     const name = String(formData.get("name") || "").trim();
     const email = String(formData.get("email") || "").trim();
     const message = String(formData.get("message") || "").trim();
@@ -372,6 +451,8 @@ function ContactPage() {
         { publicKey },
       );
       form.reset();
+      formLoadedAt.current = Date.now();
+      recordContactSubmission();
       setStatus("success");
       setStatusMessage("Message sent. We will review it at admin@texasbusiness.news.");
     } catch {
@@ -401,6 +482,10 @@ function ContactPage() {
             <span>Message</span>
             <textarea maxLength={5_000} name="message" placeholder="How can we help?" required rows={6} />
           </label>
+          <div aria-hidden="true" className="contact-honeypot">
+            <label htmlFor={contactHoneypotField}>Company website</label>
+            <input autoComplete="off" id={contactHoneypotField} name={contactHoneypotField} tabIndex={-1} type="text" />
+          </div>
           <p className="form-privacy-notice">
             We send these fields to EmailJS to deliver your request to our inbox. Do not submit sensitive personal
             information. See the <Link to="/privacy">Privacy Statement</Link>.
@@ -416,6 +501,24 @@ function ContactPage() {
   );
 }
 
+function contactCooldownRemaining() {
+  try {
+    const lastSent = Number(window.localStorage.getItem(contactCooldownKey));
+    if (!Number.isFinite(lastSent) || lastSent <= 0) return 0;
+    return Math.max(0, contactCooldownMs - (Date.now() - lastSent));
+  } catch {
+    return 0;
+  }
+}
+
+function recordContactSubmission() {
+  try {
+    window.localStorage.setItem(contactCooldownKey, String(Date.now()));
+  } catch {
+    // Storage is unavailable; the fill-time and honeypot checks still apply.
+  }
+}
+
 function TermsPage() {
   usePageTitle("Terms of Service");
 
@@ -424,11 +527,11 @@ function TermsPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Terms of service</p>
         <h1>Terms for using {siteName}.</h1>
-        <p>Effective August 31, 2026. These terms govern access to this independent news-discovery service, its filters, sponsor placements, contact form, and optional third-party widgets.</p>
+        <p>Effective {legalEffectiveDate}. These terms are an agreement between you and {siteOperator}, a Texas limited liability company (“{siteOperator},” “we,” “us,” or “the operator”), which owns and operates {siteName}. They govern access to this independent news-discovery service, its filters, sponsor placements, contact form, and optional third-party widgets.</p>
       </section>
       <section className="legal-document">
         <LegalSection title="1. Acceptance and eligibility">
-          <p>By accessing {siteName}, you accept these terms and the <Link to="/privacy">Privacy Statement</Link>. If you do not accept them, do not use the service. The service is intended for a general audience and is not directed to children under 13.</p>
+          <p>By accessing {siteName}, you accept these terms and the <Link to="/privacy">Privacy Statement</Link>. If you do not accept them, do not use the service. The service is intended for a general audience and is not directed to children under 13. {siteName} is operated by {siteOperator}, a Texas limited liability company; correspondence may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
         </LegalSection>
         <LegalSection title="2. News-discovery service">
           <p>{siteName} organizes links to positive Texas business reporting using statewide, regional, county, and industry filters. It is not the original publisher of linked reporting. Automated relevance and topic labels can be incomplete or wrong; verify the original article before relying on a result. Our process is described in the <Link to="/methodology">Editorial and Source Methodology</Link>.</p>
@@ -438,7 +541,7 @@ function TermsPage() {
           <p>Do not use {siteName} to evade a publisher paywall, reproduce full articles, remove attribution, or imply that a publisher endorses this service or an advertiser.</p>
         </LegalSection>
         <LegalSection title="4. Advertising and editorial independence">
-          <p>Paid placements are labeled “Advertisement” and “Paid sponsor,” identify the advertiser, and are technically separated from editorial cards. Advertising does not purchase coverage, favorable treatment, or influence over source selection. Advertisers are responsible for their claims, rights, offers, and destination pages and must follow our <Link to="/advertising-standards">Advertising Standards</Link>.</p>
+          <p>Every placement is labeled “Advertisement,” identifies the advertiser, and is technically separated from editorial cards. Consideration for a placement may be money or an exchange of advertising with the advertiser; either way it is disclosed as an advertisement and nothing further is claimed about the arrangement. If {siteOperator} ever runs a placement for a business it or its owners also own, that common ownership is disclosed in the placement itself. Advertising does not purchase coverage, favorable treatment, or influence over source selection. Advertisers are responsible for their claims, rights, offers, and destination pages and must follow our <Link to="/advertising-standards">Advertising Standards</Link>.</p>
         </LegalSection>
         <LegalSection title="5. No professional advice">
           <p>Nothing on the site is legal, investment, securities, tax, medical, health, insurance, employment, or other professional advice. Market and crypto information may be delayed or inaccurate. Consult the original source and a qualified professional before making decisions.</p>
@@ -462,10 +565,18 @@ function TermsPage() {
         <LegalSection title="11. Limitation of liability">
           <p>To the maximum extent permitted by law, the operator will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, lost profits, lost data, decisions based on linked content, third-party conduct, or service interruption. Rights that cannot legally be limited remain unaffected.</p>
         </LegalSection>
-        <LegalSection title="12. Changes, severability, and Texas law">
-          <p>We may update the service or these terms by posting a new effective date. If one provision is unenforceable, the remaining provisions continue. These terms are governed by Texas law, without overriding mandatory consumer protections that apply where you live.</p>
+        <LegalSection title="12. Indemnification">
+          <p>You will indemnify, defend, and hold harmless {siteOperator} and its members, officers, employees, and agents from any third-party claim, demand, loss, liability, damage, penalty, or reasonable attorneys’ fee arising out of your use of the service, your breach of these terms, your violation of law, or your infringement of another party’s rights. This does not apply to the extent a claim arises from the operator’s own conduct.</p>
+          <p>An advertiser’s indemnification obligations are set out separately in its insertion order and are in addition to this section.</p>
         </LegalSection>
-        <LegalSection title="13. Contact">
+        <LegalSection title="13. Dispute resolution and venue">
+          <p>Before filing any claim, contact us through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a> with a written description of the dispute and the relief you seek. The parties will attempt in good faith to resolve the matter informally for 30 days from that notice.</p>
+          <p>If a dispute is not resolved informally, it must be brought exclusively in the state or federal courts located in the State of Texas, and you and {siteOperator} consent to the personal jurisdiction of those courts. Either party may seek injunctive relief in any court of competent jurisdiction to protect its intellectual property or confidential information. Nothing here prevents you from bringing a matter before a government agency that has authority over it, or from filing in small claims court if your claim qualifies.</p>
+        </LegalSection>
+        <LegalSection title="14. Changes, severability, and Texas law">
+          <p>We may update the service or these terms by posting a new effective date. If one provision is unenforceable, the remaining provisions continue. These terms are governed by Texas law, without overriding mandatory consumer protections that apply where you live. These terms are the entire agreement between you and {siteOperator} regarding the service, and you may not assign them without our written consent.</p>
+        </LegalSection>
+        <LegalSection title="15. Contact">
           <p>Questions about these terms may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
         </LegalSection>
       </section>
@@ -474,11 +585,6 @@ function TermsPage() {
 }
 
 function PrivacyPage() {
-  const {
-    allowOptionalWidgets,
-    declineOptionalWidgets,
-    optionalWidgetChoice,
-  } = usePrivacyPreferences();
   usePageTitle("Privacy Statement");
 
   return (
@@ -486,11 +592,11 @@ function PrivacyPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Privacy statement</p>
         <h1>Privacy-first by design.</h1>
-        <p>Effective August 31, 2026. This statement explains the limited data used by {siteName}, the vendors involved, your choices, and how to make a privacy request.</p>
+        <p>Effective {legalEffectiveDate}. This statement explains the limited data used by {siteName}, operated by {siteOperator}, the vendors involved, your choices, and how to make a privacy request.</p>
       </section>
       <section className="legal-document">
         <LegalSection title="1. Scope and operator contact">
-          <p>This statement applies to the {siteName} website. The site currently has no user accounts, subscriptions, or direct payment processing. Contact the operator through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+          <p>This statement applies to the {siteName} website. The controller of the personal data described here is {siteOperator}, a Texas limited liability company. The site currently has no user accounts, subscriptions, or direct payment processing. Contact the operator through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
         </LegalSection>
         <LegalSection title="2. Information you provide">
           <p>The contact form collects the name, email address, and message you choose to submit. Do not include sensitive personal data. EmailJS transmits the submission to our inbox. Linked publishers, sponsors, and future advertiser intake forms collect information under their own notices.</p>
@@ -498,7 +604,7 @@ function PrivacyPage() {
         <LegalSection title="3. Browser preferences and RSS cache">
           <ul>
             <li>Selected county slugs are stored under <code>texasbusiness-news:selected-counties</code> until you clear them or browser storage.</li>
-            <li>Your optional-widget choice is stored under <code>texasbusiness-news:optional-widgets</code>.</li>
+            <li>The time of your last contact-form submission is stored under <code>texasbusiness-news:contact-last-sent</code> to rate-limit the form. It holds a timestamp only, never message content.</li>
             <li>During an eligible API outage, normalized RSS fallback metadata may be cached under keys beginning <code>texaseconews:rss-fallback:v3:</code>. Entries expire after 45 minutes and are removed when next checked.</li>
             <li>Region and industry choices otherwise remain in React page state.</li>
           </ul>
@@ -509,19 +615,15 @@ function PrivacyPage() {
         <LegalSection title="5. Sponsor measurement">
           <p>Visible sponsor impressions and sponsor-link clicks create limited events containing event type, campaign ID, sponsor name, and placement slot in the current page’s in-memory <code>dataLayer</code>. County, region, account, cross-site identifier, and sensitive data are not included. No analytics recipient is currently connected, and the in-memory events end with the page session.</p>
         </LegalSection>
-        <LegalSection title="6. Optional market widgets">
-          <p>LiveCoinWatch and TradingView scripts are blocked unless you allow optional tickers. If allowed, those vendors may receive IP address, browser and device details, page-request information, and may use storage or other technologies under their own policies. You can change your choice below at any time.</p>
-          <div className="privacy-inline-controls">
-            <span>Current choice: <strong>{optionalWidgetChoice}</strong></span>
-            <button className="button" onClick={allowOptionalWidgets} type="button">Allow optional tickers</button>
-            <button className="button ghost" onClick={declineOptionalWidgets} type="button">Keep optional tickers off</button>
-          </div>
+        <LegalSection title="6. Market ticker widgets">
+          <p>Every page loads market ticker widgets from LiveCoinWatch and TradingView. Because their scripts run in your browser, those vendors receive your IP address, browser and device details, and page-request information, and may use cookies, local storage, or similar technologies under their own privacy policies rather than this one. {siteName} does not receive or store what they collect.</p>
+          <p>If you prefer not to load them, a browser content blocker or script blocker will stop them without affecting the news feed, the filters, or the sponsor labels, which do not depend on either vendor.</p>
         </LegalSection>
         <LegalSection title="7. News delivery and RSS proxies">
           <p>The primary news API receives selected county, region, and industry slugs plus a result limit. Browser RSS fallback is off by default in production and should be enabled only after source rights and proxy terms are approved. When enabled after an eligible API failure, RSS2JSON or AllOrigins receives the public feed URL and normal network request data. Those services do not receive contact-form content from this site and do not grant rights to publisher content.</p>
         </LegalSection>
         <LegalSection title="8. Uses and legal bases">
-          <p>We use information to deliver requested pages, remember choices, route contact messages, secure and debug the service, prevent abuse, measure sponsor placement within the page, comply with law, and handle corrections or rights requests. Depending on the activity and applicable law, processing is based on providing the requested service, legitimate operational interests, consent for optional widgets, or legal obligations.</p>
+          <p>We use information to deliver requested pages, remember choices, route contact messages, secure and debug the service, prevent abuse, measure sponsor placement within the page, comply with law, and handle corrections or rights requests. Depending on the activity and applicable law, processing is based on providing the requested service, legitimate operational interests, or legal obligations.</p>
         </LegalSection>
         <LegalSection title="9. Disclosure and sale">
           <p>Information may be processed by AWS Amplify, the news API operator, EmailJS, and vendors you choose to load, and may be disclosed when legally required or in a business transfer subject to appropriate protections. {siteName} does not currently sell personal data, share it for cross-context behavioral advertising, or use it for targeted advertising as those terms are commonly defined. Current sponsor placement is contextual.</p>
@@ -628,6 +730,40 @@ function AdvertisingStandardsPage() {
         </LegalSection>
         <LegalSection title="Request review">
           <p>Send campaign inquiries through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. No campaign is accepted and no inventory is guaranteed until written approval and a signed agreement are complete.</p>
+        </LegalSection>
+      </section>
+    </Shell>
+  );
+}
+
+function AccessibilityPage() {
+  usePageTitle("Accessibility Statement");
+
+  return (
+    <Shell>
+      <section className="page-hero legal-page">
+        <p className="eyebrow">Accessibility</p>
+        <h1>Accessibility at {siteName}.</h1>
+        <p>Effective {legalEffectiveDate}. {siteOperator} intends {siteName} to be usable by everyone, including readers who use screen readers, keyboard navigation, magnification, or reduced motion.</p>
+      </section>
+      <section className="legal-document">
+        <LegalSection title="1. Standard we aim for">
+          <p>We work toward the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA. That is our target, not a claim of complete conformance: the site is new, parts of it change often, and some content comes from third parties we do not control.</p>
+        </LegalSection>
+        <LegalSection title="2. What we do">
+          <ul>
+            <li>Automated accessibility checks run against the main templates in our end-to-end test suite, and a build that introduces a detected violation is treated as a defect.</li>
+            <li>Pages use semantic headings and landmarks, visible focus, text alternatives for meaningful images, and labeled form controls.</li>
+            <li>Advertising creative is reviewed for contrast, keyboard access, and an accessible name before a placement goes live.</li>
+            <li>The market and crypto ticker widgets are supplied by third parties; the news feed, filters and sponsor labels do not depend on them and remain fully usable if those scripts are blocked.</li>
+          </ul>
+        </LegalSection>
+        <LegalSection title="3. Known limitations">
+          <p>Linked publisher articles, sponsor destination pages, and the LiveCoinWatch and TradingView ticker widgets are controlled by third parties, and their accessibility is governed by those parties. Automated testing finds only a portion of accessibility problems; reader reports are the most reliable signal we have.</p>
+        </LegalSection>
+        <LegalSection title="4. Tell us about a barrier">
+          <p>If any part of this site is difficult or impossible for you to use, tell us through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. Please include the page address, what you were trying to do, and the assistive technology or browser you were using.</p>
+          <p>We aim to acknowledge accessibility reports within five business days and to describe a fix or a workaround within thirty days. If we cannot make something accessible, we will offer another way to get the same information.</p>
         </LegalSection>
       </section>
     </Shell>
@@ -905,9 +1041,14 @@ function topicPath(topicSlug: TopicSlug, county?: TexasCounty, region?: RegionSl
   return county ? `/county/${county.slug}/topic/${topicSlug}` : `/topic/${topicSlug}`;
 }
 
-function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoadMore, onFetchMore }: { title: string; items: NewsItem[]; visibleCount: number; emptyTitle: string; emptyBody: string; onLoadMore: () => void; onFetchMore: () => void }) {
+function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoadMore, onFetchMore, canFetchMore = false, loadingMore = false }: { title: string; items: NewsItem[]; visibleCount: number; emptyTitle: string; emptyBody: string; onLoadMore: () => void; onFetchMore: () => void; canFetchMore?: boolean; loadingMore?: boolean }) {
   const visibleItems = items.slice(0, visibleCount);
   const hasHiddenItems = visibleCount < items.length;
+  const buttonLabel = loadingMore
+    ? "Loading more articles..."
+    : hasHiddenItems || canFetchMore
+      ? "Load more articles"
+      : "Fetch latest matching articles";
 
   return (
     <section className="feed-section">
@@ -929,8 +1070,8 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
         ))}
       </div>
       {visibleItems.length ? (
-        <button className="button load-more" onClick={hasHiddenItems ? onLoadMore : onFetchMore} type="button">
-          {hasHiddenItems ? "Load more articles" : "Fetch latest matching articles"}
+        <button className="button load-more" data-can-fetch-more={String(canFetchMore)} data-hidden-items={String(hasHiddenItems)} disabled={loadingMore} onClick={hasHiddenItems ? onLoadMore : onFetchMore} type="button">
+          {buttonLabel}
         </button>
       ) : null}
     </section>
@@ -1006,7 +1147,6 @@ function formatPublishedDate(value?: string) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const { showPrivacyChoices } = usePrivacyPreferences();
 
   return (
     <>
@@ -1047,8 +1187,8 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link to="/privacy">Privacy Statement</Link>
           <Link to="/methodology">Editorial Methodology</Link>
           <Link to="/advertising-standards">Advertising Standards</Link>
+          <Link to="/accessibility">Accessibility</Link>
           <Link to="/contact">Contact</Link>
-          <button className="footer-link-button" onClick={showPrivacyChoices} type="button">Manage privacy choices</button>
         </section>
         <section className="footer-card">
           <h2>Site Notes</h2>
@@ -1061,20 +1201,6 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function TickerStack() {
-  const {
-    optionalWidgetsAllowed,
-    showPrivacyChoices,
-  } = usePrivacyPreferences();
-
-  if (!optionalWidgetsAllowed) {
-    return (
-      <aside className="ticker-choice-placeholder" aria-label="Optional market tickers are off">
-        <span>Optional LiveCoinWatch and TradingView tickers are off.</span>
-        <button onClick={showPrivacyChoices} type="button">Review privacy choices</button>
-      </aside>
-    );
-  }
-
   return (
     <div className="ticker-stack" aria-label="Market tickers">
       <CryptoTicker />
@@ -1189,23 +1315,50 @@ function LegalSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
+/**
+ * Loads the home page and keeps loading it.
+ *
+ * Pages accumulate rather than replace: the first request is offset 0, and each
+ * `loadMore` asks for the next slice and appends it. One offset covers both the
+ * county and statewide sections because the API slices them together, so page
+ * N is items [N x limit, (N+1) x limit) of each. Items are deduplicated by id,
+ * since a story can surface in more than one page as upstream feeds move.
+ */
 function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
-  const [data, setData] = useState<HomePageResponse | null>(null);
+  const [pages, setPages] = useState<HomePageResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const activeRequest = useRef(0);
+  const pendingMore = useRef(false);
+
+  // Depend on the selection's value, not the array's identity. The caller
+  // rebuilds these arrays on render, which otherwise fired the same request
+  // three times on every page load.
+  const countiesKey = counties.join(",");
+  const regionsKey = regions.join(",");
+  const topicsKey = topics.join(",");
+  const selection = useMemo(
+    () => ({
+      counties: countiesKey ? countiesKey.split(",") : [],
+      regions: regionsKey ? regionsKey.split(",") : [],
+      topics: topicsKey ? topicsKey.split(",") : [],
+    }),
+    [countiesKey, regionsKey, topicsKey],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
     const requestId = activeRequest.current + 1;
     activeRequest.current = requestId;
+    pendingMore.current = false;
     setLoading(true);
     setError(null);
 
-    fetchHomePage({ counties, regions, topics, limit }, { signal: controller.signal })
+    fetchHomePage({ ...selection, limit }, { signal: controller.signal })
       .then((response) => {
-        if (activeRequest.current === requestId) setData(response);
+        if (activeRequest.current === requestId) setPages([response]);
       })
       .catch((requestError: unknown) => {
         if (controller.signal.aborted || activeRequest.current !== requestId) return;
@@ -1216,10 +1369,68 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
       });
 
     return () => controller.abort();
-  }, [counties, limit, refreshVersion, regions, topics]);
+  }, [limit, refreshVersion, selection]);
+
+  const data = useMemo(() => mergeNewsPages(pages), [pages]);
+  const hasMore = Boolean(
+    pages.at(-1)?.county?.meta.hasMore || pages.at(-1)?.statewide.meta.hasMore,
+  );
+
+  const loadMore = useCallback(() => {
+    if (pendingMore.current || !pages.length) return;
+    const latest = pages.at(-1);
+    if (!latest?.county?.meta.hasMore && !latest?.statewide.meta.hasMore) return;
+
+    pendingMore.current = true;
+    const requestId = activeRequest.current;
+    setLoadingMore(true);
+
+    fetchHomePage({ ...selection, limit, offset: pages.length * limit })
+      .then((response) => {
+        if (activeRequest.current !== requestId) return;
+        setPages((current) => [...current, response]);
+      })
+      .catch(() => {
+        // A failed extra page leaves what is already on screen intact; the
+        // reader keeps their stories and can retry by scrolling again.
+      })
+      .finally(() => {
+        pendingMore.current = false;
+        if (activeRequest.current === requestId) setLoadingMore(false);
+      });
+  }, [limit, pages, selection]);
 
   const refresh = useCallback(() => setRefreshVersion((current) => current + 1), []);
-  return { data, loading, error, refresh };
+  return { data, loading, loadingMore, hasMore, error, refresh, loadMore };
+}
+
+/** Concatenates fetched pages into one response, dropping repeated stories. */
+function mergeNewsPages(pages: readonly HomePageResponse[]): HomePageResponse | null {
+  const first = pages[0];
+  if (!first) return null;
+  if (pages.length === 1) return first;
+
+  const latest = pages[pages.length - 1] ?? first;
+  const countySections = pages.map((page) => page.county).filter(Boolean) as FeedResponse[];
+
+  return {
+    county: countySections.length
+      ? {
+          ...(latest.county ?? countySections[0]),
+          items: dedupeById(countySections.flatMap((section) => section.items)),
+        }
+      : null,
+    statewide: {
+      ...latest.statewide,
+      items: dedupeById(pages.flatMap((page) => page.statewide.items)),
+    },
+    meta: latest.meta,
+  };
+}
+
+function dedupeById(items: readonly NewsItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)));
 }
 
 function useStoredCountySelection() {
@@ -1262,6 +1473,22 @@ function useInfiniteScroll(onNearEnd: () => void, enabled: boolean) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [enabled, onNearEnd]);
+}
+
+/** Keeps a single <link rel="canonical"> in sync with the active route. */
+function useCanonicalUrl() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const href = new URL(pathname, canonicalOrigin).toString().replace(/\/$/, "") || canonicalOrigin;
+    let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "canonical";
+      document.head.appendChild(link);
+    }
+    link.href = pathname === "/" ? `${canonicalOrigin}/` : href;
+  }, [pathname]);
 }
 
 function usePageTitle(title: string) {

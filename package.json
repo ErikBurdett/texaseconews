@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "generate:sitemap": "tsx scripts/generate-sitemap.ts",
+    "prebuild": "npm run generate:sitemap"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -20,6 +22,7 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "latest",
     "@playwright/test": "^1.60.0",
     "@types/node": "latest",
@@ -29,6 +32,7 @@
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
+    "tsx": "^4.23.13",
     "typescript": "latest",
     "typescript-eslint": "latest"
   }

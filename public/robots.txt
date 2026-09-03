@@ -1,0 +1,8 @@
+# TexasBusiness.News — https://texasbusiness.news
+# The site is served from several domains; texasbusiness.news is canonical.
+# Every page also declares <link rel="canonical"> pointing at that origin.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://texasbusiness.news/sitemap.xml
