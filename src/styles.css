@@ -345,7 +345,15 @@ textarea:focus-visible {
   line-height: 1.7;
 }
 
-.eyebrow {
+/*
+ * Scoped to the hero containers as well: `.hero-copy p` and `.page-hero p` are
+ * class+element selectors, so they outrank a bare `.eyebrow` and were leaving
+ * the hero kickers grey while every other kicker went red.
+ */
+.eyebrow,
+.hero-copy .eyebrow,
+.page-hero .eyebrow,
+.hero-panel .eyebrow {
   margin: 0 0 0.65rem;
   color: var(--texas-red-ink);
   font-size: 0.78rem;
