@@ -304,7 +304,7 @@ function CountyDirectoryPage() {
               {counties.map((county) => (
                 <Link className="county-link-card" key={county.fips} to={`/county/${county.slug}`}>
                   <strong>{county.displayName}</strong>
-                  <span>{county.metro || county.region}</span>
+                  {countyPlaceLabel(county) ? <span>{countyPlaceLabel(county)}</span> : null}
                 </Link>
               ))}
             </div>
@@ -987,7 +987,7 @@ function FeedControls({
                   type="checkbox"
                 />
                 <span>{county.name}</span>
-                <small>{county.metro || county.region}</small>
+                {countyPlaceLabel(county) ? <small>{countyPlaceLabel(county)}</small> : null}
               </label>
             ))}
           </div>
@@ -1124,6 +1124,16 @@ function NewsCard({ item }: { item: NewsItem }) {
       </div>
     </article>
   );
+}
+
+/**
+ * The place label under a county name: its metro, or its region when one was
+ * actually assigned. Counties default to "All of Texas", which says nothing a
+ * reader of a Texas county directory does not already know, so it is omitted.
+ */
+function countyPlaceLabel(county: TexasCounty) {
+  if (county.metro) return county.metro;
+  return county.region === "All of Texas" ? "" : county.region;
 }
 
 /** Keeps the outbound link on one line; the full name is in the meta row. */

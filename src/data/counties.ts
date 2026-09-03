@@ -15,6 +15,7 @@ export type CountyAlias = {
 };
 
 export type TexasRegion =
+  | "All of Texas"
   | "Panhandle"
   | "North Texas"
   | "East Texas"
@@ -91,13 +92,21 @@ export function slugifyCounty(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function defaultRegion(county: UsCountyRecord): TexasRegion {
-  const fipsNumber = Number.parseInt(county.FIPS, 10);
-  if (fipsNumber <= 48100) return "Panhandle";
-  if (fipsNumber <= 48220) return "North Texas";
-  if (fipsNumber <= 48320) return "Central Texas";
-  if (fipsNumber <= 48420) return "Gulf Coast";
-  return "West Texas";
+/**
+ * Counties without an explicit assignment are simply "All of Texas".
+ *
+ * This used to bucket counties by FIPS range, which produced confidently wrong
+ * answers: Texas FIPS codes are issued in alphabetical order, not geographic
+ * order, so everything below 48100 is just the start of the alphabet. Anderson,
+ * Andrews, Angelina and Aransas were all labelled Panhandle -- they are East
+ * Texas, the Permian Basin, East Texas and the Gulf Coast. 226 of 254 counties
+ * carried a region they do not belong to.
+ *
+ * Saying "All of Texas" is accurate: we have not assigned this county a
+ * sub-region. A county earns a real one by being listed in regionalOverrides.
+ */
+function defaultRegion(): TexasRegion {
+  return "All of Texas";
 }
 
 const texasCountyRecords = getCountyByState("Texas") as UsCountyRecord[];
@@ -112,7 +121,7 @@ export const texasCounties: TexasCounty[] = texasCountyRecords
       name: county.name,
       slug,
       displayName: `${county.name} County`,
-      region: override?.region || defaultRegion(county),
+      region: override?.region || defaultRegion(),
       metro: override?.metro,
     };
   })

@@ -144,6 +144,36 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test("assigns counties a real region only where one was chosen", () => {
+  // Regions used to be inferred from FIPS ranges, which are alphabetical rather
+  // than geographic, so most counties carried a confidently wrong region.
+  const named = texasCounties.filter((county) => county.region !== "All of Texas");
+  const unnamed = texasCounties.filter((county) => county.region === "All of Texas");
+
+  expect(named.length + unnamed.length).toBe(254);
+  expect(named.length).toBeGreaterThan(0);
+  expect(unnamed.length).toBeGreaterThan(0);
+
+  // Counties that were previously mislabelled Panhandle by the FIPS bucketing.
+  for (const slug of ["anderson", "andrews", "angelina", "aransas", "bastrop"]) {
+    const county = getCountyBySlug(slug);
+    expect(county, slug).toBeDefined();
+    expect(county!.region, `${slug} should no longer claim a guessed region`).toBe("All of Texas");
+  }
+
+  // Explicit assignments still win.
+  for (const [slug, region] of [
+    ["dallas", "North Texas"],
+    ["harris", "Gulf Coast"],
+    ["travis", "Central Texas"],
+    ["bexar", "South Texas"],
+    ["potter", "Panhandle"],
+    ["el-paso", "West Texas"],
+  ] as const) {
+    expect(getCountyBySlug(slug)?.region, slug).toBe(region);
+  }
+});
+
 test("generates bounded primary, market, and nearby feeds for all 254 counties", () => {
   expect(texasCounties).toHaveLength(254);
   const issues: string[] = [];
