@@ -1097,7 +1097,7 @@ function NewsCard({ item }: { item: NewsItem }) {
       <div className="news-body">
         <span className="editorial-label">Publisher link</span>
         <div className="meta-row">
-          <span>{publisherName}</span>
+          <span className="publisher-name" title={publisherName}>{publisherName}</span>
           {expandedCoverageLabel ? (
             <span className={`coverage-chip ${item.coverageTier}`}>
               {expandedCoverageLabel}
@@ -1118,12 +1118,17 @@ function NewsCard({ item }: { item: NewsItem }) {
             ))}
           </div>
         ) : null}
-        <a className="read-source-link" href={item.link} referrerPolicy="strict-origin-when-cross-origin" rel="noopener noreferrer" target="_blank">
-          Read at {publisherName} <span aria-hidden="true">↗</span>
+        <a aria-label={`Read this story at ${publisherName} (opens in a new tab)`} className="read-source-link" href={item.link} referrerPolicy="strict-origin-when-cross-origin" rel="noopener noreferrer" target="_blank">
+          Read at {shortPublisher(publisherName)} <span aria-hidden="true">↗</span>
         </a>
       </div>
     </article>
   );
+}
+
+/** Keeps the outbound link on one line; the full name is in the meta row. */
+function shortPublisher(name: string) {
+  return name.length > 26 ? `${name.slice(0, 25).trimEnd()}\u2026` : name;
 }
 
 function publisherHostname(value?: string) {

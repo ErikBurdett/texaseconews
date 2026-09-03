@@ -11,6 +11,17 @@
   --gold: #f4f7fb;
   --blue: #4f8ccc;
   --red: #d35d68;
+  /*
+   * Texas red. Two values because they do different jobs: --texas-red is for
+   * rules, bars and borders, where contrast rules do not apply; --texas-red-ink
+   * is lightened so it still clears 4.5:1 as small text on the navy panels.
+   */
+  --texas-red: #e23d4d;
+  --texas-red-ink: #ff8d95;
+  --texas-red-line: rgba(226, 61, 77, 0.45);
+  --texas-red-soft: rgba(226, 61, 77, 0.13);
+  /* Hairline used for the divisions inside a card. */
+  --line-soft: rgba(191, 213, 238, 0.11);
   --accent: #73a7df;
   --accent-strong: #4d89c9;
   --accent-soft: rgba(84, 145, 207, 0.2);
@@ -316,11 +327,14 @@ textarea:focus-visible {
 .hero-copy h1,
 .page-hero h1 {
   margin: 0;
-  max-width: 14ch;
-  font-size: clamp(3rem, 7vw, 10rem);
-  line-height: 0.88;
-  letter-spacing: -0.08em;
+  max-width: 15ch;
+  /* The old 3rem floor wrapped to five lines on a 390px screen and pushed the
+     feed below the fold. Scale from a smaller floor and let it grow faster. */
+  font-size: clamp(2.15rem, 8.5vw, 10rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
   text-transform: uppercase;
+  text-wrap: balance;
 }
 
 .hero-copy p,
@@ -333,7 +347,7 @@ textarea:focus-visible {
 
 .eyebrow {
   margin: 0 0 0.65rem;
-  color: #ffffff;
+  color: var(--texas-red-ink);
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.22em;
@@ -492,9 +506,10 @@ textarea:focus-visible {
 
 .hero-chip-group button.selected,
 .quick-actions button.selected {
-  border-color: rgba(115, 167, 223, 0.5);
+  border-color: var(--texas-red-line);
   color: #ffffff;
-  background: var(--accent-soft);
+  background: var(--texas-red-soft);
+  box-shadow: inset 2px 0 0 var(--texas-red);
 }
 
 .search-input,
@@ -701,11 +716,24 @@ textarea:focus-visible {
 }
 
 .section-heading {
+  position: relative;
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 1rem;
   margin: 0.25rem 0 0;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.section-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 3.5rem;
+  height: 2px;
+  background: var(--texas-red);
 }
 
 .section-heading h2 {
@@ -730,12 +758,27 @@ textarea:focus-visible {
 }
 
 .news-card {
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr;
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   height: 100%;
   overflow: clip;
+}
+
+/* A Texas-red spine down the leading edge of every story. */
+.news-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--texas-red), rgba(226, 61, 77, 0.15));
+}
+
+.news-card:hover,
+.news-card:focus-within {
+  border-color: var(--texas-red-line);
 }
 
 .rights-safe-card .news-body {
@@ -789,7 +832,13 @@ textarea:focus-visible {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: 1.1rem;
+  padding: clamp(0.95rem, 2.4vw, 1.35rem);
+}
+
+.news-card .editorial-label {
+  border-color: var(--texas-red-line);
+  color: var(--texas-red-ink);
+  background: var(--texas-red-soft);
 }
 
 .news-body h3 {
@@ -847,18 +896,110 @@ textarea:focus-visible {
   color: #cef4dc;
 }
 
+/*
+ * Card internals are divided by hairlines rather than by whitespace alone:
+ * source line, headline, tags and the outbound link each read as their own
+ * band. Publisher and date sit on one line separated by a rule instead of
+ * being three stacked pills, which is what they were before.
+ */
+.news-card .meta-row {
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.news-card .meta-row > .publisher-name {
+  /* Zero basis, not auto: with auto a long publisher name is wider than the
+     row and pushes the date onto its own line, stranding its divider. At zero
+     it takes what is left and ellipsizes instead. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.news-card .meta-row > time,
+.news-card .meta-row > .coverage-chip {
+  flex: 0 0 auto;
+}
+
+.news-card .meta-row > span,
+.news-card .meta-row > time {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.news-card .meta-row > .publisher-name {
+  overflow: hidden;
+  color: #dce9f7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.news-card .meta-row > time {
+  position: relative;
+  padding-left: 0.65rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.news-card .meta-row > time::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 0.85em;
+  transform: translateY(-50%);
+  background: var(--texas-red-line);
+}
+
+/* The coverage chip stays a chip: it carries meaning the others do not. */
+.news-card .meta-row > .coverage-chip {
+  padding: 0.28rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.news-body .rights-safe-note {
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
 .news-body .tag-row {
   margin-top: auto;
-  padding-top: 0.75rem;
+  padding-top: 0.85rem;
+}
+
+.news-card .tag-row a:hover,
+.news-card .tag-row a:focus-visible {
+  border-color: var(--texas-red-line);
+  color: #ffffff;
+  background: var(--texas-red-soft);
 }
 
 .read-source-link {
-  width: fit-content;
-  margin-top: 1rem;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line-soft);
   color: #ffffff;
   font-weight: 900;
-  text-decoration-color: rgba(115, 167, 223, 0.7);
+  text-decoration-color: var(--texas-red-line);
+  text-decoration-thickness: 2px;
   text-underline-offset: 0.25em;
+}
+
+.read-source-link:hover,
+.read-source-link:focus-visible {
+  text-decoration-color: var(--texas-red);
 }
 
 .status-card,
@@ -1436,6 +1577,23 @@ textarea:focus-visible {
 }
 
 @media (max-width: 680px) {
+  /* Stack the section heading: side-by-side squeezed "15 stories" into a
+     two-line column beside the title. */
+  .section-heading {
+    flex-direction: column;
+    align-items: start;
+    gap: 0.35rem;
+  }
+
+  .news-card .meta-row {
+    flex-wrap: wrap;
+  }
+
+  .news-card .meta-row > .coverage-chip {
+    order: 3;
+    flex-basis: 100%;
+  }
+
   .privacy-choices {
     right: 0.65rem;
     bottom: 0.65rem;
