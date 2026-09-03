@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
-    "prebuild": "npm run generate:sitemap"
+    "prebuild": "npm run generate:sitemap",
+    "report:pdf": "node compliance-report/build-pdf.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

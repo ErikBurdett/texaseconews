@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TexasBusiness.News — Compliance Remediation Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ink:        #10233f;
+    --ink-soft:   #46586e;
+    --ink-faint:  #77869a;
+    --rule:       #d5dde7;
+    --rule-soft:  #e7ecf2;
+    --red:        #c72132;
+    --red-soft:   #fdf1f2;
+    --green:      #1a6349;
+    --amber:      #8a5600;
+    --panel:      #f6f8fb;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: #ffffff;
+    font-family: "Public Sans", Helvetica, Arial, sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: Newsreader, Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  p { margin: 0 0 0.7em; max-width: 41em; }
+  ul, ol { margin: 0 0 0.8em; padding-left: 1.1em; }
+  li { margin-bottom: 0.35em; max-width: 40em; }
+  strong, b { font-weight: 700; }
+  code {
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--panel);
+    padding: 0.05em 0.3em;
+    border-radius: 2px;
+  }
+
+  /* ---------- page furniture ----------
+     Sections flow rather than each claiming a page: forcing a break before
+     every one left most pages ending at 60% and pushed the report to 20 pages.
+     Only the cover, the summary and the appendices start fresh. Small blocks
+     still refuse to split across a page boundary. */
+  .page-break { break-before: page; }
+  h2, h3, h4 { break-after: avoid; }
+  .kicker { break-after: avoid; }
+  table, .evidence, .callout, .metrics, .notice { break-inside: avoid; }
+  thead { display: table-header-group; }
+  tbody tr { break-inside: avoid; }
+  ul.gate li, ol.q li, li { break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+
+  /* ---------- cover ---------- */
+  .cover { padding-top: 14mm; border-top: 4px solid var(--red); }
+  .cover .org {
+    font-size: 8.5pt; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 1.6em;
+  }
+  .cover h1 { font-size: 30pt; line-height: 1.1; max-width: 15em; }
+  .cover .sub {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 13pt; line-height: 1.45; color: var(--ink-soft);
+    max-width: 30em; margin-top: 0.7em;
+  }
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 0.9em 2em; margin-top: 2.4em; padding-top: 1.2em;
+    border-top: 1px solid var(--rule);
+    max-width: 40em;
+  }
+  .meta-grid dt {
+    font-size: 7.6pt; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.15em;
+  }
+  .meta-grid dd { margin: 0; font-size: 10pt; font-weight: 500; }
+
+  .notice {
+    margin-top: 2em; padding: 0.9em 1.1em;
+    border-left: 3px solid var(--red); background: var(--red-soft);
+    font-size: 9.4pt; color: var(--ink-soft); max-width: 43em;
+  }
+  .notice strong { color: var(--ink); }
+
+  /* ---------- headings ---------- */
+  .kicker {
+    font-size: 7.6pt; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--red); margin: 0 0 0.4em;
+  }
+  h2 {
+    font-size: 17pt; line-height: 1.2; margin: 0 0 0.15em;
+    padding-bottom: 0.3em; border-bottom: 2px solid var(--ink);
+  }
+  h2 + .lede {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 11.5pt; color: var(--ink-soft); margin: 0.7em 0 1.1em; max-width: 39em;
+  }
+  h3 { font-size: 12.5pt; margin: 1.5em 0 0.4em; }
+  h4 {
+    font-family: "Public Sans", sans-serif;
+    font-size: 8pt; font-weight: 700; letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 1.3em 0 0.4em;
+  }
+  section { margin-top: 1.7em; }
+
+  /* ---------- status chips ---------- */
+  .chip {
+    display: inline-block; padding: 0.1em 0.5em; border-radius: 2px;
+    font-size: 7.4pt; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .chip.done  { color: #ffffff;      background: var(--green); }
+  .chip.part  { color: #ffffff;      background: var(--amber); }
+  .chip.open  { color: #ffffff;      background: var(--red); }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 9.2pt; margin: 0.6em 0 1em; }
+  thead th {
+    text-align: left; padding: 0 0.6em 0.4em 0;
+    border-bottom: 1.5px solid var(--ink);
+    font-size: 7.4pt; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  tbody td { padding: 0.5em 0.6em 0.5em 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { width: 2.2em; color: var(--ink-faint); font-family: "IBM Plex Mono", monospace; font-size: 8.6pt; }
+  td.st { width: 6.5em; }
+
+  /* ---------- evidence ---------- */
+  .evidence {
+    margin: 0.7em 0 1em; border: 1px solid var(--rule);
+    border-left: 3px solid var(--red); background: var(--panel);
+    padding: 0.7em 0.9em; max-width: 43em;
+  }
+  .evidence .cap {
+    font-size: 7.4pt; font-weight: 700; letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.4em;
+  }
+  .evidence pre {
+    margin: 0; font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 8.4pt; line-height: 1.5; white-space: pre-wrap; color: var(--ink);
+  }
+
+  /* ---------- metric strip ---------- */
+  .metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0; border: 1px solid var(--rule); margin: 1em 0 1.2em;
+  }
+  .metrics div { padding: 0.7em 0.8em; border-right: 1px solid var(--rule); }
+  .metrics div:last-child { border-right: none; }
+  .metrics b {
+    display: block; font-family: Newsreader, Georgia, serif;
+    font-size: 19pt; line-height: 1; color: var(--red); font-weight: 500;
+  }
+  .metrics span {
+    display: block; margin-top: 0.25em; font-size: 7.4pt; font-weight: 600;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  /* ---------- checklists ---------- */
+  ul.gate { list-style: none; padding: 0; margin: 0.5em 0 1em; }
+  ul.gate li {
+    display: grid; grid-template-columns: 1.3em 1fr; gap: 0.5em;
+    margin-bottom: 0.55em; max-width: 42em;
+  }
+  ul.gate li::before { font-weight: 700; font-size: 9.5pt; grid-column: 1; }
+  ul.gate li.y::before { content: "✓"; color: var(--green); }
+  ul.gate li.n::before { content: "○"; color: var(--red); }
+  /* The marker, the label and the explanation are three grid children in a
+     two-column grid, so without this the explanation wraps into the 1.3em
+     marker column and sets one word per line. Both text parts stay in col 2. */
+  ul.gate li > b { grid-column: 2; }
+  ul.gate .why { grid-column: 2; display: block; color: var(--ink-soft); font-size: 9pt; }
+
+  ol.q { counter-reset: q; list-style: none; padding: 0; }
+  ol.q li {
+    counter-increment: q; display: grid; grid-template-columns: 1.9em 1fr;
+    gap: 0.5em; margin-bottom: 0.75em; max-width: 42em;
+  }
+  ol.q li::before {
+    content: counter(q, decimal-leading-zero);
+    font-family: "IBM Plex Mono", monospace; font-size: 8.4pt; color: var(--red); font-weight: 500;
+  }
+
+  .callout {
+    border: 1px solid var(--rule); border-top: 3px solid var(--ink);
+    padding: 0.9em 1.1em; margin: 1em 0; background: #ffffff; max-width: 43em;
+  }
+  .callout h4 { margin-top: 0; }
+
+  .footnote { font-size: 8.6pt; color: var(--ink-faint); max-width: 40em; }
+</style>
+</head>
+<body>
+
+<!-- ============================== COVER ============================== -->
+<div class="cover">
+  <p class="org">Texas Business News, LLC</p>
+  <h1>Compliance Remediation Report</h1>
+  <p class="sub">What the pre-launch review found, what has been corrected and verified in production, and what still requires counsel, contracts or insurance before advertising revenue is taken.</p>
+
+  <dl class="meta-grid">
+    <div><dt>Prepared for</dt><dd>Counsel and stakeholders</dd></div>
+    <div><dt>Property</dt><dd>texasbusiness.news</dd></div>
+    <div><dt>Date</dt><dd>3 September 2026</dd></div>
+    <div><dt>Supersedes</dt><dd>Pre-launch review, same date</dd></div>
+    <div><dt>Operating entity</dt><dd>Texas Business News, LLC (Texas)</dd></div>
+    <div><dt>Verification</dt><dd>Live production, not source review</dd></div>
+  </dl>
+
+  <div class="notice">
+    <strong>This is not legal advice and its author is not your lawyer.</strong> It is an engineering and compliance record, written to make time with a Texas media attorney shorter and better targeted. Where it says something is a legal risk, read that as “ask counsel about this,” not as a conclusion. Every factual claim about the running system was checked against the live site and API on the date above; claims about contracts, insurance and filings are simply reports of what does and does not exist.
+  </div>
+</div>
+
+<!-- ========================= EXECUTIVE SUMMARY ======================== -->
+<section class="page-break">
+  <p class="kicker">Executive summary</p>
+  <h2>The gap between the written program and the running system is closed</h2>
+  <p class="lede">The compliance documents were never the problem. The problem was that the deployed system did not match them in two specific, checkable ways, and that both were provable by an outsider in a single command.</p>
+
+  <p>A pre-launch review raised nine findings: two critical, two high, five medium. <strong>Both critical findings and both high findings are now resolved and verified running in production.</strong> Of the five medium findings, four are resolved and one — consolidating eight web addresses into one — is partly done and needs infrastructure work rather than a decision.</p>
+
+  <p>The two that mattered most were the same kind of problem. The published rights position said the service distributes headlines, publishers, dates and links, and never publisher-written summaries or photographs. The website honoured that; <em>the public data feed did not</em>, and handed both to anyone who asked. Separately, that feed was drawing stories from publishers well outside the cleared list, including a South Korean outlet and a Michigan radio station, and in some cases printed a raw search query where a publisher's name belongs. Both are fixed, enforced by automated tests, and confirmed against the live system.</p>
+
+  <div class="metrics">
+    <div><b>4 of 4</b><span>Critical and high closed</span></div>
+    <div><b>8 of 9</b><span>Findings resolved</span></div>
+    <div><b>118</b><span>Automated tests</span></div>
+    <div><b>0</b><span>Excerpts or images served</span></div>
+  </div>
+
+  <p>Alongside the remediation, the product itself was substantially deepened: catalogued news sources went from 24 to 91, all validated before inclusion, and the available story pool across a representative sample of counties and regions went from 454 items to 1,710.</p>
+
+  <h4>What still blocks advertising revenue</h4>
+  <p>Nothing further in software. The remaining items are contractual and procedural: media liability insurance, counsel review of the terms and the aggregation posture, a written agreement covering the one active advertising arrangement, and rights records for the news sources added since the review. These are listed in full in Section 7.</p>
+</section>
+
+<!-- ========================== FINDINGS TABLE ========================= -->
+<section>
+  <p class="kicker">Section 1</p>
+  <h2>Every finding and where it now stands</h2>
+  <p class="lede">Numbered as in the original review so the two documents can be read side by side. “Partly” always means the software is done and something outside the software is not.</p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Finding</th><th>Status</th><th>What remains</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="num">01</td>
+        <td>No legal entity standing between the operator and a claim</td>
+        <td class="st"><span class="chip part">Partly</span></td>
+        <td>Entity exists and is now named throughout. Counsel review and insurance outstanding.</td>
+      </tr>
+      <tr>
+        <td class="num">02</td>
+        <td>Data feed published publisher summaries and photographs</td>
+        <td class="st"><span class="chip done">Closed</span></td>
+        <td>Nothing. Verified in production and guarded by a test.</td>
+      </tr>
+      <tr>
+        <td class="num">03</td>
+        <td>Stories drawn from publishers outside the cleared list</td>
+        <td class="st"><span class="chip done">Closed</span></td>
+        <td>Rights records for sources added since the review.</td>
+      </tr>
+      <tr>
+        <td class="num">04</td>
+        <td>Advertising relationship undisclosed and mislabelled</td>
+        <td class="st"><span class="chip part">Partly</span></td>
+        <td>A written agreement covering the arrangement.</td>
+      </tr>
+      <tr>
+        <td class="num">05</td>
+        <td>No security headers on the website</td>
+        <td class="st"><span class="chip done">Closed</span></td>
+        <td>Nothing. Verified on the wire.</td>
+      </tr>
+      <tr>
+        <td class="num">06</td>
+        <td>Accessibility an unaddressed litigation surface</td>
+        <td class="st"><span class="chip done">Closed</span></td>
+        <td>Ongoing by nature; an audit now runs on every change.</td>
+      </tr>
+      <tr>
+        <td class="num">07</td>
+        <td>Eight web addresses for one site, no sitemap or robots file</td>
+        <td class="st"><span class="chip part">Partly</span></td>
+        <td>Redirecting seven addresses to one. Needs infrastructure work.</td>
+      </tr>
+      <tr>
+        <td class="num">08</td>
+        <td>Terms missing indemnification and dispute resolution</td>
+        <td class="st"><span class="chip done">Closed</span></td>
+        <td>Counsel decision on arbitration, deliberately left open.</td>
+      </tr>
+      <tr>
+        <td class="num">09</td>
+        <td>Contact form had no abuse control</td>
+        <td class="st"><span class="chip done">Closed</span></td>
+        <td>Nothing.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ====================== THE TWO CRITICAL ONES ====================== -->
+<section>
+  <p class="kicker">Section 2</p>
+  <h2>The two findings that blocked launch</h2>
+  <p class="lede">Both were cases where the published position and the running system disagreed. That disagreement is more damaging than the underlying issue, because it is the difference between “we had controls” and “we documented controls we did not implement.”</p>
+
+  <h3>Publisher summaries and photographs are no longer distributed</h3>
+  <p>The service's strongest position as an aggregator is that it publishes facts — a headline, who wrote it, when, and a link — rather than expressive content that belongs to the publisher. That position was undermined by a public data feed that handed out publisher-written summaries and photograph addresses to anyone who requested them, without authentication. A publisher's counsel could have established this with a single command.</p>
+
+  <p>Those two fields are now removed at the moment a response is assembled. The system still reads them internally, because they are needed to judge whether a story is about Texas and whether it is constructive business news — which is exactly what the rights document already contemplated — but they never leave the building. An automated test inspects every response the service can produce and fails the build if either field appears anywhere.</p>
+
+  <div class="evidence">
+    <div class="cap">Verified against the production service</div>
+<pre>Before   items returned 48   with summary 48   with photograph 48
+After    items returned 60   with summary  0   with photograph  0
+         items with no publisher named: 0</pre>
+  </div>
+
+  <h3>Stories now come only from publishers on the register</h3>
+  <p>Search services such as Google News and Bing News were being used to discover stories. They will return any publisher matching a query, and they were returning publishers that appeared nowhere in the rights register — a South Korean business outlet, a Michigan radio station, a sports recruiting site. A separate defect printed a raw search query in place of a publisher's name, which the internal field rules expressly forbid.</p>
+
+  <p>A publisher register now governs what may be displayed. A story arriving from a search service must resolve to a publisher on that register or it is discarded. The first tier of the register is derived automatically from the catalogued source list, so the two cannot drift apart. The attribution defect had a second cause worth recording: the check that recognised an aggregator looked for the words “Google News” in the feed's title, but the title was shortened before that check ran, cutting the marker off. The system no longer uses a search feed's title for attribution at all.</p>
+
+  <div class="evidence">
+    <div class="cap">Publishers served in one response, before and after</div>
+<pre>Before   Chosunbiz (South Korea), WTVB (Michigan radio),
+         247sports.com, and a raw search query printed
+         where a publisher name belongs
+
+After    Texas publishers only. Raw queries in the
+         publisher field: 0</pre>
+  </div>
+</section>
+
+<!-- ========================== ADVERTISING =========================== -->
+<section>
+  <p class="kicker">Section 3</p>
+  <h2>Advertising disclosure</h2>
+  <p class="lede">The single active placement was labelled in a way that was affirmatively untrue. Correcting it took two passes, because the first correction was based on a wrong premise.</p>
+
+  <p>The placement for Double B Ranch carried the label “Paid sponsor.” No advertiser had paid for it, and no signed agreement existed. Stating that someone paid when they did not is a worse position than saying nothing at all, because it is a false statement rather than an omission.</p>
+
+  <p>The original review inferred that the advertiser was a business the operator also owns, and the first correction disclosed it on that basis. <strong>That inference was wrong.</strong> Double B Ranch is a separate entity, and the arrangement is a trade: they carry TexasBusiness.News placements in exchange. Recording this plainly matters, because the first correction would have told readers something untrue in the other direction.</p>
+
+  <p>Barter is consideration, so this is a genuine advertisement with nothing unusual to disclose. The label now says what it is, names the advertiser, and stops there. The placement also now links to the domain shown in its own artwork, which it previously did not — the artwork read one address while the link went to another.</p>
+
+  <p>What actually prevents this class of error recurring is not the wording. Each placement now declares what kind of arrangement it is, and the reader-facing label is generated from that declaration rather than typed in by hand, so a placement cannot assert a relationship that does not exist. Each placement also carries a record of what the advertiser gave, because a barter arrangement is the easiest kind to leave undocumented.</p>
+
+  <div class="callout">
+    <h4>Outstanding on this placement</h4>
+    <p style="margin-bottom:0">A reciprocal arrangement needs the same file a cash campaign gets: a written agreement naming both parties, the placements each side runs, the term, the value each side ascribes to the exchange, the right to reject or withdraw artwork, and how it ends. An undocumented trade is the same evidence gap as an undocumented sale.</p>
+  </div>
+</section>
+
+<!-- ====================== LEGAL DOCUMENTS =========================== -->
+<section>
+  <p class="kicker">Section 4</p>
+  <h2>Entity, terms and accountability</h2>
+  <p class="lede">The public documents referred only to “the operator.” No entity was named anywhere on the site or in the compliance files.</p>
+
+  <p><strong>Texas Business News, LLC</strong> is now named as the operator in the Terms of Service, as the controller of personal data in the Privacy Statement, and as the contracting party in the advertiser insertion order template.</p>
+
+  <h4>Added to the Terms</h4>
+  <ul>
+    <li><strong>Indemnification.</strong> Users indemnify the company for claims arising from their use, their breach, or their infringement of another party's rights, expressly excluding claims arising from the company's own conduct.</li>
+    <li><strong>Dispute resolution.</strong> Thirty days of good-faith informal resolution first, then exclusive venue in Texas state or federal courts, with carve-outs preserving injunctive relief, complaints to government agencies, and small claims.</li>
+  </ul>
+
+  <p><strong>Arbitration was deliberately not added.</strong> Whether to require arbitration and waive class actions is a genuine judgment call with real trade-offs for a free, advertising-supported publication. It is a decision for counsel and the owner, not something to be settled quietly in a software change. The rest of the dispute-resolution section is drafted around that gap so a clause can be inserted without rework.</p>
+
+  <p>The advertiser insertion order had left its dispute terms as a placeholder and its indemnity running only one way. Both are now filled in and mirror the public Terms, so the two documents cannot diverge, and the operator's own indemnity to the advertiser has been added with notice, defence-control and settlement provisions.</p>
+
+  <p>The compliance program requires a named accountable party for privacy, copyright, corrections, advertising complaints and regulator inquiries, and required one named reviewer to complete and retain the advertising preflight checklist. Both are now assigned to <strong>the Texas Business News Team</strong>, reachable at admin@texasbusiness.news.</p>
+</section>
+
+<!-- ================ SECURITY, PRIVACY, ACCESSIBILITY ================ -->
+<section>
+  <p class="kicker">Section 5</p>
+  <h2>Security, privacy and accessibility</h2>
+
+  <h3>Security headers</h3>
+  <p>The site previously sent none of the standard protective headers. It now sends a content security policy, strict transport security, framing and content-type protections, a referrer policy and a permissions policy — all confirmed present on live responses.</p>
+  <p>The content security policy matters more here than on a typical site because the site deliberately loads two third-party market widgets. The policy names exactly those and blocks everything else, so a script added by mistake or by compromise cannot run.</p>
+  <p>Framing protection also matters specifically for a site carrying advertising: without it, the site can be embedded inside someone else's page and its advertising placements manipulated.</p>
+
+  <h3>Accessibility</h3>
+  <p>There was no audit, no statement, and no stated contact route for access problems. Web accessibility claims against small commercial sites are an active area of plaintiff practice and are usually settled rather than litigated, which makes them inexpensive to bring. Documented, good-faith remediation materially changes how such a demand plays out.</p>
+  <p>An <strong>accessibility statement</strong> is now published, naming the standard the site works toward, what is done to meet it, the known limitations, and a contact route with stated response commitments. An automated audit now runs against nine page templates on both desktop and mobile as part of the test suite, so a change that introduces a violation fails before it ships.</p>
+
+  <div class="callout">
+    <h4>The audit found a real defect immediately</h4>
+    <p style="margin-bottom:0">The word “Advertisement” — the single most legally significant label on the page — was rendering at a contrast ratio of <strong>1.68 to 1</strong> against its background, where 4.5 to 1 is the requirement. It was the least legible text on the site. A general styling rule was overriding the label's own colour. The existing advertising checklist covered contrast for advertising artwork but not for the labelling around it; the automated audit now covers both.</p>
+  </div>
+
+  <h3>Contact form</h3>
+  <p>The contact form is the published intake route for privacy requests, corrections, copyright complaints and takedown notices, and had no abuse controls. The concern is less about nuisance mail than about a legally significant channel being buried in automated noise — “we did not see it” is a poor position when a rights holder's notice goes unanswered. The form now carries a hidden field that automated submitters fill and humans cannot, a minimum completion time, and a per-visitor rate limit.</p>
+
+  <h3>A change in the privacy posture, made deliberately</h3>
+  <p>The two optional market widgets previously loaded only after a visitor agreed. That gate has been removed at the owner's direction and the widgets now load for every visitor. <strong>The Privacy Statement was rewritten to match</strong> rather than left claiming a control that no longer exists — it now states plainly that the widgets load on every page, names what those vendors receive, and notes that the news feed and filters work without them. Related claims about the legal basis for processing and about stored browser data were corrected at the same time. Two consequences are flagged for counsel in Section 8.</p>
+</section>
+
+<!-- =================== COVERAGE AND EDITORIAL ======================= -->
+<section>
+  <p class="kicker">Section 6</p>
+  <h2>Coverage, sources and editorial scope</h2>
+  <p class="lede">Beyond remediation, the substance of the product was deepened. This section matters to counsel mainly for what it says about the rights surface.</p>
+
+  <div class="metrics">
+    <div><b>91</b><span>Catalogued sources</span></div>
+    <div><b>1,710</b><span>Stories available</span></div>
+    <div><b>120</b><span>Day coverage window</span></div>
+    <div><b>0</b><span>Unvetted feeds added</span></div>
+  </div>
+
+  <p>The source register grew from 24 to 91. <strong>Every feed was tested before it was written in:</strong> it had to return a readable feed containing at least one story published in the previous thirty days, or it was discarded rather than added hopefully. Roughly half of all candidates failed and were rejected — some were abandoned feeds whose newest item was years old; six were rejected after inspection because a set of apparently local business feeds turned out to be the same national wire republished under different market names, which would have added cost and no Texas content.</p>
+
+  <h4>The rights position on everything added</h4>
+  <p>Nothing added is cleared for anything beyond the launch-safe format, and the documentation says so explicitly. Ranked by the strength of the underlying position:</p>
+  <ol>
+    <li><strong>Texas state bodies</strong> — the Workforce Commission and the Texas Economic Development Corporation. The strongest position and, usefully, the most on-topic material in the set.</li>
+    <li><strong>Public universities</strong> — institutional and campus economic news.</li>
+    <li><strong>Economic development corporations, chambers, ports and cities</strong> — press releases published in order to be redistributed, which is favourable footing but is not the same as a written grant.</li>
+    <li><strong>Commercial newsrooms</strong> — local television and newspapers. The same position as the commercial sources already in the register: headline, publisher, date and link, and nothing further until someone grants it in writing.</li>
+  </ol>
+
+  <h3>An editorial scope decision</h3>
+  <p>Government, defence and public-finance stories are now in scope where the framing is economic — a contract, an installation, a budget, a tax measure, an appropriation, an infrastructure programme. Public spending is one of the largest drivers of regional Texas economies, and in a rural county it is frequently the only substantial business story in a given month.</p>
+  <p>This is an <em>editorial</em> scope decision and is documented as separate from the advertising restricted-category list, which continues to require category-specific legal review before any government, military or political <em>advertiser</em> is accepted. Covering a contract award is not the same as selling advertising to a defence contractor, and the two decisions remain independent.</p>
+</section>
+
+<!-- ======================= WHAT REMAINS OPEN ======================== -->
+<section>
+  <p class="kicker">Section 7</p>
+  <h2>What remains open</h2>
+  <p class="lede">Grouped by what each gate unblocks. Nothing in this section is a software task.</p>
+
+  <h4>Before taking advertising revenue</h4>
+  <ul class="gate">
+    <li class="n"><b>Bind media liability and errors &amp; omissions insurance</b><span class="why">Covering advertising injury, copyright infringement and defamation. General liability policies exclude exactly these perils. This is the single largest remaining exposure, and forming the company did not address it.</span></li>
+    <li class="n"><b>Counsel review of the Terms, Privacy Statement, aggregation posture and insertion order</b><span class="why">Including the arbitration question left deliberately open. This is a review-and-refine engagement, not a drafting one.</span></li>
+    <li class="n"><b>A written agreement for the Double B Ranch advertising trade</b><span class="why">Detailed in Section 3.</span></li>
+    <li class="n"><b>Rights records for the sources added since the review</b><span class="why">They display today on the strength of the format, not on a confirmed reuse pathway for each outlet.</span></li>
+    <li class="y"><b>Form the operating entity and name it in the public documents</b></li>
+    <li class="y"><b>Add indemnification and dispute resolution to the Terms and the insertion order</b></li>
+    <li class="y"><b>Assign an accountable party for privacy, copyright, corrections and complaints</b></li>
+    <li class="y"><b>Correct the advertising label and destination</b></li>
+  </ul>
+
+  <h4>Soon after</h4>
+  <ul class="gate">
+    <li class="n"><b>Consolidate eight web addresses into one</b><span class="why">Four domains each serve on two addresses with no redirect. Every page now declares which address is canonical, which addresses the search-engine half; a visitor who types another one still stays there. Requires infrastructure work rather than a decision.</span></li>
+    <li class="n"><b>Register a designated agent under the Digital Millennium Copyright Act</b><span class="why">The filing fee is nominal and the safe harbour is unusually valuable for a service whose function is surfacing other people's material. The Terms currently disclaim having one, which is honest but leaves protection unclaimed.</span></li>
+    <li class="n"><b>Set the six-month source review cadence the rights audit specifies</b><span class="why">And reconcile the served publisher list against the register at each review.</span></li>
+    <li class="y"><b>Publish an accessibility statement and put an audit in the build</b></li>
+    <li class="y"><b>Add security headers, a robots file, a sitemap and canonical addresses</b></li>
+    <li class="y"><b>Add contact form abuse controls</b></li>
+  </ul>
+</section>
+
+<!-- ==================== QUESTIONS FOR COUNSEL ======================= -->
+<section>
+  <p class="kicker">Section 8</p>
+  <h2>Questions for a Texas media attorney</h2>
+  <p class="lede">Listed so the meeting is not spent on background. Bringing the two compliance documents from the repository is worthwhile; they are detailed and current.</p>
+
+  <ol class="q">
+    <li>Does publishing headlines and links with automated topic labels, running next to paid advertising, create hot-news misappropriation or unfair competition exposure in Texas and the Fifth Circuit — and does earning advertising revenue change the answer?</li>
+    <li>Is using a search service as a discovery mechanism for a commercial publication consistent with that service's terms, now that results are filtered against a publisher register and attributed to the originating publisher?</li>
+    <li>For the sources added since the review, is headline-and-link display defensible on the strength of the format alone, or does each outlet need an affirmative reuse pathway assessed individually?</li>
+    <li>Does drawing on Texas state agency and public university material carry a materially different position from commercial newsrooms, and can we rely on that difference?</li>
+    <li>Given a single-member Texas company, what media liability limits and endorsements are appropriate for an advertising-supported publication at this scale?</li>
+    <li>Does the Texas Data Privacy and Security Act apply given the small business exemption, and if it does, what universal opt-out obligations attach to a site that neither sells data nor runs targeted advertising?</li>
+    <li>For a reciprocal advertising trade with an unaffiliated business, is “Advertisement” plus the advertiser's name sufficient under the Federal Trade Commission's endorsement guidance, or must an exchange of advertising be disclosed as such? What should the written trade agreement cover?</li>
+    <li>Third-party widget scripts now load for every visitor, including any incidental European or United Kingdom visitors, where prior consent is the rule. What exposure does that create, and does it warrant reinstating a consent gate for those visitors specifically?</li>
+    <li>The Privacy Statement says the site does not share personal data for cross-context behavioural advertising. Does that remain accurate now that two vendors receive a visitor's network address and page data on every page load?</li>
+    <li>Should a designated agent be registered under the Digital Millennium Copyright Act, and what published notice-and-takedown process is required to rely on the safe harbour?</li>
+    <li>Arbitration and a class action waiver in the Terms: worth it for a free, advertising-supported publication, or more trouble than they solve?</li>
+    <li>What is the right retention schedule for advertising campaign records, against the four-year period drafted in the advertising program?</li>
+  </ol>
+</section>
+
+<!-- ======================= APPENDIX A: EVIDENCE ===================== -->
+<section class="page-break">
+  <p class="kicker">Appendix A</p>
+  <h2>Verification evidence</h2>
+  <p class="lede">Measured against the live production system, not against source code. A claim that could not be checked this way is not made in this report.</p>
+
+  <table>
+    <thead><tr><th>Claim</th><th>How it was checked</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>No publisher summaries or photographs are distributed</td><td>Requested 60 stories from the live service and inspected every field</td><td>0 of 60 carried either</td></tr>
+      <tr><td>Every story names its publisher</td><td>Same response, checked for missing attribution</td><td>0 unattributed</td></tr>
+      <tr><td>Only registered publishers are served</td><td>Listed every publisher in the response</td><td>Texas publishers only</td></tr>
+      <tr><td>Security headers are sent</td><td>Inspected live response headers</td><td>All seven present</td></tr>
+      <tr><td>Advertising label is correct</td><td>Loaded the live page and read the rendered label and link</td><td>“Advertisement”, correct destination</td></tr>
+      <tr><td>No “Paid sponsor” claim remains</td><td>Searched the rendered page text</td><td>0 occurrences</td></tr>
+      <tr><td>Robots file and sitemap are published</td><td>Requested both addresses</td><td>Present; 300 addresses listed</td></tr>
+      <tr><td>Accessibility audit passes</td><td>Automated audit, 9 templates × 2 device sizes</td><td>18 of 18 pass</td></tr>
+      <tr><td>Automated test suites pass</td><td>Full run of both repositories</td><td>118 tests, 0 failures</td></tr>
+    </tbody>
+  </table>
+
+  <p class="footnote">Two vendor behaviours were discovered only by enforcing the security policy against live traffic, and are recorded here because they explain a brief period during which the market widgets did not render: one vendor loads its script from one address but draws its display from a second, and another retrieves its data and its images from two further addresses. None are documented by the vendors. All are now permitted explicitly and nothing else is.</p>
+</section>
+
+<!-- ==================== APPENDIX B: TECHNICAL ======================= -->
+<section class="page-break">
+  <p class="kicker">Appendix B</p>
+  <h2>Technical reference</h2>
+  <p class="lede">For the operator rather than for counsel. Where each control lives, so a future change does not quietly undo one.</p>
+
+  <h4>Controls and where they are enforced</h4>
+  <table>
+    <thead><tr><th>Control</th><th>Location</th></tr></thead>
+    <tbody>
+      <tr><td>Summary and photograph removal</td><td><code>txbiz-api/src/public-view.ts</code>, applied in <code>http.ts</code></td></tr>
+      <tr><td>Publisher register and allowlist</td><td><code>txbiz-api/src/publisher-registry.ts</code></td></tr>
+      <tr><td>Attribution resolution</td><td><code>txbiz-api/src/rss.ts</code></td></tr>
+      <tr><td>Source catalogue</td><td><code>txbiz-api/src/source-registry.ts</code></td></tr>
+      <tr><td>Editorial screens</td><td><code>txbiz-api/src/data/editorial.ts</code>, <code>src/filter.ts</code></td></tr>
+      <tr><td>Rights and editorial guards</td><td><code>txbiz-api/tests/compliance.test.ts</code></td></tr>
+      <tr><td>Advertising disclosure model</td><td><code>texaseconews/src/data/ads.ts</code>, <code>src/lib/ads.ts</code></td></tr>
+      <tr><td>Accessibility audit</td><td><code>texaseconews/tests/accessibility.spec.ts</code></td></tr>
+      <tr><td>Security headers (source of truth)</td><td><code>texaseconews/amplify.yml</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <h4>Two traps worth remembering</h4>
+    <p><strong>The security headers are not served from <code>amplify.yml</code>.</strong> The hosting app has a build specification stored in its console, and a stored specification takes precedence over the one in the repository, so the header block in that file is inert. The live headers are set on the app's own custom headers field. Editing the file alone changes nothing; the accompanying command in the file's header comment must be re-run. This is why the first deployment served no headers despite a successful build.</p>
+    <p style="margin-bottom:0"><strong>Widening the coverage window can shrink county feeds.</strong> County feeds expand into nearby markets only while the county's own newsroom has produced fewer than a set number of stories. Lengthening the window let local feeds clear that threshold on their own, silently switching off the expansion that had been supplying most of the depth. Raise the threshold whenever the window widens.</p>
+  </div>
+
+  <h4>Regenerating this document</h4>
+  <p>The source is <code>compliance-report/compliance-report.html</code>. Run <code>npm run report:pdf</code> to rebuild the PDF beside it. Edit the HTML, never the PDF.</p>
+</section>
+
+<p class="footnote" style="margin-top:1.4em;padding-top:0.8em;border-top:1px solid var(--rule);">
+  Verified 3 September 2026 against the live deployment of texasbusiness.news and the production news service, plus 118 automated tests and 18 automated accessibility checks. Engineering and compliance record only — not legal advice.
+</p>
+
+</body>
+</html>
