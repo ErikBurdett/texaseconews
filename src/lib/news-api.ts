@@ -64,6 +64,34 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
+export type CountySourceDirectory = {
+  countySlug: string;
+  sources: Array<{
+    id: string;
+    name: string;
+    websiteUrl: string;
+    kind: "newsroom" | "official" | "registered";
+    coverage: "county" | "statewide";
+  }>;
+};
+
+export async function fetchCountySources(countySlug: string, signal: AbortSignal): Promise<CountySourceDirectory> {
+  const base = new URL(resolveApiUrl());
+  base.search = "";
+  base.hash = "";
+  if (!base.pathname.endsWith("/")) base.pathname += "/";
+  const response = await fetch(new URL(`v1/sources/counties/${encodeURIComponent(countySlug)}`, base), { signal });
+  if (!response.ok) throw new NewsApiError("The source directory is temporarily unavailable.");
+  const value: unknown = await response.json();
+  if (!isRecord(value) || value.countySlug !== countySlug || !Array.isArray(value.sources) || !value.sources.every((source) =>
+    isRecord(source) && isString(source.id) && isString(source.name) && isString(source.websiteUrl) &&
+    /^https?:\/\//u.test(source.websiteUrl) && ["newsroom", "official", "registered"].includes(String(source.kind)) &&
+    ["county", "statewide"].includes(String(source.coverage)))) {
+    throw new NewsApiError("The source directory returned an invalid response.");
+  }
+  return value as CountySourceDirectory;
+}
+
 const localApiUrl = "http://localhost:8787";
 
 export class NewsApiError extends Error {

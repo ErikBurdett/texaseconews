@@ -106,7 +106,7 @@ Two changes were made alongside the expansion, both affecting what reaches a rea
 
 **The constructive-business test now reads the headline, not the headline plus the excerpt.** The headline is the only thing published, so it has to carry the business signal itself. Previously an item was admitted when its excerpt happened to contain a business word, which let a story about a college football coach being fired into a county business feed on the strength of a summary no reader ever sees. The negative screen still reads headline and excerpt together, because bad news anywhere in an item disqualifies it.
 
-**A registered source mapped to a county is trusted for geography.** A direct item is only ever tagged with a county its registered source is mapped to, so the outlet establishes the location and the copy need not repeat it — a Brenham newsroom writing for Brenham readers rarely says "Texas". The explicit Texas signal is still required for Google and Bing results, where the publisher could be anywhere and "Washington County" could be any of thirty.
+**October 26 locality correction:** a registered county mapping selects candidates but never establishes article locality by itself. Both direct and discovered stories require article-level place evidence; ambiguous places need Texas/county corroboration. City feeds also require the selected city.
 
 **Government, defence and public-finance stories are admitted on their economic impact.** Public spending is one of the largest drivers of regional Texas economies — a military installation, a federal contract, a city budget, a tax abatement or a road programme is often the only substantial business story a rural county produces in a month. The constructive vocabulary now covers that ground explicitly: defence and federal contracts, installations, appropriations, municipal budgets, bonds, tax base and incentives, transit, water, utilities and capital improvement. The terms stay economic rather than political — a headline qualifies by naming the contract, the installation or the funding, not by being about government. Detention and deportation are no longer blocked outright; a facility contract with a jobs number is economic news, and the operator has decided it is in scope.
 
@@ -432,3 +432,11 @@ Do not set `VITE_ENABLE_RSS_FALLBACK=true` in Amplify until:
 ## Review Cadence
 
 Recheck source terms at least every six months and before changing card fields, enabling images or excerpts, adding ads or analytics, changing proxies, or adding a source. Record the date, reviewer, changed terms, decision, and any required removal.
+
+## October 26, 2026 source mapping
+
+211 reviewed newsroom profiles and 254 official county profiles now join the existing registry. The source-by-source register is maintained alongside the API in `txbiz-api/docs/evidence/source-register.csv`, with exact website/feed URLs, county mappings, identity-review date and access status. `source-review-2026-10-26.json` in that directory records the candidate decisions, HTTP checks, dates and discovered policy links. The register is generated from the same data that powers `/v1/sources/counties/{county}` and the website source directory.
+
+This expansion uses the existing headline/publisher/date/link format. Source-specific terms and commercial permission reviews remain pending; identity verification and a working RSS endpoint are not a reuse license. No new excerpt, image, logo or full-text permission is asserted. Official county content receives the same display restrictions. The public API still strips excerpts and image URLs, and production browser fallback stays disabled.
+
+Dormant feeds, discontinued newspapers and repurposed domains were excluded from the new mapping. Current feeds and publisher-specific discovery remain bounded by the existing request limits. Maps never bypass story-level geography or positive-business screening.

@@ -3,9 +3,10 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormE
 import { Link, NavLink, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { AdSlot, SponsorBadge } from "./components/AdSlot";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
+import { countyPlaces } from "./data/county-places";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
 import { featuredTopicSlugs, getTopicBySlug, heroTopicSlugs, isTopicSlug, topicCatalog, type TopicSlug } from "./data/topics";
-import { fetchHomePage, type FeedResponse, type HomePageQuery, type HomePageResponse, type NewsItem } from "./lib/news-api";
+import { fetchCountySources, fetchHomePage, type CountySourceDirectory, type FeedResponse, type HomePageQuery, type HomePageResponse, type NewsItem } from "./lib/news-api";
 
 const siteName = "TexasBusiness.News";
 /**
@@ -63,6 +64,7 @@ function AppContent() {
         <Route path="/region/:regionSlug" element={<RegionPage />} />
         <Route path="/region/:regionSlug/industry/:topicSlug" element={<RegionIndustryPage />} />
         <Route path="/county/:countySlug" element={<CountyPage />} />
+        <Route path="/county/:countySlug/sources" element={<CountySourcesPage />} />
         <Route path="/county/:countySlug/topic/:topicSlug" element={<CountyTopicPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
@@ -185,6 +187,10 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
             onRegionChange={setSelectedRegionSlugs}
             onTopicChange={setSelectedTopicSlugs}
           />
+          {selectedCounties.length ? <nav className="directory-section" aria-label="Local source directories">
+            <h2>Local sources</h2>
+            {selectedCounties.map((county) => <p key={county.slug}><Link to={`/county/${county.slug}/sources`}>{county.displayName} sources and towns</Link></p>)}
+          </nav> : null}
         </div>
         <main className="feed-column">
           <div className="feed-toolbar">
@@ -313,6 +319,58 @@ function CountyDirectoryPage() {
       </section>
     </Shell>
   );
+}
+
+function CountySourcesPage() {
+  const { countySlug = "" } = useParams();
+  const county = getCountyBySlug(countySlug);
+  const [result, setResult] = useState<{ slug: string; data?: CountySourceDirectory; error?: string }>();
+  const [selection, setSelection] = useState({ countySlug: "", city: "" });
+  const city = selection.countySlug === countySlug ? selection.city : "";
+  usePageTitle(`${county?.displayName || "County"} Sources`);
+  useEffect(() => {
+    if (!county) return;
+    const controller = new AbortController();
+    fetchCountySources(county.slug, controller.signal).then(
+      (data) => { if (!controller.signal.aborted) setResult({ slug: county.slug, data }); },
+      () => { if (!controller.signal.aborted) setResult({ slug: county.slug, error: "The source directory is temporarily unavailable. Please try again shortly." }); },
+    );
+    return () => controller.abort();
+  }, [county]);
+  if (!county) return <NotFoundPage title="County not found" body="Choose a Texas county from the directory." />;
+  const current = result?.slug === countySlug ? result : undefined;
+  const sources = current?.data?.sources;
+  const groups = [
+    { title: "Local newsrooms", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "newsroom", empty: "We have not yet verified a local newsroom for this county. Official and statewide sources are listed separately below." },
+    { title: "Official county sources", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "official", empty: "No official source is currently listed." },
+    { title: "Additional regional and statewide sources", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "registered", empty: "No additional sources are currently listed." },
+  ];
+  return <Shell>
+    <section className="page-hero">
+      <p className="eyebrow">Local source directory</p>
+      <h1>{city ? `${city}, ${county.displayName}` : county.displayName} sources</h1>
+      <p>These sources help us find business growth, jobs, investment, and public projects. Each story must pass our positive business news and location checks.</p>
+      <p><Link to={`/county/${county.slug}`}>Read {county.displayName} news</Link> · <Link to="/counties">Browse all counties</Link></p>
+      <label htmlFor="source-city">City or town</label>
+      <select id="source-city" className="search-input directory-search" value={city} onChange={(event) => setSelection({ countySlug, city: event.target.value })}>
+        <option value="">All of {county.displayName}</option>
+        {(countyPlaces[county.fips] ?? []).map((name) => <option key={name} value={name}>{name}</option>)}
+      </select>
+      {city ? <p>These are county-serving sources for {city}; a city story must also name {city}. A listed source may cover other towns.</p> : null}
+      <p>A source listing does not guarantee a recent matching story. Official county announcements are distinct from newsroom reporting.</p>
+    </section>
+    {!current ? <StatusCard loading title="Loading local sources" body="Checking the county source directory." /> : null}
+    {current?.error ? <StatusCard title="Sources unavailable" body={current.error} /> : null}
+    {sources ? <section className="directory-grid">{groups.map((group) => {
+      const entries = sources.filter(group.match);
+      return <article className="directory-section" key={group.title}>
+        <h2>{group.title}</h2>
+        {!entries.length ? <p>{group.empty}</p> : <div className="county-link-grid">{entries.map((source) =>
+          <a className="county-link-card" key={source.id} href={source.websiteUrl} target="_blank" rel="noopener noreferrer"><strong>{source.name}</strong><span>{source.coverage === "county" ? county.displayName : "Texas statewide"}</span></a>,
+        )}</div>}
+      </article>;
+    })}</section> : null}
+  </Shell>;
 }
 
 function MissionPage() {

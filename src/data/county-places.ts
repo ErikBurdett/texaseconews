@@ -1,4 +1,4 @@
-// Texas Census/USGS 2024 place snapshot from txbiz-api; selected towns, not all municipalities.
+// Texas Census 2025 incorporated-place/county join plus retained GNIS towns from txbiz-api.
 // Refresh: node scripts/sync-news-geography.mjs /path/to/txbiz-api/src/data/county-places.ts
 export const countyPlaces: Record<string, readonly string[]> = {
   "48001": [
@@ -47,7 +47,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Wallis",
     "San Felipe",
     "Brazos Country",
-    "Industry"
+    "Industry",
+    "South Frydek"
   ],
   "48017": [
     "Muleshoe"
@@ -72,7 +73,13 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Harker Heights",
     "Belton",
     "Nolanville",
-    "Morgan's Point Resort"
+    "Morgan's Point Resort",
+    "Troy",
+    "Salado",
+    "Little River-Academy",
+    "Holland",
+    "Rogers",
+    "Bartlett"
   ],
   "48029": [
     "San Antonio",
@@ -80,7 +87,28 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Universal City",
     "Live Oak",
     "Leon Valley",
-    "Helotes"
+    "Helotes",
+    "Kirby",
+    "Selma",
+    "Fair Oaks Ranch",
+    "Alamo Heights",
+    "Schertz",
+    "Sandy Oaks",
+    "Windcrest",
+    "Terrell Hills",
+    "Castle Hills",
+    "Shavano Park",
+    "Hollywood Park",
+    "Elmendorf",
+    "Balcones Heights",
+    "St. Hedwig",
+    "Olmos Park",
+    "Somerset",
+    "Von Ormy",
+    "China Grove",
+    "Hill Country Village",
+    "Grey Forest",
+    "Lytle"
   ],
   "48031": [
     "Johnson City",
@@ -98,7 +126,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Valley Mills",
     "Walnut Springs",
     "Morgan",
-    "Iredell"
+    "Iredell",
+    "Cranfills Gap"
   ],
   "48037": [
     "Texarkana",
@@ -106,7 +135,11 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "New Boston",
     "Nash",
     "Hooks",
-    "De Kalb"
+    "De Kalb",
+    "Maud",
+    "Red Lick",
+    "Redwater",
+    "Leary"
   ],
   "48039": [
     "Pearland",
@@ -114,7 +147,25 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Lake Jackson",
     "Angleton",
     "Manvel",
-    "Iowa Colony"
+    "Iowa Colony",
+    "Clute",
+    "Freeport",
+    "Richwood",
+    "West Columbia",
+    "Sweeny",
+    "Brazoria",
+    "Jones Creek",
+    "Danbury",
+    "Brookside Village",
+    "Oyster Creek",
+    "Holiday Lakes",
+    "Bailey's Prairie",
+    "Surfside Beach",
+    "Hillcrest Village",
+    "Liverpool",
+    "Sandy Point",
+    "Bonney",
+    "Quintana"
   ],
   "48041": [
     "College Station",
@@ -149,7 +200,10 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Granite Shoals",
     "Bertram",
     "Meadowlakes",
-    "Cottonwood Shores"
+    "Cottonwood Shores",
+    "Horseshoe Bay",
+    "Highland Haven",
+    "Double Horn"
   ],
   "48055": [
     "Lockhart",
@@ -176,7 +230,18 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "San Benito",
     "Los Fresnos",
     "La Feria",
-    "Primera"
+    "Primera",
+    "Port Isabel",
+    "Laguna Vista",
+    "Combes",
+    "Rancho Viejo",
+    "Santa Rosa",
+    "Rio Hondo",
+    "South Padre Island",
+    "Palm Valley",
+    "Los Indios",
+    "Indian Lake",
+    "Bayview"
   ],
   "48063": [
     "Pittsburg",
@@ -194,7 +259,10 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Hughes Springs",
     "Queen City",
     "Avinger",
-    "Bloomburg"
+    "Bloomburg",
+    "Douglassville",
+    "Marietta",
+    "Domino"
   ],
   "48069": [
     "Dimmitt",
@@ -215,7 +283,11 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Alto",
     "New Summerfield",
     "Wells",
-    "Gallatin"
+    "Bullard",
+    "Gallatin",
+    "Reklaw",
+    "Cuney",
+    "Troup"
   ],
   "48075": [
     "Childress"
@@ -226,7 +298,9 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Dean",
     "Byers",
     "Bellevue",
-    "Jolly"
+    "Jolly",
+    "Windthorst",
+    "Wichita Falls"
   ],
   "48079": [
     "Morton",
@@ -248,7 +322,30 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Frisco",
     "Allen",
     "Wylie",
-    "Dallas"
+    "Celina",
+    "Dallas",
+    "Princeton",
+    "Richardson",
+    "Prosper",
+    "Anna",
+    "Melissa",
+    "Murphy",
+    "Sachse",
+    "Lavon",
+    "Fairview",
+    "Josephine",
+    "Lucas",
+    "Parker",
+    "Farmersville",
+    "Royse City",
+    "Lowry Crossing",
+    "Nevada",
+    "Blue Ridge",
+    "Weston",
+    "St. Paul",
+    "Carrollton",
+    "New Hope",
+    "Garland"
   ],
   "48087": [
     "Wellington",
@@ -265,7 +362,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Garden Ridge",
     "Schertz",
     "Fair Oaks Ranch",
-    "Selma"
+    "Selma",
+    "Spring Branch"
   ],
   "48093": [
     "Comanche",
@@ -282,7 +380,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Lindsay",
     "Valley View",
     "Road Runner",
-    "Callisburg"
+    "Callisburg",
+    "Oak Ridge"
   ],
   "48099": [
     "Copperas Cove",
@@ -322,7 +421,31 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Garland",
     "Mesquite",
     "Grand Prairie",
-    "Richardson"
+    "Richardson",
+    "Rowlett",
+    "DeSoto",
+    "Carrollton",
+    "Cedar Hill",
+    "Lancaster",
+    "Coppell",
+    "Duncanville",
+    "Farmers Branch",
+    "Balch Springs",
+    "University Park",
+    "Seagoville",
+    "Sachse",
+    "Addison",
+    "Glenn Heights",
+    "Sunnyvale",
+    "Highland Park",
+    "Hutchins",
+    "Wilmer",
+    "Cockrell Hill",
+    "Wylie",
+    "Lewisville",
+    "Combine",
+    "Ovilla",
+    "Ferris"
   ],
   "48115": [
     "Lamesa",
@@ -343,7 +466,43 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Frisco",
     "Carrollton",
     "Flower Mound",
-    "Little Elm"
+    "Little Elm",
+    "The Colony",
+    "Dallas",
+    "Corinth",
+    "Fort Worth",
+    "Highland Village",
+    "Trophy Club",
+    "Providence Village",
+    "Northlake",
+    "Roanoke",
+    "Sanger",
+    "Prosper",
+    "Aubrey",
+    "Pilot Point",
+    "Lake Dallas",
+    "Justin",
+    "Oak Point",
+    "Hickory Creek",
+    "Krum",
+    "Argyle",
+    "Celina",
+    "Plano",
+    "Double Oak",
+    "Shady Shores",
+    "Hackberry",
+    "Ponder",
+    "Copper Canyon",
+    "Krugerville",
+    "Cross Roads",
+    "Bartonville",
+    "Coppell",
+    "Lakewood Village",
+    "Southlake",
+    "DISH",
+    "Hebron",
+    "Corral City",
+    "Westlake"
   ],
   "48123": [
     "Cuero",
@@ -391,7 +550,21 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Ennis",
     "Red Oak",
     "Glenn Heights",
-    "Ovilla"
+    "Ovilla",
+    "Ferris",
+    "Palmer",
+    "Italy",
+    "Oak Leaf",
+    "Maypearl",
+    "Venus",
+    "Garrett",
+    "Milford",
+    "Pecan Hill",
+    "Bardwell",
+    "Cedar Hill",
+    "Mansfield",
+    "Alma",
+    "Grand Prairie"
   ],
   "48141": [
     "El Paso",
@@ -399,7 +572,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Horizon City",
     "San Elizario",
     "Anthony",
-    "Vinton"
+    "Vinton",
+    "Clint"
   ],
   "48143": [
     "Stephenville",
@@ -417,7 +591,14 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Honey Grove",
     "Trenton",
     "Savoy",
-    "Ector"
+    "Ector",
+    "Ladonia",
+    "Dodd City",
+    "Bailey",
+    "Windom",
+    "Ravenna",
+    "Whitewright",
+    "Pecan Gap"
   ],
   "48149": [
     "La Grange",
@@ -425,7 +606,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Flatonia",
     "Ellinger",
     "Carmine",
-    "Fayetteville"
+    "Fayetteville",
+    "Round Top"
   ],
   "48151": [
     "Rotan",
@@ -444,7 +626,21 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Fulshear",
     "Houston",
     "Rosenberg",
-    "Stafford"
+    "Stafford",
+    "Richmond",
+    "Katy",
+    "Pearland",
+    "Weston Lakes",
+    "Meadows Place",
+    "Needville",
+    "Arcola",
+    "Pleak",
+    "Fairchilds",
+    "Beasley",
+    "Simonton",
+    "Kendleton",
+    "Orchard",
+    "Thompsons"
   ],
   "48159": [
     "Mount Vernon",
@@ -472,7 +668,14 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Galveston",
     "Friendswood",
     "Dickinson",
-    "La Marque"
+    "La Marque",
+    "Santa Fe",
+    "Hitchcock",
+    "Kemah",
+    "Bayou Vista",
+    "Clear Lake Shores",
+    "Tiki Island",
+    "Jamaica Beach"
   ],
   "48169": [
     "Post"
@@ -507,7 +710,17 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Van Alstyne",
     "Whitesboro",
     "Howe",
-    "Pottsboro"
+    "Pottsboro",
+    "Gunter",
+    "Collinsville",
+    "Whitewright",
+    "Bells",
+    "Tioga",
+    "Southmayd",
+    "Tom Bean",
+    "Knollwood",
+    "Sadler",
+    "Dorchester"
   ],
   "48183": [
     "Longview",
@@ -515,7 +728,9 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "White Oak",
     "Gladewater",
     "Lakeport",
-    "Clarksville City"
+    "Clarksville City",
+    "Easton",
+    "Warren City"
   ],
   "48185": [
     "Navasota",
@@ -531,7 +746,12 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Schertz",
     "New Braunfels",
     "Selma",
-    "Marion"
+    "Marion",
+    "Santa Clara",
+    "New Berlin",
+    "Staples",
+    "Kingsbury",
+    "Luling"
   ],
   "48189": [
     "Plainview",
@@ -572,7 +792,35 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Baytown",
     "La Porte",
     "Deer Park",
-    "Bellaire"
+    "Bellaire",
+    "Humble",
+    "South Houston",
+    "Tomball",
+    "West University Place",
+    "Katy",
+    "Seabrook",
+    "Webster",
+    "Friendswood",
+    "Galena Park",
+    "Jacinto City",
+    "Pearland",
+    "Jersey Village",
+    "Missouri City",
+    "Nassau Bay",
+    "Hunters Creek Village",
+    "Spring Valley Village",
+    "Bunker Hill Village",
+    "Taylor Lake Village",
+    "Piney Point Village",
+    "El Lago",
+    "League City",
+    "Hedwig Village",
+    "Southside Place",
+    "Waller",
+    "Shoreacres",
+    "Hilshire Village",
+    "Stafford",
+    "Morgan's Point"
   ],
   "48203": [
     "Marshall",
@@ -600,7 +848,14 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Buda",
     "Dripping Springs",
     "Wimberley",
-    "Woodcreek"
+    "Woodcreek",
+    "Uhland",
+    "Niederwald",
+    "Austin",
+    "Mountain City",
+    "Bear Creek",
+    "Hays",
+    "Creedmoor"
   ],
   "48211": [
     "Canadian"
@@ -611,7 +866,22 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Chandler",
     "Tool",
     "Malakoff",
-    "Mabank"
+    "Mabank",
+    "Seven Points",
+    "Brownsboro",
+    "Eustace",
+    "Berryville",
+    "Log Cabin",
+    "Trinidad",
+    "Payne Springs",
+    "Star Harbor",
+    "Murchison",
+    "Enchanted Oaks",
+    "Poynor",
+    "Coffee City",
+    "Caney City",
+    "Moore Station",
+    "Frankston"
   ],
   "48215": [
     "McAllen",
@@ -619,7 +889,23 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Mission",
     "Pharr",
     "Weslaco",
-    "San Juan"
+    "San Juan",
+    "Alton",
+    "Alamo",
+    "Mercedes",
+    "Donna",
+    "Palmview",
+    "Hidalgo",
+    "Penitas",
+    "Elsa",
+    "La Joya",
+    "Progreso",
+    "Sullivan City",
+    "La Villa",
+    "Edcouch",
+    "Palmhurst",
+    "Granjeno",
+    "Progreso Lakes"
   ],
   "48217": [
     "Hillsboro",
@@ -627,7 +913,15 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Itasca",
     "Hubbard",
     "Blum",
-    "Abbott"
+    "Abbott",
+    "Mount Calm",
+    "Covington",
+    "Malone",
+    "Carl's Corner",
+    "Penelope",
+    "Bynum",
+    "Mertens",
+    "Aquilla"
   ],
   "48219": [
     "Levelland",
@@ -672,7 +966,16 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Caddo Mills",
     "Royse City",
     "West Tawakoni",
-    "Quinlan"
+    "Quinlan",
+    "Wolfe City",
+    "Poetry",
+    "Celeste",
+    "Lone Oak",
+    "Campbell",
+    "Union Valley",
+    "Hawk Cove",
+    "Josephine",
+    "Neylandville"
   ],
   "48233": [
     "Borger",
@@ -706,7 +1009,10 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Nederland",
     "Groves",
     "Port Neches",
-    "China"
+    "China",
+    "Bevil Oaks",
+    "Nome",
+    "Taylor Landing"
   ],
   "48247": [
     "Hebbronville",
@@ -730,7 +1036,17 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Joshua",
     "Venus",
     "Alvarado",
-    "Keene"
+    "Keene",
+    "Mansfield",
+    "Godley",
+    "Grandview",
+    "Rio Vista",
+    "Briaroaks",
+    "Cross Timber",
+    "Coyote Flats",
+    "Cresson",
+    "Crowley",
+    "Grand Prairie"
   ],
   "48253": [
     "Abilene",
@@ -752,7 +1068,21 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Kaufman",
     "Crandall",
     "Mabank",
-    "Talty"
+    "Talty",
+    "Combine",
+    "Oak Ridge",
+    "Kemp",
+    "Post Oak Bend",
+    "Scurry",
+    "Oak Grove",
+    "Poetry",
+    "Grays Prairie",
+    "Rosser",
+    "Cottonwood",
+    "Mesquite",
+    "Seven Points",
+    "Seagoville",
+    "Heath"
   ],
   "48259": [
     "Boerne",
@@ -791,7 +1121,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Spofford"
   ],
   "48273": [
-    "Kingsville"
+    "Kingsville",
+    "Corpus Christi"
   ],
   "48275": [
     "Munday",
@@ -805,7 +1136,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Blossom",
     "Roxton",
     "Deport",
-    "Toco"
+    "Toco",
+    "Sun Valley"
   ],
   "48279": [
     "Littlefield",
@@ -841,7 +1173,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Jewett",
     "Normangee",
     "Oakwood",
-    "Marquez"
+    "Marquez",
+    "Leona"
   ],
   "48291": [
     "Dayton",
@@ -849,7 +1182,14 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Liberty",
     "Plum Grove",
     "Ames",
-    "Daisetta"
+    "Daisetta",
+    "Hardin",
+    "Kenefick",
+    "Devers",
+    "North Cleveland",
+    "Old River-Winfree",
+    "Dayton Lakes",
+    "Mont Belvieu"
   ],
   "48293": [
     "Mexia",
@@ -857,7 +1197,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Coolidge",
     "Kosse",
     "Thornton",
-    "Tehuacana"
+    "Tehuacana",
+    "Mart"
   ],
   "48295": [
     "Booker",
@@ -883,7 +1224,10 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Slaton",
     "Shallowater",
     "Idalou",
-    "Ransom Canyon"
+    "Ransom Canyon",
+    "New Deal",
+    "Abernathy",
+    "Buffalo Springs Lake"
   ],
   "48305": [
     "Tahoka",
@@ -901,7 +1245,22 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Robinson",
     "Bellmead",
     "Woodway",
-    "Lacy-Lakeview"
+    "Lacy-Lakeview",
+    "McGregor",
+    "West",
+    "Mart",
+    "Beverly Hills",
+    "Lorena",
+    "Moody",
+    "Bruceville-Eddy",
+    "Gholson",
+    "Riesel",
+    "Crawford",
+    "Hallsburg",
+    "Leroy",
+    "Ross",
+    "Golinda",
+    "Valley Mills"
   ],
   "48311": [
     "Tilden",
@@ -940,7 +1299,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Castroville",
     "Natalia",
     "LaCoste",
-    "Lytle"
+    "Lytle",
+    "San Antonio"
   ],
   "48327": [
     "Menard"
@@ -968,15 +1328,26 @@ export const countyPlaces: Record<string, readonly string[]> = {
   "48337": [
     "Bowie",
     "Nocona",
+    "Saint Jo",
     "St. Jo"
   ],
   "48339": [
     "Conroe",
-    "Willis",
     "Magnolia",
+    "Willis",
     "Houston",
     "Shenandoah",
-    "Oak Ridge North"
+    "Montgomery",
+    "Oak Ridge North",
+    "Panorama Village",
+    "Roman Forest",
+    "Splendora",
+    "Patton Village",
+    "Woodbranch",
+    "Cut and Shoot",
+    "Stagecoach",
+    "Woodloch",
+    "Cleveland"
   ],
   "48341": [
     "Dumas",
@@ -1008,7 +1379,18 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Rice",
     "Blooming Grove",
     "Dawson",
-    "Frost"
+    "Frost",
+    "Mildred",
+    "Angus",
+    "Retreat",
+    "Oak Valley",
+    "Eureka",
+    "Richland",
+    "Barry",
+    "Navarro",
+    "Emhouse",
+    "Goodlow",
+    "Powell"
   ],
   "48351": [
     "Newton"
@@ -1023,8 +1405,10 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Robstown",
     "Port Aransas",
     "Bishop",
+    "Driscoll",
     "Agua Dulce",
-    "Driscoll"
+    "Petronila",
+    "Aransas Pass"
   ],
   "48357": [
     "Perryton",
@@ -1040,7 +1424,9 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Vidor",
     "West Orange",
     "Pinehurst",
-    "Pine Forest"
+    "Pine Forest",
+    "Rose City",
+    "Port Arthur"
   ],
   "48363": [
     "Mineral Wells",
@@ -1061,7 +1447,19 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Aledo",
     "Springtown",
     "Reno",
-    "Annetta"
+    "Annetta",
+    "Azle",
+    "Hudson Oaks",
+    "Fort Worth",
+    "Dennis",
+    "Cresson",
+    "Annetta South",
+    "Peaster",
+    "Annetta North",
+    "Millsap",
+    "Sanctuary",
+    "Cool",
+    "Mineral Wells"
   ],
   "48369": [
     "Friona",
@@ -1141,7 +1539,10 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Royse City",
     "Heath",
     "Rowlett",
-    "McLendon-Chisholm"
+    "McLendon-Chisholm",
+    "Wylie",
+    "Mobile City",
+    "Dallas"
   ],
   "48399": [
     "Ballinger",
@@ -1154,7 +1555,9 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Overton",
     "Tatum",
     "New London",
-    "Mount Enterprise"
+    "Mount Enterprise",
+    "Reklaw",
+    "Easton"
   ],
   "48403": [
     "Hemphill",
@@ -1175,7 +1578,14 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Aransas Pass",
     "Sinton",
     "Mathis",
-    "Taft"
+    "Taft",
+    "Odem",
+    "Gregory",
+    "Ingleside on the Bay",
+    "Lake City",
+    "San Patricio",
+    "Lakeside",
+    "Corpus Christi"
   ],
   "48411": [
     "San Saba",
@@ -1208,7 +1618,12 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Lindale",
     "Bullard",
     "Hideaway",
-    "Troup"
+    "Troup",
+    "Arp",
+    "Noonday",
+    "Winona",
+    "New Chapel Hill",
+    "Overton"
   ],
   "48425": [
     "Glen Rose"
@@ -1239,10 +1654,45 @@ export const countyPlaces: Record<string, readonly string[]> = {
   "48439": [
     "Fort Worth",
     "Arlington",
-    "Grand Prairie",
     "Mansfield",
+    "Grand Prairie",
     "North Richland Hills",
-    "Euless"
+    "Euless",
+    "Grapevine",
+    "Bedford",
+    "Keller",
+    "Haltom City",
+    "Hurst",
+    "Southlake",
+    "Saginaw",
+    "Colleyville",
+    "Benbrook",
+    "Watauga",
+    "Crowley",
+    "White Settlement",
+    "Forest Hill",
+    "Azle",
+    "Kennedale",
+    "Burleson",
+    "Richland Hills",
+    "River Oaks",
+    "Everman",
+    "Sansom Park",
+    "Haslet",
+    "Lake Worth",
+    "Edgecliff Village",
+    "Westworth Village",
+    "Pelican Bay",
+    "Pantego",
+    "Blue Mound",
+    "Dalworthington Gardens",
+    "Westlake",
+    "Lakeside",
+    "Trophy Club",
+    "Flower Mound",
+    "Westover Hills",
+    "Reno",
+    "Roanoke"
   ],
   "48441": [
     "Abilene",
@@ -1250,7 +1700,9 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Tye",
     "Tuscola",
     "Buffalo Gap",
-    "Lawn"
+    "Lawn",
+    "Trent",
+    "Impact"
   ],
   "48443": [
     "Sanderson",
@@ -1286,7 +1738,23 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Manor",
     "Lakeway",
     "Leander",
-    "Lago Vista"
+    "Lago Vista",
+    "Bee Cave",
+    "Cedar Park",
+    "West Lake Hills",
+    "Jonestown",
+    "Briarcliff",
+    "The Hills",
+    "Round Rock",
+    "Elgin",
+    "Rollingwood",
+    "Point Venture",
+    "Sunset Valley",
+    "San Leanna",
+    "Volente",
+    "Webberville",
+    "Mustang Ridge",
+    "Creedmoor"
   ],
   "48455": [
     "Trinity",
@@ -1304,7 +1772,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Big Sandy",
     "Ore City",
     "East Mountain",
-    "Union Grove"
+    "Union Grove",
+    "Warren City"
   ],
   "48461": [
     "McCamey",
@@ -1323,7 +1792,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Grand Saline",
     "Van",
     "Edgewood",
-    "Fruitvale"
+    "Fruitvale",
+    "Edom"
   ],
   "48469": [
     "Victoria"
@@ -1339,7 +1809,8 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Katy",
     "Brookshire",
     "Waller",
-    "Pine Island"
+    "Pine Island",
+    "Pattison"
   ],
   "48475": [
     "Monahans",
@@ -1390,13 +1861,24 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Leander",
     "Cedar Park",
     "Austin",
-    "Hutto"
+    "Hutto",
+    "Taylor",
+    "Liberty Hill",
+    "Jarrell",
+    "Florence",
+    "Granger",
+    "Bartlett",
+    "Thrall",
+    "Weir",
+    "Coupland",
+    "Pflugerville",
+    "Thorndale"
   ],
   "48493": [
     "Floresville",
     "Poth",
-    "Stockdale",
     "La Vernia",
+    "Stockdale",
     "Elmendorf"
   ],
   "48495": [
@@ -1409,7 +1891,13 @@ export const countyPlaces: Record<string, readonly string[]> = {
     "Boyd",
     "Runaway Bay",
     "Rhome",
-    "New Fairview"
+    "Alvord",
+    "New Fairview",
+    "Aurora",
+    "Newark",
+    "Chico",
+    "Paradise",
+    "Lake Bridgeport"
   ],
   "48499": [
     "Mineola",

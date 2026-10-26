@@ -144,6 +144,35 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test("shows county-serving newsrooms and official sources for a selected city", async ({ page }) => {
+  await page.route("**/v1/sources/counties/angelina", (route) => route.fulfill({
+    json: { countySlug: "angelina", sources: [
+      { id: "lufkin", name: "The Lufkin Daily News", websiteUrl: "https://lufkindailynews.com/", kind: "newsroom", coverage: "county" },
+      { id: "official", name: "Angelina County Government", websiteUrl: "https://www.angelinacounty.net/", kind: "official", coverage: "county" },
+    ] },
+  }));
+  await page.goto("/county/angelina");
+  await page.getByRole("link", { name: "Angelina County sources and towns" }).click();
+  await expect(page.getByRole("heading", { name: "Local newsrooms" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /The Lufkin Daily News/ })).toHaveAttribute("href", "https://lufkindailynews.com/");
+  await page.getByLabel("City or town").selectOption("Diboll");
+  await expect(page.getByRole("heading", { name: "Diboll, Angelina County sources" })).toBeVisible();
+  await expect(page.getByText(/a city story must also name Diboll/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Official county sources" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("keeps a newsroom coverage gap visible when an official source exists", async ({ page }) => {
+  await page.route("**/v1/sources/counties/loving", (route) => route.fulfill({
+    json: { countySlug: "loving", sources: [
+      { id: "official", name: "Loving County Government", websiteUrl: "https://www.co.loving.tx.us/", kind: "official", coverage: "county" },
+    ] },
+  }));
+  await page.goto("/county/loving/sources");
+  await expect(page.getByText(/not yet verified a local newsroom/)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Loving County Government/ })).toBeVisible();
+});
+
 test("assigns counties a real region only where one was chosen", () => {
   // Regions used to be inferred from FIPS ranges, which are alphabetical rather
   // than geographic, so most counties carried a confidently wrong region.

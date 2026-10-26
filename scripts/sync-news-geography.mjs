@@ -10,4 +10,4 @@ if (!match) throw new Error("Missing API county/place data");
 const data = JSON.parse(match[1]);
 if (Object.keys(data).length !== 254) throw new Error("Expected all 254 Texas counties");
 await writeFile(new URL("../src/data/county-places.ts", import.meta.url),
-  `// Texas Census/USGS 2024 place snapshot from txbiz-api; selected towns, not all municipalities.\n// Refresh: node scripts/sync-news-geography.mjs /path/to/txbiz-api/src/data/county-places.ts\nexport const countyPlaces: Record<string, readonly string[]> = ${JSON.stringify(data, null, 2)};\n`);
+  `// Texas Census 2025 incorporated-place/county join plus retained GNIS towns from txbiz-api.\n// Refresh: node scripts/sync-news-geography.mjs /path/to/txbiz-api/src/data/county-places.ts\nexport const countyPlaces: Record<string, readonly string[]> = ${JSON.stringify(data, null, 2)};\n`);

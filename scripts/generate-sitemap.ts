@@ -30,6 +30,7 @@ const paths = [
   ...topicSlugs.map((slug) => `/topic/${slug}`),
   ...regionSlugs.map((slug) => `/region/${slug}`),
   ...texasCounties.map((county) => `/county/${county.slug}`),
+  ...texasCounties.map((county) => `/county/${county.slug}/sources`),
 ];
 
 const lastModified = new Date().toISOString().slice(0, 10);
