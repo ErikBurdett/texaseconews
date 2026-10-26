@@ -1,4 +1,5 @@
 import { getCountyByState, type UsCountyRecord } from "@nickgraffis/us-counties";
+import { countyPlaces } from "./county-places";
 
 export type TexasCounty = {
   fips: string;
@@ -142,7 +143,7 @@ export function countyAliases(county: TexasCounty): CountyAlias[] {
     `${county.name} TX`,
   ];
   const metro = county.metro ? [county.metro] : [];
-  const places = placeAliasesByCountySlug[county.slug] || [];
+  const places = [...(countyPlaces[county.fips] ?? []), ...(placeAliasesByCountySlug[county.slug] ?? [])];
   const aliases = [...base, ...metro, ...places];
 
   return [...new Set(aliases)]

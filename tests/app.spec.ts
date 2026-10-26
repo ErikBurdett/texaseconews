@@ -487,6 +487,12 @@ test("supports multi-county search, region filters, and industry navigation", as
   await expect(page.getByRole("heading", { name: "Energy news across Texas." })).toBeVisible();
 });
 
+test("finds a rural county through its town name", async ({ page }) => {
+  await page.getByPlaceholder("Search county, city, metro, or region. Try: Frisco or Potter, Randall").fill("Lufkin");
+  await page.getByRole("button", { name: "Add matches" }).click();
+  await expect(page.getByRole("button", { name: "Remove Angelina County" })).toBeVisible();
+});
+
 test("keeps filter selections within the API fan-out budget", async ({ page }) => {
   await openResponsiveFilters(page);
   for (const industry of ["Energy", "Robotics", "Small Business", "Infrastructure"]) {
