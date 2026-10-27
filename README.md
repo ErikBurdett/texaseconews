@@ -71,7 +71,7 @@ Required for the contact form through EmailJS:
 - `VITE_EMAILJS_TEMPLATE_ID`
 - `VITE_EMAILJS_PUBLIC_KEY`
 
-These must be set in AWS Amplify environment variables for the deployed contact form to send to `admin@texasbusiness.news`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
+These must be set in AWS Amplify environment variables for the deployed contact form to send to `erikaburdet@gmail.com`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
 
 ## Local Development
 

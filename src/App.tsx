@@ -421,7 +421,7 @@ function ContactPage() {
     if (String(formData.get(contactHoneypotField) || "").trim()) {
       form.reset();
       setStatus("success");
-      setStatusMessage("Message sent. We will review it at admin@texasbusiness.news.");
+      setStatusMessage("Message sent. We will review it at erikaburdet@gmail.com.");
       return;
     }
 
@@ -435,7 +435,7 @@ function ContactPage() {
     if (cooldownRemaining > 0) {
       setStatus("error");
       setStatusMessage(
-        `Please wait ${Math.ceil(cooldownRemaining / 1000)} seconds before sending another message, or email admin@texasbusiness.news.`,
+        `Please wait ${Math.ceil(cooldownRemaining / 1000)} seconds before sending another message, or email erikaburdet@gmail.com.`,
       );
       return;
     }
@@ -449,7 +449,7 @@ function ContactPage() {
 
     if (!serviceId || !templateId || !publicKey) {
       setStatus("error");
-      setStatusMessage("Contact form is not configured yet. Please email admin@texasbusiness.news.");
+      setStatusMessage("Contact form is not configured yet. Please email erikaburdet@gmail.com.");
       return;
     }
 
@@ -461,7 +461,7 @@ function ContactPage() {
         serviceId,
         templateId,
         {
-          to_email: "admin@texasbusiness.news",
+          to_email: "erikaburdet@gmail.com",
           from_name: name,
           reply_to: email,
           message,
@@ -473,10 +473,10 @@ function ContactPage() {
       formLoadedAt.current = Date.now();
       recordContactSubmission();
       setStatus("success");
-      setStatusMessage("Message sent. We will review it at admin@texasbusiness.news.");
+      setStatusMessage("Message sent. We will review it at erikaburdet@gmail.com.");
     } catch {
       setStatus("error");
-      setStatusMessage("Message failed to send. Please email admin@texasbusiness.news.");
+      setStatusMessage("Message failed to send. Please email erikaburdet@gmail.com.");
     }
   }
 
@@ -485,7 +485,7 @@ function ContactPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Contact</p>
         <h1>Reach TexasBusiness.News.</h1>
-        <p>Use the contact form for sponsor questions, source suggestions, corrections, privacy requests, or general site feedback. You can also email <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+        <p>Use the contact form for sponsor questions, source suggestions, corrections, privacy requests, or general site feedback. You can also email <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>.</p>
       </section>
       <section className="contact-panel">
         <form className="contact-form" onSubmit={handleContactSubmit}>
@@ -510,11 +510,11 @@ function ContactPage() {
             information. See the <Link to="/privacy">Privacy Statement</Link>.
           </p>
           <button className="button" disabled={status === "submitting"} type="submit">
-            {status === "submitting" ? "Sending..." : "Send to admin@texasbusiness.news"}
+            {status === "submitting" ? "Sending..." : "Send to erikaburdet@gmail.com"}
           </button>
           {statusMessage ? <p className={`form-status ${status}`}>{statusMessage}</p> : null}
         </form>
-        <InfoCard title="Contact Policy" body="TexasBusiness.News does not list phone numbers or street addresses on the site. Contact forms and admin@texasbusiness.news are the official contact paths." />
+        <InfoCard title="Contact Policy" body="TexasBusiness.News does not list phone numbers or street addresses on the site. Contact forms and erikaburdet@gmail.com are the official contact paths." />
       </section>
     </Shell>
   );
@@ -550,7 +550,7 @@ function TermsPage() {
       </section>
       <section className="legal-document">
         <LegalSection title="1. Acceptance and eligibility">
-          <p>By accessing {siteName}, you accept these terms and the <Link to="/privacy">Privacy Statement</Link>. If you do not accept them, do not use the service. The service is intended for a general audience and is not directed to children under 13. {siteName} is operated by {siteOperator}, a Texas limited liability company; correspondence may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+          <p>By accessing {siteName}, you accept these terms and the <Link to="/privacy">Privacy Statement</Link>. If you do not accept them, do not use the service. The service is intended for a general audience and is not directed to children under 13. {siteName} is operated by {siteOperator}, a Texas limited liability company; correspondence may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>.</p>
         </LegalSection>
         <LegalSection title="2. News-discovery service">
           <p>{siteName} organizes links to positive Texas business reporting using statewide, regional, county, and industry filters. It is not the original publisher of linked reporting. Automated relevance and topic labels can be incomplete or wrong; verify the original article before relying on a result. Our process is described in the <Link to="/methodology">Editorial and Source Methodology</Link>.</p>
@@ -575,7 +575,7 @@ function TermsPage() {
           <p>The {siteName} name, original interface, taxonomy, arrangement, and original policy text are protected to the extent allowed by law. No license is granted to third-party publisher or advertiser marks. Reasonable linking to public pages is permitted if it does not imply endorsement.</p>
         </LegalSection>
         <LegalSection title="9. Corrections and copyright concerns">
-          <p>Send corrections, source opt-out requests, and copyright concerns through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. Include the affected URL, the work or statement at issue, your authority to act, a clear explanation, and reliable contact information. We may remove or disable material while reviewing a request.</p>
+          <p>Send corrections, source opt-out requests, and copyright concerns through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>. Include the affected URL, the work or statement at issue, your authority to act, a clear explanation, and reliable contact information. We may remove or disable material while reviewing a request.</p>
           <p>This contact process is not a representation that the operator has registered a designated agent or currently claims every safe harbor under the Digital Millennium Copyright Act. Counsel should complete any formal DMCA registration and notice process before the site represents otherwise.</p>
         </LegalSection>
         <LegalSection title="10. Disclaimers">
@@ -589,14 +589,14 @@ function TermsPage() {
           <p>An advertiser’s indemnification obligations are set out separately in its insertion order and are in addition to this section.</p>
         </LegalSection>
         <LegalSection title="13. Dispute resolution and venue">
-          <p>Before filing any claim, contact us through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a> with a written description of the dispute and the relief you seek. The parties will attempt in good faith to resolve the matter informally for 30 days from that notice.</p>
+          <p>Before filing any claim, contact us through the <Link to="/contact">contact form</Link> or at <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a> with a written description of the dispute and the relief you seek. The parties will attempt in good faith to resolve the matter informally for 30 days from that notice.</p>
           <p>If a dispute is not resolved informally, it must be brought exclusively in the state or federal courts located in the State of Texas, and you and {siteOperator} consent to the personal jurisdiction of those courts. Either party may seek injunctive relief in any court of competent jurisdiction to protect its intellectual property or confidential information. Nothing here prevents you from bringing a matter before a government agency that has authority over it, or from filing in small claims court if your claim qualifies.</p>
         </LegalSection>
         <LegalSection title="14. Changes, severability, and Texas law">
           <p>We may update the service or these terms by posting a new effective date. If one provision is unenforceable, the remaining provisions continue. These terms are governed by Texas law, without overriding mandatory consumer protections that apply where you live. These terms are the entire agreement between you and {siteOperator} regarding the service, and you may not assign them without our written consent.</p>
         </LegalSection>
         <LegalSection title="15. Contact">
-          <p>Questions about these terms may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+          <p>Questions about these terms may be sent through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>.</p>
         </LegalSection>
       </section>
     </Shell>
@@ -615,7 +615,7 @@ function PrivacyPage() {
       </section>
       <section className="legal-document">
         <LegalSection title="1. Scope and operator contact">
-          <p>This statement applies to the {siteName} website. The controller of the personal data described here is {siteOperator}, a Texas limited liability company. The site currently has no user accounts, subscriptions, or direct payment processing. Contact the operator through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+          <p>This statement applies to the {siteName} website. The controller of the personal data described here is {siteOperator}, a Texas limited liability company. The site currently has no user accounts, subscriptions, or direct payment processing. Contact the operator through the <Link to="/contact">contact form</Link> or at <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>.</p>
         </LegalSection>
         <LegalSection title="2. Information you provide">
           <p>The contact form collects the name, email address, and message you choose to submit. Do not include sensitive personal data. EmailJS transmits the submission to our inbox. Linked publishers, sponsors, and future advertiser intake forms collect information under their own notices.</p>
@@ -651,7 +651,7 @@ function PrivacyPage() {
           <p>Browser preferences remain until cleared or changed. RSS fallback cache entries expire after 45 minutes. Page-memory ad events end when the page session ends. Contact messages and infrastructure logs are retained only as reasonably needed for the request, security, records, and legal obligations under operator and vendor settings. We use reasonable safeguards, but no internet system is completely secure.</p>
         </LegalSection>
         <LegalSection title="11. Texas privacy rights">
-          <p>Where the Texas Data Privacy and Security Act or another law applies, you may request access, correction, deletion, or a portable copy of covered personal data, and may opt out of covered targeted advertising, sale, or certain profiling. You may also appeal a denied request. Submit requests through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. We may verify your identity and authority and will respond within the period required by applicable law.</p>
+          <p>Where the Texas Data Privacy and Security Act or another law applies, you may request access, correction, deletion, or a portable copy of covered personal data, and may opt out of covered targeted advertising, sale, or certain profiling. You may also appeal a denied request. Submit requests through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>. We may verify your identity and authority and will respond within the period required by applicable law.</p>
         </LegalSection>
         <LegalSection title="12. Children and sensitive data">
           <p>The site is not directed to children under 13 and does not knowingly collect children’s personal information. We do not ask for precise geolocation, government identifiers, health records, account credentials, or other sensitive data. Do not place sensitive data in the contact form.</p>
@@ -660,7 +660,7 @@ function PrivacyPage() {
           <p>Publishers, sponsors, and widgets have separate privacy practices. Their processing may occur outside Texas or the United States. Review their notices before enabling a widget or following an external link.</p>
         </LegalSection>
         <LegalSection title="14. Changes and complaints">
-          <p>We may update this statement by changing its effective date. Send questions, complaints, requests, or appeals through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>.</p>
+          <p>We may update this statement by changing its effective date. Send questions, complaints, requests, or appeals through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>.</p>
         </LegalSection>
       </section>
     </Shell>
@@ -697,7 +697,7 @@ function MethodologyPage() {
           <p>Advertising is selected independently of article inclusion and uses separate components and unmistakable labels. A sponsor does not approve coverage, and an ad beside a story does not imply endorsement by the publisher, subject, county, or public entity.</p>
         </LegalSection>
         <LegalSection title="Corrections, source requests, and opt-outs">
-          <p>Send a correction, source suggestion, source opt-out, or rights concern through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. Include the page URL and supporting information. We may remove a result while reviewing it.</p>
+          <p>Send a correction, source suggestion, source opt-out, or rights concern through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>. Include the page URL and supporting information. We may remove a result while reviewing it.</p>
         </LegalSection>
       </section>
     </Shell>
@@ -748,7 +748,7 @@ function AdvertisingStandardsPage() {
           <p>The operator may reject, pause, relabel, or remove a campaign at any time for legal, safety, quality, or trust concerns. Material changes require re-review. Advertisers remain responsible for their content and must promptly cooperate with complaints and investigations.</p>
         </LegalSection>
         <LegalSection title="Request review">
-          <p>Send campaign inquiries through the <Link to="/contact">contact form</Link> or to <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. No campaign is accepted and no inventory is guaranteed until written approval and a signed agreement are complete.</p>
+          <p>Send campaign inquiries through the <Link to="/contact">contact form</Link> or to <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>. No campaign is accepted and no inventory is guaranteed until written approval and a signed agreement are complete.</p>
         </LegalSection>
       </section>
     </Shell>
@@ -781,7 +781,7 @@ function AccessibilityPage() {
           <p>Linked publisher articles, sponsor destination pages, and the LiveCoinWatch and TradingView ticker widgets are controlled by third parties, and their accessibility is governed by those parties. Automated testing finds only a portion of accessibility problems; reader reports are the most reliable signal we have.</p>
         </LegalSection>
         <LegalSection title="4. Tell us about a barrier">
-          <p>If any part of this site is difficult or impossible for you to use, tell us through the <Link to="/contact">contact form</Link> or at <a href="mailto:admin@texasbusiness.news">admin@texasbusiness.news</a>. Please include the page address, what you were trying to do, and the assistive technology or browser you were using.</p>
+          <p>If any part of this site is difficult or impossible for you to use, tell us through the <Link to="/contact">contact form</Link> or at <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>. Please include the page address, what you were trying to do, and the assistive technology or browser you were using.</p>
           <p>We aim to acknowledge accessibility reports within five business days and to describe a fix or a workaround within thirty days. If we cannot make something accessible, we will offer another way to get the same information.</p>
         </LegalSection>
       </section>

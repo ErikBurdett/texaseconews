@@ -649,7 +649,7 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
 
   await page.goto("/contact");
   await expect(page.getByRole("heading", { name: "Reach TexasBusiness.News." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "admin@texasbusiness.news", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "erikaburdet@gmail.com", exact: true })).toBeVisible();
 
   await page.goto("/not-a-real-route");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
@@ -968,4 +968,21 @@ test("an explicit refresh supersedes an older pending response in the client cac
   });
   expect(result).toEqual({ newer: "newer", cached: "newer" });
   expect(requests).toBe(2);
+});
+
+
+test("contact form sends every inquiry to the configured owner and keeps reply-to", async ({ page }) => {
+  let payload: { template_params?: Record<string, string> } | undefined;
+  await page.route("https://api.emailjs.com/**", route => {
+    payload = route.request().postDataJSON();
+    return route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+  });
+  await page.goto("/contact");
+  await page.getByLabel("Name", { exact: true }).fill("Routing test");
+  await page.getByLabel("Email", { exact: true }).fill("reader@example.com");
+  await page.getByLabel("Message", { exact: true }).fill("A source suggestion for my county.");
+  await page.waitForTimeout(3100);
+  await page.getByRole("button", { name: "Send to erikaburdet@gmail.com" }).click();
+  await expect(page.getByText("Message sent. We will review it at erikaburdet@gmail.com.")).toBeVisible();
+  expect(payload?.template_params).toMatchObject({ to_email: "erikaburdet@gmail.com", reply_to: "reader@example.com", submission_type: "general_contact" });
 });
