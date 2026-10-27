@@ -97,29 +97,12 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
   const industryLabel = selectedTopics.length ? selectedTopics.map(displayLabel).join(", ") : "";
   const feedTitle = `${scopeLabel} ${industryLabel ? industryLabel.toLowerCase() : "business momentum"}`;
   const countySectionTitle = selectedCounties.length > 1
-    ? "Selected counties and nearby market articles"
-    : `${selectedCounties[0]?.displayName || "County"} and nearby market articles`;
+    ? "Selected county coverage"
+    : `${selectedCounties[0]?.displayName || "County"} coverage`;
   const isLoading = pageNews.loading;
   const hasError = Boolean(pageNews.error);
 
   usePageTitle(selectedTopicSlugs.length || selectedRegionSlugs.length ? `${scopeLabel} ${industryLabel || "News"}` : "Positive Texas Business News");
-  const countyHasHidden = Boolean(selectedCounties.length) && visibleCountyCount < countyItems.length;
-  const statewideHasHidden = visibleStatewideCount < statewideItems.length;
-
-  // Reveal what is already loaded first; only reach for the network once the
-  // reader has actually run out of stories on screen.
-  useInfiniteScroll(() => {
-    if (countyHasHidden) {
-      setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length));
-      return;
-    }
-    if (statewideHasHidden) {
-      setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length));
-      return;
-    }
-    pageNews.loadMore();
-  }, countyHasHidden || statewideHasHidden || pageNews.hasMore);
-
   // A newly appended page is useless if the reveal counters stay put.
   useEffect(() => {
     if (!pageNews.loadingMore) {
@@ -197,8 +180,8 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
               items={countyItems}
               title={countySectionTitle}
               visibleCount={visibleCountyCount}
-              canFetchMore={pageNews.hasMore}
-              loadingMore={pageNews.loadingMore}
+              canFetchMore={pageNews.data?.county?.meta.hasMore ?? false}
+              loadingMore={pageNews.loadingMore} loadMoreError={pageNews.loadMoreError}
               onFetchMore={pageNews.hasMore ? pageNews.loadMore : pageNews.refresh}
               onLoadMore={() => setVisibleCountyCount((current) => Math.min(current + pageSize, countyItems.length))}
             />
@@ -210,8 +193,8 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
             items={statewideItems}
             title="Texas statewide articles"
             visibleCount={visibleStatewideCount}
-            canFetchMore={pageNews.hasMore}
-            loadingMore={pageNews.loadingMore}
+            canFetchMore={pageNews.data?.statewide.meta.hasMore ?? false}
+            loadingMore={pageNews.loadingMore} loadMoreError={pageNews.loadMoreError}
             onFetchMore={pageNews.hasMore ? pageNews.loadMore : pageNews.refresh}
             onLoadMore={() => setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length))}
           />
@@ -1010,14 +993,32 @@ function topicPath(topicSlug: TopicSlug, county?: TexasCounty, region?: RegionSl
   return county ? `/county/${county.slug}/topic/${topicSlug}` : `/topic/${topicSlug}`;
 }
 
-function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoadMore, onFetchMore, canFetchMore = false, loadingMore = false }: { title: string; items: NewsItem[]; visibleCount: number; emptyTitle: string; emptyBody: string; onLoadMore: () => void; onFetchMore: () => void; canFetchMore?: boolean; loadingMore?: boolean }) {
+function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoadMore, onFetchMore, canFetchMore = false, loadingMore = false, loadMoreError }: { title: string; items: NewsItem[]; visibleCount: number; emptyTitle: string; emptyBody: string; onLoadMore: () => void; onFetchMore: () => void; canFetchMore?: boolean; loadingMore?: boolean; loadMoreError?: string | null }) {
   const visibleItems = items.slice(0, visibleCount);
   const hasHiddenItems = visibleCount < items.length;
-  const buttonLabel = loadingMore
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (loadingMore || loadMoreError || (!hasHiddenItems && !canFetchMore)) return;
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        // Also catches fast scrolls that jump past the sentinel on small screens.
+        if (sentinel.current && sentinel.current.getBoundingClientRect().top < window.innerHeight + 600) {
+          if (hasHiddenItems) onLoadMore(); else onFetchMore();
+        }
+      });
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
+  }, [hasHiddenItems, canFetchMore, loadingMore, loadMoreError, onLoadMore, onFetchMore]);
+  const buttonLabel = loadMoreError ? "Retry loading older stories" : loadingMore
     ? "Loading more articles..."
     : hasHiddenItems || canFetchMore
       ? "Load more articles"
-      : "Fetch latest matching articles";
+      : "End of matching stories";
 
   return (
     <section className="feed-section">
@@ -1026,7 +1027,7 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
         <h2>{title}</h2>
       </div>
       {!visibleItems.length ? <StatusCard title={emptyTitle} body={emptyBody} /> : null}
-      <p className="feed-source-note">Headlines from original publishers. Open a story to read the full report.</p>
+      <p className="feed-source-note">Newest first. Keep scrolling for older stories matching your filters, up to two years back. Open a headline to read the original report.</p>
       <div className="news-list">
         {visibleItems.map((item, index) => (
           <Fragment key={item.id}>
@@ -1039,8 +1040,10 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
           </Fragment>
         ))}
       </div>
-      {visibleItems.length ? (
-        <button className="button load-more" data-can-fetch-more={String(canFetchMore)} data-hidden-items={String(hasHiddenItems)} disabled={loadingMore} onClick={hasHiddenItems ? onLoadMore : onFetchMore} type="button">
+      <div ref={sentinel} className="feed-sentinel" aria-hidden="true" />
+      {loadMoreError ? <p role="status" className="feed-source-note">{loadMoreError}</p> : null}
+      {visibleItems.length || canFetchMore ? (
+        <button className="button load-more" data-can-fetch-more={String(canFetchMore)} data-hidden-items={String(hasHiddenItems)} disabled={loadingMore || (!hasHiddenItems && !canFetchMore)} onClick={hasHiddenItems ? onLoadMore : onFetchMore} type="button">
           {buttonLabel}
         </button>
       ) : null}
@@ -1056,7 +1059,9 @@ function NewsCard({ item }: { item: NewsItem }) {
     ? getCountyBySlug(item.countySlug)
     : undefined;
   const expandedCoverageLabel =
-    item.coverageTier === "market"
+    item.coverageTier === "statewide" && item.coverageLabel?.startsWith("Texas statewide context")
+      ? item.coverageLabel
+      : item.coverageTier === "market"
       ? `Market coverage: ${item.coverageLabel || item.feedLabel || "nearby market"}`
       : item.coverageTier === "nearby"
         ? `Nearby coverage: ${item.coverageLabel || item.feedLabel || "nearby county"}`
@@ -1272,7 +1277,7 @@ function TexasExchangePage() {
         {news.error ? <StatusCard title="Exchange news is temporarily unavailable" body={news.error} /> : null}
         <FeedSection title="Texas Stock Exchange news" items={news.data?.statewide.items ?? noNewsItems} visibleCount={visible}
           emptyTitle="No matching exchange stories yet" emptyBody="The official TXSE resources above are available while this feed updates."
-          onLoadMore={() => setVisible((count) => count + pageSize)} onFetchMore={news.loadMore} canFetchMore={news.hasMore} loadingMore={news.loadingMore} />
+          onLoadMore={() => setVisible((count) => count + pageSize)} onFetchMore={news.loadMore} canFetchMore={news.hasMore} loadingMore={news.loadingMore} loadMoreError={news.loadMoreError} />
       </section>
     </div>
   </Shell>;
@@ -1405,19 +1410,13 @@ function LegalSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
-/**
- * Loads the home page and keeps loading it.
- *
- * Pages accumulate rather than replace: the first request is offset 0, and each
- * `loadMore` asks for the next slice and appends it. One offset covers both the
- * county and statewide sections because the API slices them together, so page
- * N is items [N x limit, (N+1) x limit) of each. Items are deduplicated by id,
- * since a story can surface in more than one page as upstream feeds move.
- */
+/** Keeps independent county/statewide cursors so sparse sections can search older
+ * periods without skipping stories in the other section. Legacy APIs still use offsets. */
 function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
   const [pages, setPages] = useState<HomePageResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const activeRequest = useRef(0);
@@ -1447,6 +1446,7 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
     activeRequest.current = requestId;
     pendingMore.current = false;
     setLoadingMore(false);
+    setLoadMoreError(null);
     setLoading(true);
     setError(null);
 
@@ -1454,7 +1454,10 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
     previousRefresh.current = refreshVersion;
     fetchHomePage({ ...selection, limit }, { signal: controller.signal, forceRefresh })
       .then((response) => {
-        if (activeRequest.current === requestId) { setPages([response]); setResolvedSelection(selectionKey); }
+        if (activeRequest.current === requestId) {
+          setPages([response]); setResolvedSelection(selectionKey);
+          if (response.county?.meta.retryable || response.statewide.meta.retryable) setLoadMoreError("Some stories are temporarily unavailable. Retry below.");
+        }
       })
       .catch((requestError: unknown) => {
         if (controller.signal.aborted || activeRequest.current !== requestId) return;
@@ -1480,15 +1483,21 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
     pendingMore.current = true;
     const requestId = activeRequest.current;
     setLoadingMore(true);
-
-    fetchHomePage({ ...selection, limit, offset: pages.length * limit })
+    setLoadMoreError(null);
+    const usesCursors = Boolean(latest.county?.meta.nextCursor || latest.statewide.meta.nextCursor);
+    fetchHomePage({ ...selection, limit, ...(usesCursors ? {
+      countyCursor: latest.county?.meta.nextCursor ?? "end",
+      statewideCursor: latest.statewide.meta.nextCursor ?? "end",
+    } : { offset: pages.length * limit }) })
       .then((response) => {
         if (activeRequest.current !== requestId) return;
         setPages((current) => [...current, response]);
+        if (response.county?.meta.retryable || response.statewide.meta.retryable) {
+          setLoadMoreError("Older stories are temporarily unavailable. Your loaded stories are saved; retry below.");
+        }
       })
       .catch(() => {
-        // A failed extra page leaves what is already on screen intact; the
-        // reader keeps their stories and can retry by scrolling again.
+        if (activeRequest.current === requestId) setLoadMoreError("Could not load older stories. Retry below to continue from the same place.");
       })
       .finally(() => {
         if (activeRequest.current === requestId) { pendingMore.current = false; setLoadingMore(false); }
@@ -1496,7 +1505,7 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
   }, [limit, pages, selection, loading, resolvedSelection, selectionKey]);
 
   const refresh = useCallback(() => setRefreshVersion((current) => current + 1), []);
-  return { data, loading, loadingMore, hasMore, error, refresh, loadMore };
+  return { data, loading, loadingMore, loadMoreError, hasMore, error, refresh, loadMore };
 }
 
 /** Concatenates fetched pages into one response, dropping repeated stories. */
@@ -1555,19 +1564,6 @@ function useStoredCountySelection() {
   }, []);
 
   return [slugs, update] as const;
-}
-
-function useInfiniteScroll(onNearEnd: () => void, enabled: boolean) {
-  useEffect(() => {
-    if (!enabled) return;
-    function onScroll() {
-      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
-      if (remaining < 900) onNearEnd();
-    }
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [enabled, onNearEnd]);
 }
 
 /** Keeps a single <link rel="canonical"> in sync with the active route. */

@@ -164,3 +164,18 @@ static `public/texas-mark.svg` for navigation and the favicon. The Apple touch
 icon is a 180px render of that same SVG. Recent API responses stay in a bounded,
 two-minute browser-memory cache; Refresh bypasses it, and changing scopes hides
 stories belonging to the previous selection while the new request completes.
+
+
+### Scrolling through older stories
+
+Each feed section loads as its end approaches the viewport, including fast
+mobile scrolls and periods with no matches. The shared API request carries
+independent county/statewide cursors, preserves all active location and industry
+filters, and accumulates stories without repeating IDs. Timestamp/ID pagination
+keeps the list newest-first as newer articles arrive. A retry control retains
+already loaded stories and the failed cursor; changing filters resets the list.
+The API searches up to two years back and the UI clearly marks the end.
+
+Sparse county desks may show explicitly labeled **Texas statewide context**
+after local and nearby retrieval are exhausted. This is context for the reader,
+not a claim that the story occurred in their county.

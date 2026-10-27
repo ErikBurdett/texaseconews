@@ -300,7 +300,7 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(sponsorLink).toHaveAttribute("rel", /sponsored/);
   await expect(page.locator(".controls-card").getByText("Premium ranch products from Double B Ranch")).toHaveCount(0);
   await expect(page.locator(".news-card img")).toHaveCount(0);
-  await expect(page.getByText("Headlines from original publishers. Open a story to read the full report.")).toBeVisible();
+  await expect(page.getByText(/Newest first. Keep scrolling for older stories/)).toBeVisible();
   await expect(page.locator(".news-card").first()).not.toContainText("Texas statewide manufacturing and AI infrastructure investment");
   await expect(page.getByRole("link", { name: /TexasBusiness.News Business/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
@@ -314,7 +314,7 @@ test("restores saved county filters alongside the statewide feed", async ({ page
   await page.reload();
 
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Potter County and nearby market articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Potter County coverage" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove Potter County" })).toBeVisible();
 });
 
@@ -381,7 +381,7 @@ test("uses local RSS feeds for Potter County fallback coverage", async ({ page }
 
   await page.goto("/county/potter");
 
-  await expect(page.getByRole("heading", { name: "Potter County and nearby market articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Potter County coverage" })).toBeVisible();
   await expect(page.getByText(localTitle).first()).toBeVisible();
   await expect(page.getByText("News API unavailable")).toHaveCount(0);
 });
@@ -455,7 +455,7 @@ test("uses honest market and nearby coverage when a rural county feed is sparse"
   await page.goto("/county/king");
 
   await expect(page.getByRole("heading", {
-    name: "King County and nearby market articles",
+    name: "King County coverage",
   })).toBeVisible();
   const marketCard = page.locator(".news-card").filter({ hasText: marketTitle });
   const nearbyCard = page.locator(".news-card").filter({ hasText: nearbyTitle });
@@ -506,7 +506,7 @@ test("supports multi-county search, region filters, and industry navigation", as
 
   await expect(page.getByRole("button", { name: "Remove Potter County" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove Randall County" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Selected counties and nearby market articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Selected county coverage" })).toBeVisible();
 
   await openResponsiveFilters(page);
   await page.getByRole("button", { name: "DFW" }).click();
@@ -594,14 +594,14 @@ test("uses the desktop width and keeps the connected map and footer responsive",
 test("renders shareable county and county-topic routes", async ({ page }) => {
   await page.goto("/county/dallas");
   await expect(page.getByRole("button", { name: "Remove Dallas County" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dallas County and nearby market articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dallas County coverage" })).toBeVisible();
   await expect(page.getByText(/^Dallas County, Texas .* creates positive growth$/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
 
   await page.goto("/county/dallas/topic/jobs");
   await expect(page.getByRole("heading", { name: "Jobs news across Texas." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Dallas County and nearby market articles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dallas County coverage" })).toBeVisible();
 });
 
 test("renders shareable region and region-industry routes", async ({ page }) => {
@@ -841,4 +841,81 @@ test("reuses recent filter results, refreshes on request, and hides mismatched s
   expect(generalRequests).toBe(0);
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect.poll(() => generalRequests).toBe(1);
+});
+
+test("scrolls beyond 240 stories through an empty history window while retaining filters", async ({ page }) => {
+  const cursors: string[] = [];
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", route => {
+    const url = new URL(route.request().url());
+    expect(url.searchParams.get("regions")).toBe("dfw");
+    expect(url.searchParams.get("topics")).toBe("semiconductors");
+    const cursor = url.searchParams.get("statewideCursor") ?? "first";
+    cursors.push(cursor);
+    const number = cursor === "first" ? 0 : Number(cursor.slice(1));
+    const empty = number === 2;
+    const count = empty ? 0 : 60;
+    const items = Array.from({ length: count }, (_, i) => ({
+      id: `history-${number}-${i}`, title: `Dallas chip factory ${number}-${i} expands`,
+      link: `https://example.com/history-${number}-${i}`, topics: ["semiconductors"],
+      publishedAt: new Date(Date.parse(fetchedAt) - (number * 60 + i) * 86400000).toISOString(),
+      source: "Example Texas Business Journal", coverageTier: "statewide",
+    }));
+    const section = feed(items);
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ county: null,
+      statewide: { ...section, meta: { ...section.meta, hasMore: number < 5, ...(number < 5 ? { nextCursor: `p${number + 1}` } : {}), history: number > 0 } }, meta: { fetchedAt } }) });
+  });
+  await page.goto("/region/dfw/industry/semiconductors");
+  for (let i = 0; i < 55; i++) {
+    if (await page.locator(".news-card").count() === 300) break;
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(100);
+  }
+  await expect(page.locator(".news-card")).toHaveCount(300);
+  expect(cursors[0]).toBe("first");
+  expect(cursors.filter(cursor => cursor !== "first")).toEqual(["p1", "p2", "p3", "p4", "p5"]);
+  const dates = await page.locator(".news-card time").evaluateAll(elements => elements.map(e => Date.parse(e.getAttribute("datetime")!)));
+  expect(dates).toEqual([...dates].sort((a, b) => b - a));
+  await expect(page.getByRole("button", { name: "End of matching stories" })).toBeDisabled();
+});
+
+test("retries a failed history page without discarding stories or advancing its cursor", async ({ page }) => {
+  let attempts = 0;
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", route => {
+    const url = new URL(route.request().url());
+    const cursor = url.searchParams.get("statewideCursor");
+    if (cursor) {
+      expect(cursor).toBe("older"); attempts++;
+      if (attempts === 1) return route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({error:{message:"Temporary fixture failure"}}) });
+    }
+    const section = feed([{ id: cursor ? "older-story" : "recent-story", title: cursor ? "Dallas chip factory expands in February" : "Dallas chip factory expands in June",
+      link: `https://example.com/${cursor ?? "recent"}`, topics: ["semiconductors"], publishedAt: cursor ? "2026-02-01T12:00:00Z" : fetchedAt }]);
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ county:null,
+      statewide:{ ...section, meta:{ ...section.meta, hasMore:!cursor, ...(!cursor ? {nextCursor:"older"} : {}) } }, meta:{ fetchedAt } }) });
+  });
+  await page.goto("/topic/semiconductors");
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const retry = page.getByRole("button", { name:"Retry loading older stories" });
+  await expect(retry).toBeVisible();
+  await expect(page.locator(".news-card")).toHaveCount(1);
+  await page.waitForTimeout(300);
+  expect(attempts).toBe(1);
+  await retry.click();
+  await expect(page.locator(".news-card")).toHaveCount(2);
+  expect(attempts).toBe(2);
+});
+
+test("labels statewide context on a county desk without presenting it as county-local news", async ({ page }) => {
+  await page.unroute("**/v1/pages/home**");
+  await page.route("**/v1/pages/home**", route => {
+    const section = feed([{ id: "state-context", title: "Texas workforce investment creates new jobs", link: "https://example.com/state-context",
+      topics: ["jobs"], publishedAt: fetchedAt, coverageTier: "statewide",
+      coverageLabel: "Texas statewide context — no matching local or nearby reports in this period" }]);
+    return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({ county:section, statewide:feed([]),meta:{fetchedAt} })});
+  });
+  await page.goto("/county/loving");
+  await expect(page.getByRole("heading", {name:"Loving County coverage"})).toBeVisible();
+  await expect(page.locator(".news-card").first()).toContainText("Texas statewide context");
+  await expect(page.locator(".news-card").first()).not.toContainText("Loving County growth");
 });

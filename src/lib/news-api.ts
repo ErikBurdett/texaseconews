@@ -28,6 +28,11 @@ export type FeedMeta = {
    */
   total?: number;
   hasMore?: boolean;
+  nextCursor?: string;
+  history?: boolean;
+  retryable?: boolean;
+  windowStart?: string;
+  windowEnd?: string;
   sourcesUsed: string[];
   fetchedAt: string;
   cacheTtlSeconds: number;
@@ -56,6 +61,8 @@ export type HomePageQuery = {
   limit: number;
   /** Items to skip, so a reader scrolling past the first page gets the next. */
   offset?: number;
+  countyCursor?: string;
+  statewideCursor?: string;
 };
 
 type RequestOptions = {
@@ -201,6 +208,8 @@ export function buildHomePageUrl(query: HomePageQuery) {
     topics: query.topics.join(","),
     limit: String(query.limit),
     offset: String(offset),
+    ...(query.countyCursor ? { countyCursor: query.countyCursor } : {}),
+    ...(query.statewideCursor ? { statewideCursor: query.statewideCursor } : {}),
   }).toString();
   return url;
 }
@@ -252,6 +261,9 @@ function isFeedResponse(value: unknown): value is FeedResponse {
     isNonNegativeInteger(meta.partialFailures) &&
     (meta.total === undefined || isNonNegativeInteger(meta.total)) &&
     (meta.hasMore === undefined || typeof meta.hasMore === "boolean") &&
+    (meta.nextCursor === undefined || (typeof meta.nextCursor === "string" && /^[A-Za-z0-9_-]{1,1024}$/u.test(meta.nextCursor))) &&
+    (meta.history === undefined || typeof meta.history === "boolean") &&
+    (meta.retryable === undefined || typeof meta.retryable === "boolean") &&
     (meta.coverageMix === undefined || isCoverageMix(meta.coverageMix))
   );
 }
