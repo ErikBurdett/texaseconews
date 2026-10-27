@@ -574,11 +574,19 @@ test("uses the desktop width and keeps the connected map and footer responsive",
     await page.setViewportSize({ width, height: 1000 });
     const hero = await page.locator(".hero").boundingBox();
     expect(hero!.width).toBeGreaterThan(width * .88);
+    const map = await page.locator(".texas-map").boundingBox();
+    expect(map!.y).toBeGreaterThanOrEqual(hero!.y);
+    expect(map!.y + map!.height).toBeLessThanOrEqual(hero!.y + hero!.height);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.locator("#feed-filter-panel")).toBeVisible();
   }
-  await expect(page.locator(".texas-map text")).toHaveCount(0);
-  expect(await page.locator(".texas-map circle").count()).toBeGreaterThan(600);
+  const mapImage = page.locator(".texas-map img");
+  await expect(mapImage).toBeVisible();
+  expect(await mapImage.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBe(600);
+  const illustration = await mapImage.getAttribute("src");
+  await page.goto(illustration!);
+  await expect(page.locator("svg text")).toHaveCount(0);
+  expect(await page.locator("svg circle").count()).toBeGreaterThan(600);
   await page.emulateMedia({ reducedMotion: "reduce" });
   expect(await page.locator(".network-beam").first().evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
 });
