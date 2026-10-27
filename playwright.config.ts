@@ -28,9 +28,7 @@ export default defineConfig({
   ],
   webServer: {
     env: {
-      VITE_EMAILJS_SERVICE_ID: "test_service",
-      VITE_EMAILJS_TEMPLATE_ID: "test_template",
-      VITE_EMAILJS_PUBLIC_KEY: "test_public_key",
+      VITE_CONTACT_API_URL: "https://contact.example.test/",
     },
     command: `npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
     url: `http://127.0.0.1:${port}`,

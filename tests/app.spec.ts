@@ -972,8 +972,8 @@ test("an explicit refresh supersedes an older pending response in the client cac
 
 
 test("contact form sends every inquiry to the configured owner and keeps reply-to", async ({ page }) => {
-  let payload: { template_params?: Record<string, string> } | undefined;
-  await page.route("https://api.emailjs.com/**", route => {
+  let payload: Record<string, string> | undefined;
+  await page.route("https://contact.example.test/**", route => {
     payload = route.request().postDataJSON();
     return route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
   });
@@ -984,5 +984,20 @@ test("contact form sends every inquiry to the configured owner and keeps reply-t
   await page.waitForTimeout(3100);
   await page.getByRole("button", { name: "Send to erikaburdet@gmail.com" }).click();
   await expect(page.getByText("Message sent. We will review it at erikaburdet@gmail.com.")).toBeVisible();
-  expect(payload?.template_params).toMatchObject({ to_email: "erikaburdet@gmail.com", reply_to: "reader@example.com", submission_type: "general_contact" });
+  expect(payload).toEqual({ name: "Routing test", email: "reader@example.com", message: "A source suggestion for my county." });
 });
+
+for (const status of [429, 503]) {
+  test(`contact form keeps the message and shows fallback after HTTP ${status}`, async ({ page }) => {
+    await page.route("https://contact.example.test/**", route => route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ error: "Delivery unavailable" }) }));
+    await page.goto("/contact");
+    await page.getByLabel("Name", { exact: true }).fill("Routing test");
+    await page.getByLabel("Email", { exact: true }).fill("reader@example.com");
+    await page.getByLabel("Message", { exact: true }).fill("Please preserve my inquiry.");
+    await page.waitForTimeout(3100);
+    await page.getByRole("button", { name: "Send to erikaburdet@gmail.com" }).click();
+    await expect(page.getByText("Message failed to send. Please email erikaburdet@gmail.com.")).toBeVisible();
+    await expect(page.getByLabel("Message", { exact: true })).toHaveValue("Please preserve my inquiry.");
+    await expect(page.getByText("Message sent. We will review it at erikaburdet@gmail.com.")).toHaveCount(0);
+  });
+}

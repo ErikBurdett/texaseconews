@@ -65,13 +65,15 @@ Optional RSS fallback endpoint overrides:
 
 Production defaults `VITE_ENABLE_RSS_FALLBACK` to false. The built-in development defaults are RSS2JSON and AllOrigins. Overrides must be valid HTTP(S) endpoints; they are browser-only availability fallbacks, not replacements for `VITE_NEWS_API_URL`. Review `rss_source_compliance.md` before enabling production fallback.
 
-Required for the contact form through EmailJS:
+Required for the contact form:
 
-- `VITE_EMAILJS_SERVICE_ID`
-- `VITE_EMAILJS_TEMPLATE_ID`
-- `VITE_EMAILJS_PUBLIC_KEY`
+- `VITE_CONTACT_API_URL`: the `ContactApiUrl` output of the `txbiz-api-prod` stack.
 
-These must be set in AWS Amplify environment variables for the deployed contact form to send to `erikaburdet@gmail.com`. The EmailJS template should accept `to_email`, `from_name`, `reply_to`, and `message`.
+The dedicated AWS endpoint validates submissions and publishes to the confirmed
+SNS email subscription for `erikaburdet@gmail.com`. The recipient is fixed on the
+server. It limits submissions to five per IP per hour and 100 per day overall;
+message bodies are not stored in the rate-limit table or application logs. Add
+the exact function origin to Amplify's live CSP as well as `amplify.yml`.
 
 ## Local Development
 

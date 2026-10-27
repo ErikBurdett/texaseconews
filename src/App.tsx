@@ -1,4 +1,3 @@
-import emailjs from "@emailjs/browser";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { AdSlot, SponsorBadge } from "./components/AdSlot";
@@ -392,7 +391,7 @@ function AdvertisePage() {
  *
  * The form is the published intake path for privacy requests, corrections, and
  * copyright complaints, so the concern is a legally significant channel being
- * drowned in automated noise (and the EmailJS quota being exhausted), not spam
+ * drowned in automated noise, not spam
  * for its own sake. A honeypot field and a minimum fill time reject scripted
  * submissions; a per-browser cooldown caps the rate of genuine ones.
  */
@@ -443,13 +442,10 @@ function ContactPage() {
     const name = String(formData.get("name") || "").trim();
     const email = String(formData.get("email") || "").trim();
     const message = String(formData.get("message") || "").trim();
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-    if (!serviceId || !templateId || !publicKey) {
+    const contactUrl = import.meta.env.VITE_CONTACT_API_URL?.trim();
+    if (!contactUrl) {
       setStatus("error");
-      setStatusMessage("Contact form is not configured yet. Please email erikaburdet@gmail.com.");
+      setStatusMessage("Contact delivery is unavailable. Please email erikaburdet@gmail.com.");
       return;
     }
 
@@ -457,18 +453,11 @@ function ContactPage() {
     setStatusMessage("");
 
     try {
-      await emailjs.send(
-        serviceId,
-        templateId,
-        {
-          to_email: "erikaburdet@gmail.com",
-          from_name: name,
-          reply_to: email,
-          message,
-          submission_type: "general_contact",
-        },
-        { publicKey },
-      );
+      const response = await fetch(contactUrl, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }), signal: AbortSignal.timeout(20_000),
+      });
+      if (!response.ok) throw new Error("Contact delivery failed");
       form.reset();
       formLoadedAt.current = Date.now();
       recordContactSubmission();
@@ -506,7 +495,7 @@ function ContactPage() {
             <input autoComplete="off" id={contactHoneypotField} name={contactHoneypotField} tabIndex={-1} type="text" />
           </div>
           <p className="form-privacy-notice">
-            We send these fields to EmailJS to deliver your request to our inbox. Do not submit sensitive personal
+            We use AWS to deliver these fields to our inbox. Do not submit sensitive personal
             information. See the <Link to="/privacy">Privacy Statement</Link>.
           </p>
           <button className="button" disabled={status === "submitting"} type="submit">
@@ -566,7 +555,7 @@ function TermsPage() {
           <p>Nothing on the site is legal, investment, securities, tax, medical, health, insurance, employment, or other professional advice. Market and crypto information may be delayed or inaccurate. Consult the original source and a qualified professional before making decisions.</p>
         </LegalSection>
         <LegalSection title="6. Third-party services and links">
-          <p>The news API, RSS providers, EmailJS, LiveCoinWatch, TradingView, sponsors, and linked publishers are independent third parties. Their content, availability, security, accessibility, and privacy practices are governed by their own terms. A link or adjacent advertisement does not constitute endorsement, partnership, or verification.</p>
+          <p>The news API, RSS providers, AWS, LiveCoinWatch, TradingView, sponsors, and linked publishers are independent third parties. Their content, availability, security, accessibility, and privacy practices are governed by their own terms. A link or adjacent advertisement does not constitute endorsement, partnership, or verification.</p>
         </LegalSection>
         <LegalSection title="7. Acceptable use">
           <p>You may browse the service and share links to public pages. You may not disrupt the site, bypass security or rate limits, introduce malicious code, scrape at a volume that harms the service, misrepresent affiliation, copy protected third-party content, use the service unlawfully, or use automated output to make high-impact decisions about another person.</p>
@@ -618,7 +607,7 @@ function PrivacyPage() {
           <p>This statement applies to the {siteName} website. The controller of the personal data described here is {siteOperator}, a Texas limited liability company. The site currently has no user accounts, subscriptions, or direct payment processing. Contact the operator through the <Link to="/contact">contact form</Link> or at <a href="mailto:erikaburdet@gmail.com">erikaburdet@gmail.com</a>.</p>
         </LegalSection>
         <LegalSection title="2. Information you provide">
-          <p>The contact form collects the name, email address, and message you choose to submit. Do not include sensitive personal data. EmailJS transmits the submission to our inbox. Linked publishers, sponsors, and future advertiser intake forms collect information under their own notices.</p>
+          <p>The contact form collects the name, email address, and message you choose to submit. Do not include sensitive personal data. AWS delivers the submission to our inbox. A daily hash of the submitting IP address and rate-limit counters expire after 24 hours and are then removed asynchronously; the rate-limit database does not store the message. Linked publishers, sponsors, and future advertiser intake forms collect information under their own notices.</p>
         </LegalSection>
         <LegalSection title="3. Browser preferences and RSS cache">
           <ul>
@@ -645,7 +634,7 @@ function PrivacyPage() {
           <p>We use information to deliver requested pages, remember choices, route contact messages, secure and debug the service, prevent abuse, measure sponsor placement within the page, comply with law, and handle corrections or rights requests. Depending on the activity and applicable law, processing is based on providing the requested service, legitimate operational interests, or legal obligations.</p>
         </LegalSection>
         <LegalSection title="9. Disclosure and sale">
-          <p>Information may be processed by AWS Amplify, the news API operator, EmailJS, and vendors you choose to load, and may be disclosed when legally required or in a business transfer subject to appropriate protections. {siteName} does not currently sell personal data, share it for cross-context behavioral advertising, or use it for targeted advertising as those terms are commonly defined. Current sponsor placement is contextual.</p>
+          <p>Information may be processed by AWS Amplify, the news API operator and vendors you choose to load, and may be disclosed when legally required or in a business transfer subject to appropriate protections. {siteName} does not currently sell personal data, share it for cross-context behavioral advertising, or use it for targeted advertising as those terms are commonly defined. Current sponsor placement is contextual.</p>
         </LegalSection>
         <LegalSection title="10. Retention and security">
           <p>Browser preferences remain until cleared or changed. RSS fallback cache entries expire after 45 minutes. Page-memory ad events end when the page session ends. Contact messages and infrastructure logs are retained only as reasonably needed for the request, security, records, and legal obligations under operator and vendor settings. We use reasonable safeguards, but no internet system is completely secure.</p>
