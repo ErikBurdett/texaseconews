@@ -6,8 +6,8 @@
 # public, ad-supported site needs belong in version control next to the code
 # whose behaviour they constrain.
 #
-# The SPA rewrite (/<*> -> /index.html, 404-200) remains a console redirect
-# rule; amplify.yml cannot express redirects.
+# SPA rewrites are versioned in infra/amplify-rewrites.json and applied through
+# the Amplify app customRules field; amplify.yml cannot express redirects.
 version: 1
 frontend:
   phases:

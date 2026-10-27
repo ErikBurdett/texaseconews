@@ -126,7 +126,13 @@ frontend:
       - node_modules/**/*
 ```
 
-Because this is a React Router SPA, Amplify should include a rewrite rule that sends unmatched routes to `/index.html` with a `200` status so deep links like `/county/dallas/topic/jobs` work after deployment.
+This React Router SPA uses the live Amplify `customRules` in
+`infra/amplify-rewrites.json`. Known application routes receive an explicit
+HTTP 200 rewrite to `/index.html`; asset paths are excluded. The previous
+404 fallback alone rendered `/contact/` with HTTP 404 despite displaying the
+form. Apply only `--custom-rules file://infra/amplify-rewrites.json` with
+`aws amplify update-app --app-id d3ovdx20nkkza2 --profile dharma --region us-west-2`.
+See [AWS rewrite documentation](https://docs.aws.amazon.com/amplify/latest/userguide/redirect-rewrite-examples.html).
 
 AWS Amplify environment variables needed for production news and contact support:
 

@@ -1,0 +1,12 @@
+[
+  {
+    "source": "</^\\/(?:counties|txse|mission|advertise|contact|terms|privacy|methodology|advertising-standards|accessibility|(?:topic|industry)\\/[a-z-]+|region\\/[a-z-]+(?:\\/industry\\/[a-z-]+)?|county\\/[a-z-]+(?:\\/sources|\\/topic\\/[a-z-]+)?)\\/?$/>",
+    "target": "/index.html",
+    "status": "200"
+  },
+  {
+    "source": "/<*>",
+    "target": "/index.html",
+    "status": "404-200"
+  }
+]
