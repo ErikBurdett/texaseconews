@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { texasPlaces } from "../src/data/places";
 import { texasCounties } from "../src/data/counties";
 import { regionSlugs } from "../src/data/regions";
 import { topicSlugs } from "../src/data/topics";
@@ -15,6 +16,7 @@ const canonicalOrigin = "https://texasbusiness.news";
 const staticPaths = [
   "/",
   "/counties",
+  "/places",
   "/txse",
   "/mission",
   "/advertise",
@@ -28,6 +30,7 @@ const staticPaths = [
 
 const paths = [
   ...staticPaths,
+  ...texasPlaces.map(place => `/county/${place.county.slug}/city/${place.slug}`),
   ...topicSlugs.map((slug) => `/topic/${slug}`),
   ...regionSlugs.map((slug) => `/region/${slug}`),
   ...texasCounties.map((county) => `/county/${county.slug}`),

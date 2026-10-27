@@ -1,6 +1,6 @@
 [
   {
-    "source": "</^\\/(?:counties|txse|mission|advertise|contact|terms|privacy|methodology|advertising-standards|accessibility|(?:topic|industry)\\/[a-z-]+|region\\/[a-z-]+(?:\\/industry\\/[a-z-]+)?|county\\/[a-z-]+(?:\\/sources|\\/topic\\/[a-z-]+)?)\\/?$/>",
+    "source": "</^\\/(?:counties|places|txse|mission|advertise|contact|terms|privacy|methodology|advertising-standards|accessibility|(?:topic|industry)\\/[a-z-]+|region\\/[a-z-]+(?:\\/industry\\/[a-z-]+)?|county\\/[a-z-]+(?:\\/sources|\\/topic\\/[a-z-]+|\\/city\\/[a-z0-9-]+(?:\\/sources)?)?)\\/?$/>",
     "target": "/index.html",
     "status": "200"
   },

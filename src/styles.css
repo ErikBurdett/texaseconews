@@ -1660,3 +1660,15 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Place directories render a bounded result set, including on small screens. */
+.town-search { margin-top: 1.5rem; }
+.town-search .county-link-grid { margin-top: 1rem; }
+.town-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0; }
+.town-filters .search-input { flex: 1; min-width: 12rem; }
+.town-search .county-link-card, .directory-section .county-link-card { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .town-filters { align-items: stretch; } .town-filters label { flex-basis: 100%; } }
+
+.town-news-content { width: calc(100% - (var(--page-gutter) * 2)); margin-inline: auto; }
+.page-hero label[for="place-search"], .town-search label { display: block; margin-top: 1.5rem; font-weight: 600; }
+.page-hero .feed-source-note { font-size: .9rem; line-height: 1.6; color: var(--muted); }

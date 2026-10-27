@@ -144,7 +144,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("shows county-serving newsrooms and official sources for a selected city", async ({ page }) => {
-  await page.route("**/v1/sources/counties/angelina", (route) => route.fulfill({
+  await page.route("**/v1/sources/counties/angelina**", (route) => route.fulfill({
     json: { countySlug: "angelina", sources: [
       { id: "lufkin", name: "The Lufkin Daily News", websiteUrl: "https://lufkindailynews.com/", kind: "newsroom", coverage: "county" },
       { id: "official", name: "Angelina County Government", websiteUrl: "https://www.angelinacounty.net/", kind: "official", coverage: "county" },
@@ -154,7 +154,8 @@ test("shows county-serving newsrooms and official sources for a selected city", 
   await page.getByRole("link", { name: "Angelina County sources and towns" }).click();
   await expect(page.getByRole("heading", { name: "Local newsrooms" })).toBeVisible();
   await expect(page.getByRole("link", { name: /The Lufkin Daily News/ })).toHaveAttribute("href", "https://lufkindailynews.com/");
-  await page.getByLabel("City or town").selectOption("Diboll");
+  await page.getByLabel("Find a city, town or community").fill("Diboll");
+  await page.getByRole("link", { name: "Diboll Local source directory ↗" }).click();
   await expect(page.getByRole("heading", { name: "Diboll, Angelina County sources" })).toBeVisible();
   await expect(page.getByText(/a city story must also name Diboll/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Official county sources" })).toBeVisible();

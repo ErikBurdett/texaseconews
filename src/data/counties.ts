@@ -152,9 +152,9 @@ export function countyAliases(county: TexasCounty): CountyAlias[] {
 }
 
 export function countyQueryAliases(county: TexasCounty) {
-  return countyAliases(county)
-    .filter((alias) => alias.querySafe)
-    .map((alias) => alias.label);
+  // The full place inventory is for search and locality; never put thousands
+  // of names into one fallback provider URL. Production rotates towns server-side.
+  return [county.displayName, ...(countyPlaces[county.fips] ?? []).slice(0, 8)];
 }
 
 export function countySearchText(county: TexasCounty) {
@@ -182,5 +182,5 @@ export function normalizeCountySearch(value: string) {
 }
 
 function normalizeForSearch(value: string) {
-  return ` ${value.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim()} `;
+  return ` ${value.normalize("NFKD").replace(/[\u0300-\u036f]/gu, "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim()} `;
 }

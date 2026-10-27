@@ -202,3 +202,11 @@ Texas business, industry, positivity, and geography rules remain enforced by
 the Texas API. Active stale feeds refresh in the background and all counties
 participate in the scheduled rotation. First visits to uncached combinations
 and older historical periods can still require upstream retrieval.
+
+## Complete town coverage (October 27, 2026)
+
+`/places` searches the Census 2025/USGS place catalog across all 254 counties. Each place has `/county/{county}/city/{place}` and `/county/{county}/city/{place}/sources` pages. Cross-county towns appear under each county. The catalog includes neighborhoods and unincorporated communities; source mappings are not a promise of current business stories.
+
+Town pages pass `city` with one county to the page API, preserve town scope during industry changes and infinite scrolling, and disable browser county fallback. Pending shared snapshots are rechecked at most three times at 30-second intervals. Empty town pages offer wider county coverage separately.
+
+Refresh geography with `node scripts/sync-news-geography.mjs ../txbiz-api/src/data/county-places.ts`. The API repository's `docs/local-coverage-2026-10-27.md` records source review, provenance and gaps. Deploy `infra/amplify-rewrites.json` to Amplify custom rules when changing the town route structure; repo edits alone do not update live edge routing.

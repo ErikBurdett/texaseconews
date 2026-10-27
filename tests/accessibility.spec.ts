@@ -15,6 +15,8 @@ const templates = [
   { path: "/", name: "home" },
   { path: "/txse", name: "Texas Stock Exchange" },
   { path: "/counties", name: "county directory" },
+  { path: "/places", name: "town directory" },
+  { path: "/county/oldham/city/wildorado", name: "town feed" },
   { path: "/county/potter", name: "county feed" },
   { path: "/topic/energy", name: "industry feed" },
   { path: "/contact", name: "contact" },

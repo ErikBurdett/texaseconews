@@ -4,6 +4,7 @@ import { AdSlot, SponsorBadge } from "./components/AdSlot";
 import { CountyCombobox } from "./components/CountyCombobox";
 import { TexasMap } from "./components/TexasMap";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
+import { placeSlug, texasPlaces } from "./data/places";
 import { countyPlaces } from "./data/county-places";
 import { getRegionBySlug, regionCatalog, regionSlugs, type RegionSlug } from "./data/regions";
 import { featuredTopicSlugs, getTopicBySlug, isTopicSlug, topicCatalog, type TopicSlug } from "./data/topics";
@@ -53,6 +54,9 @@ function AppContent() {
       <TickerStack />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/places" element={<PlaceDirectoryPage />} />
+        <Route path="/county/:countySlug/city/:citySlug" element={<CityPage />} />
+        <Route path="/county/:countySlug/city/:citySlug/sources" element={<CountySourcesPage />} />
         <Route path="/counties" element={<CountyDirectoryPage />} />
         <Route path="/txse" element={<TexasExchangePage />} />
         <Route path="/mission" element={<MissionPage />} />
@@ -130,6 +134,7 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
           <p>{selectedTopicSlugs.length === 1 ? selectedTopics[0].description : selectedRegionSlugs.length === 1 ? selectedRegions[0].description : "The businesses, people, and projects moving Texas forward. Discover new jobs, local investment, and opportunity in the places you care about."}</p>
           <div className="hero-actions">
             <a className="button primary" href="#feed-controls" onClick={() => document.getElementById("county-search")?.focus()}>Find your county <span aria-hidden="true">↗</span></a>
+            <Link className="hero-text-link" to="/places">Find your town ↗</Link>
             <a className="hero-text-link" href="#latest-news">Explore the latest <span aria-hidden="true">↓</span></a>
           </div>
           <div className="hero-footnote"><span>254 counties. One connected Texas.</span><Link to="/methodology">Our editorial approach ↗</Link></div>
@@ -149,6 +154,7 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
           />
           {selectedCounties.length ? <nav className="directory-section" aria-label="Local source directories">
             <h2>Local sources</h2>
+            <p><Link to="/places">Find a city, town or community</Link></p>
             {selectedCounties.map((county) => <p key={county.slug}><Link to={`/county/${county.slug}/sources`}>{county.displayName} sources and towns</Link></p>)}
           </nav> : null}
         </div>
@@ -260,6 +266,7 @@ function CountyDirectoryPage() {
         <p className="eyebrow">County directory</p>
         <h1>Find good business news by Texas county.</h1>
         <p>Open a county feed, then narrow by topic for shareable local growth pages with strict Texas place checks.</p>
+        <p><Link className="button primary" to="/places">Search cities, towns & communities ↗</Link></p>
         <input className="search-input directory-search" placeholder="Search counties, cities, metros, or regions..." value={query} onChange={(event) => setQuery(event.target.value)} />
       </section>
       <section className="directory-grid">
@@ -281,24 +288,103 @@ function CountyDirectoryPage() {
   );
 }
 
+function TownSearch({ county, sources = false }: { county: TexasCounty; sources?: boolean }) {
+  const [query, setQuery] = useState("");
+  const terms = searchTokens(query);
+  const matches = (countyPlaces[county.fips] ?? []).filter(name => terms.every(term => normalizeCountySearch(name).includes(term)));
+  return <div className="town-search">
+    <label htmlFor="town-search">Find a city, town or community</label>
+    <input id="town-search" className="search-input directory-search" type="search" value={query} placeholder={`Search places in ${county.name} County…`} onChange={event => setQuery(event.target.value)} />
+    <p className="feed-source-note" role="status">{matches.length} matching places{matches.length > 12 ? ". Showing the first 12; type to narrow your search." : "."}</p>
+    <div className="county-link-grid">{matches.slice(0, 12).map(name => <Link className="county-link-card" key={name} to={`/county/${county.slug}/city/${placeSlug(name)}${sources ? "/sources" : ""}`}><strong>{name}</strong><span>{sources ? "Local source directory" : "Business news"} ↗</span></Link>)}</div>
+  </div>;
+}
+
+function PlaceDirectoryPage() {
+  const { search } = useLocation();
+  const countySlug = new URLSearchParams(search).get("county");
+  const [query, setQuery] = useState("");
+  const [visible, setVisible] = useState(36);
+  const terms = searchTokens(query);
+  const matches = texasPlaces.filter(place => (!countySlug || place.county.slug === countySlug) && terms.every(term => place.search.includes(term)));
+  usePageTitle("Texas Cities, Towns & Communities");
+  return <Shell>
+    <section className="page-hero">
+      <p className="eyebrow">Every corner of Texas</p>
+      <h1>Big ambitions. Hometown roots.</h1>
+      <p>Find business news and local sources for Texas cities, towns, and smaller communities across all 254 counties.</p>
+      <label htmlFor="place-search">Search a place or county</label>
+      <input id="place-search" className="search-input directory-search" type="search" placeholder="Try Wildorado, Pearland, or your county…" value={query} onChange={event => { setQuery(event.target.value); setVisible(36); }} />
+      <p><Link to="/counties">Browse counties</Link>{countySlug ? <> · <Link to="/places">Search all Texas</Link></> : null}</p>
+      <p className="feed-source-note">Cities, towns and USGS-listed communities. Places that cross county borders appear under each county. Some places may have no recent matching story.</p>
+    </section>
+    <section className="directory-section directory-grid" aria-label="Matching places">
+      <p role="status">{matches.length.toLocaleString()} place and county matches</p>
+      <div className="county-link-grid">{matches.slice(0, visible).map(place => <Link className="county-link-card" key={`${place.county.slug}/${place.slug}`} to={`/county/${place.county.slug}/city/${place.slug}`}><strong>{place.name}</strong><span>{place.county.displayName}{place.county.region !== "All of Texas" ? ` · ${place.county.region}` : ""}</span></Link>)}</div>
+      {!matches.length ? <p>No places match this search. Try a shorter name or a county.</p> : null}
+      {visible < matches.length ? <button className="button load-more" onClick={() => setVisible(count => count + 36)}>Show more places</button> : null}
+    </section>
+  </Shell>;
+}
+
+function CityPage() {
+  const { countySlug, citySlug } = useParams();
+  const county = getCountyBySlug(countySlug);
+  const city = county ? (countyPlaces[county.fips] ?? []).find(name => placeSlug(name) === citySlug) : undefined;
+  if (!county || !city) return <NotFoundPage title="Town not found" body="Find your community in the Texas place directory." />;
+  return <CityNews key={`${county.slug}/${citySlug}`} county={county} city={city} />;
+}
+
+function CityNews({ county, city }: { county: TexasCounty; city: string }) {
+  const [topic, setTopic] = useState("");
+  const [visible, setVisible] = useState(initialVisibleStories);
+  const news = usePageNews({ counties: [county.slug], city: placeSlug(city), regions: [], topics: topic ? [topic] : [], limit: pageApiLimit });
+  const items = news.data?.county?.items ?? noNewsItems;
+  const refreshAttempts = useRef(0);
+  const { data: townData, loading: townLoading, refresh: refreshTown } = news;
+  useEffect(() => {
+    if (!townData?.county?.meta.stale || townLoading || refreshAttempts.current >= 3) return;
+    const timer = window.setTimeout(() => { refreshAttempts.current++; refreshTown(); }, 30_000);
+    return () => window.clearTimeout(timer);
+  }, [townData, townLoading, refreshTown]);
+  usePageTitle(`${city}, ${county.displayName} Business News`);
+  return <Shell>
+    <section className="page-hero">
+      <p className="eyebrow">{county.displayName}{county.region !== "All of Texas" ? ` · ${county.region}` : ""}</p>
+      <h1>{city}. Local opportunity.</h1>
+      <p>Business openings, jobs, investment, and public projects connected to {city}, Texas. Stories must name this place and pass our business-news checks.</p>
+      <div className="hero-actions"><Link className="button primary" to={`/county/${county.slug}/city/${placeSlug(city)}/sources`}>Explore local sources ↗</Link><Link className="button ghost" to={`/county/${county.slug}`}>All {county.displayName} news</Link><Link to="/places">Find another town</Link></div>
+    </section>
+    <div className="town-news-content">
+    <section className="filter-panel town-filters" aria-label="Town news filters">
+      <label htmlFor="town-industry">Industry</label>
+      <select id="town-industry" className="search-input" value={topic} onChange={event => { setTopic(event.target.value); setVisible(initialVisibleStories); refreshAttempts.current = 0; }}><option value="">All industries</option>{Object.entries(topicCatalog).map(([slug, definition]) => <option key={slug} value={slug}>{definition.label}</option>)}</select>
+      <button className="button ghost" onClick={news.refresh}>Refresh stories</button>
+    </section>
+    {news.loading ? <StatusCard loading title={`Finding ${city} stories`} body="Checking local publishers and the shared news archive." /> : news.error ? <StatusCard title="Stories temporarily unavailable" body={news.error} /> : <FeedSection title={`${city} business news`} items={items} visibleCount={visible} emptyTitle={`No matching ${city} stories yet`} emptyBody="Explore the local source directory or open the county feed for clearly labeled wider coverage. Refresh to check again as local reporting arrives." onLoadMore={() => setVisible(count => count + pageSize)} onFetchMore={news.loadMore} autoLoad={items.length > 0} canFetchMore={!news.data?.county?.meta.stale && (news.data?.county?.meta.hasMore ?? false)} loadingMore={news.loadingMore} loadMoreError={news.loadMoreError} />}
+    </div>
+  </Shell>;
+}
+
 function CountySourcesPage() {
-  const { countySlug = "" } = useParams();
+  const { countySlug = "", citySlug = "" } = useParams();
   const county = getCountyBySlug(countySlug);
   const [result, setResult] = useState<{ slug: string; data?: CountySourceDirectory; error?: string }>();
-  const [selection, setSelection] = useState({ countySlug: "", city: "" });
-  const city = selection.countySlug === countySlug ? selection.city : "";
-  usePageTitle(`${county?.displayName || "County"} Sources`);
+  const city = county ? (countyPlaces[county.fips] ?? []).find(name => placeSlug(name) === citySlug) : undefined;
+  const sourceKey = `${countySlug}/${citySlug}`;
+  usePageTitle(`${city ? `${city}, ` : ""}${county?.displayName || "County"} Sources`);
   useEffect(() => {
-    if (!county) return;
+    if (!county || (citySlug && !city)) return;
     const controller = new AbortController();
-    fetchCountySources(county.slug, controller.signal).then(
-      (data) => { if (!controller.signal.aborted) setResult({ slug: county.slug, data }); },
-      () => { if (!controller.signal.aborted) setResult({ slug: county.slug, error: "The source directory is temporarily unavailable. Please try again shortly." }); },
+    fetchCountySources(county.slug, controller.signal, citySlug).then(
+      (data) => { if (!controller.signal.aborted) setResult({ slug: sourceKey, data }); },
+      () => { if (!controller.signal.aborted) setResult({ slug: sourceKey, error: "The source directory is temporarily unavailable. Please try again shortly." }); },
     );
     return () => controller.abort();
-  }, [county]);
+  }, [county, city, citySlug, sourceKey]);
   if (!county) return <NotFoundPage title="County not found" body="Choose a Texas county from the directory." />;
-  const current = result?.slug === countySlug ? result : undefined;
+  if (citySlug && !city) return <NotFoundPage title="Town not found" body="Choose a town from the Texas place directory." />;
+  const current = result?.slug === sourceKey ? result : undefined;
   const sources = current?.data?.sources;
   const groups = [
     { title: "Local newsrooms", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "newsroom", empty: "We have not yet verified a local newsroom for this county. Official and statewide sources are listed separately below." },
@@ -311,11 +397,8 @@ function CountySourcesPage() {
       <h1>{city ? `${city}, ${county.displayName}` : county.displayName} sources</h1>
       <p>These sources help us find business growth, jobs, investment, and public projects. Each story must pass our positive business news and location checks.</p>
       <p><Link to={`/county/${county.slug}`}>Read {county.displayName} news</Link> · <Link to="/counties">Browse all counties</Link></p>
-      <label htmlFor="source-city">City or town</label>
-      <select id="source-city" className="search-input directory-search" value={city} onChange={(event) => setSelection({ countySlug, city: event.target.value })}>
-        <option value="">All of {county.displayName}</option>
-        {(countyPlaces[county.fips] ?? []).map((name) => <option key={name} value={name}>{name}</option>)}
-      </select>
+      <TownSearch county={county} sources />
+      {city ? <p><Link className="button primary" to={`/county/${county.slug}/city/${placeSlug(city)}`}>Read {city} news ↗</Link></p> : null}
       {city ? <p>These are county-serving sources for {city}; a city story must also name {city}. A listed source may cover other towns.</p> : null}
       <p>A source listing does not guarantee a recent matching story. Official county announcements are distinct from newsroom reporting.</p>
     </section>
@@ -326,7 +409,7 @@ function CountySourcesPage() {
       return <article className="directory-section" key={group.title}>
         <h2>{group.title}</h2>
         {!entries.length ? <p>{group.empty}</p> : <div className="county-link-grid">{entries.map((source) =>
-          <a className="county-link-card" key={source.id} href={source.websiteUrl} target="_blank" rel="noopener noreferrer"><strong>{source.name}</strong><span>{source.coverage === "county" ? county.displayName : "Texas statewide"}</span></a>,
+          <a className="county-link-card" key={source.id} href={source.websiteUrl} target="_blank" rel="noopener noreferrer"><strong>{source.name}</strong><span>{source.basedInSelectedPlace ? `Based in ${city}` : source.coverage === "county" ? `${county.displayName} coverage` : "Texas statewide"}</span></a>,
         )}</div>}
       </article>;
     })}</section> : null}
@@ -975,12 +1058,12 @@ function topicPath(topicSlug: TopicSlug, county?: TexasCounty, region?: RegionSl
   return county ? `/county/${county.slug}/topic/${topicSlug}` : `/topic/${topicSlug}`;
 }
 
-function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoadMore, onFetchMore, canFetchMore = false, loadingMore = false, loadMoreError }: { title: string; items: NewsItem[]; visibleCount: number; emptyTitle: string; emptyBody: string; onLoadMore: () => void; onFetchMore: () => void; canFetchMore?: boolean; loadingMore?: boolean; loadMoreError?: string | null }) {
+function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoadMore, onFetchMore, canFetchMore = false, loadingMore = false, loadMoreError, autoLoad = true }: { title: string; items: NewsItem[]; visibleCount: number; emptyTitle: string; emptyBody: string; onLoadMore: () => void; onFetchMore: () => void; canFetchMore?: boolean; loadingMore?: boolean; loadMoreError?: string | null; autoLoad?: boolean }) {
   const visibleItems = items.slice(0, visibleCount);
   const hasHiddenItems = visibleCount < items.length;
   const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (loadingMore || loadMoreError || (!hasHiddenItems && !canFetchMore)) return;
+    if (!autoLoad || loadingMore || loadMoreError || (!hasHiddenItems && !canFetchMore)) return;
     let frame = 0;
     const check = () => {
       cancelAnimationFrame(frame);
@@ -995,7 +1078,7 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
     window.addEventListener("scroll", check, { passive: true });
     window.addEventListener("resize", check);
     return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
-  }, [hasHiddenItems, canFetchMore, loadingMore, loadMoreError, onLoadMore, onFetchMore]);
+  }, [hasHiddenItems, canFetchMore, loadingMore, loadMoreError, onLoadMore, onFetchMore, autoLoad]);
   const buttonLabel = loadMoreError ? "Retry loading older stories" : loadingMore
     ? "Loading more articles..."
     : hasHiddenItems || canFetchMore
@@ -1202,6 +1285,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <AdSlot slot="footer" limit={1} />
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
+          <Link to="/places">Cities & towns</Link>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/privacy">Privacy Statement</Link>
           <Link to="/methodology">Editorial Methodology</Link>
@@ -1394,7 +1478,7 @@ function LegalSection({ title, children }: { title: string; children: React.Reac
 
 /** Keeps independent county/statewide cursors so sparse sections can search older
  * periods without skipping stories in the other section. Legacy APIs still use offsets. */
-function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
+function usePageNews({ counties, regions, topics, limit, city }: HomePageQuery) {
   const [pages, setPages] = useState<HomePageResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1412,14 +1496,15 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
   const countiesKey = counties.join(",");
   const regionsKey = regions.join(",");
   const topicsKey = topics.join(",");
-  const selectionKey = `${countiesKey}|${regionsKey}|${topicsKey}`;
+  const selectionKey = `${countiesKey}|${regionsKey}|${topicsKey}|${city ?? ""}`;
   const selection = useMemo(
     () => ({
+      ...(city ? { city } : {}),
       counties: countiesKey ? countiesKey.split(",") : [],
       regions: regionsKey ? regionsKey.split(",") : [],
       topics: topicsKey ? topicsKey.split(",") : [],
     }),
-    [countiesKey, regionsKey, topicsKey],
+    [countiesKey, regionsKey, topicsKey, city],
   );
 
   useEffect(() => {

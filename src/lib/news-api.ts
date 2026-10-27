@@ -55,6 +55,7 @@ export type HomePageResponse = {
 };
 
 export type HomePageQuery = {
+  city?: string;
   counties: readonly string[];
   regions: readonly string[];
   topics: readonly string[];
@@ -78,15 +79,17 @@ export type CountySourceDirectory = {
     websiteUrl: string;
     kind: "newsroom" | "official" | "registered";
     coverage: "county" | "statewide";
+    basedInSelectedPlace?: boolean;
+    homeCities?: string[];
   }>;
 };
 
-export async function fetchCountySources(countySlug: string, signal: AbortSignal): Promise<CountySourceDirectory> {
+export async function fetchCountySources(countySlug: string, signal: AbortSignal, citySlug?: string): Promise<CountySourceDirectory> {
   const base = new URL(resolveApiUrl());
   base.search = "";
   base.hash = "";
   if (!base.pathname.endsWith("/")) base.pathname += "/";
-  const response = await fetch(new URL(`v1/sources/counties/${encodeURIComponent(countySlug)}`, base), { signal });
+  const response = await fetch(new URL(`v1/sources/counties/${encodeURIComponent(countySlug)}${citySlug ? `/cities/${encodeURIComponent(citySlug)}` : ""}`, base), { signal });
   if (!response.ok) throw new NewsApiError("The source directory is temporarily unavailable.");
   const value: unknown = await response.json();
   if (!isRecord(value) || value.countySlug !== countySlug || !Array.isArray(value.sources) || !value.sources.every((source) =>
@@ -116,7 +119,7 @@ export async function fetchHomePage(query: HomePageQuery, options: RequestOption
   } catch (error) {
     if (options.signal?.aborted || isAbortError(error)) throw error;
     if (error instanceof NewsApiError && !error.fallbackEligible) throw error;
-    if (!rssFallbackEnabled()) throw error;
+    if (query.city || !rssFallbackEnabled()) throw error;
 
     try {
       const { fetchRssFallbackPage } = await import("./rss-fallback");
@@ -224,6 +227,7 @@ export function buildHomePageUrl(query: HomePageQuery) {
 
   const url = new URL("v1/pages/home", baseUrl);
   url.search = new URLSearchParams({
+    ...(query.city ? { city: query.city } : {}),
     counties: query.counties.join(","),
     regions: query.regions.join(","),
     topics: query.topics.join(","),
