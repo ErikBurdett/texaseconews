@@ -846,8 +846,6 @@ function FeedControls({
   onTopicChange: (slugs: TopicSlug[]) => void;
 }) {
   const [filterError, setFilterError] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const filterToggleRef = useRef<HTMLButtonElement | null>(null);
   const selected = new Set(selectedSlugs);
   const selectedCounties = selectedSlugs.map(getCountyBySlug).filter(Boolean) as TexasCounty[];
   const activeFilterCount = selectedSlugs.length + selectedRegionSlugs.length + selectedTopicSlugs.length;
@@ -888,14 +886,7 @@ function FeedControls({
   }
 
   return (
-    <section
-      className="controls-card" id="feed-controls"
-      onKeyDown={(event) => {
-        if (event.key !== "Escape") return;
-        setFiltersOpen(false);
-        filterToggleRef.current?.focus();
-      }}
-    >
+    <section className="controls-card" id="feed-controls">
       <div className="controls-heading-row">
         <div className="controls-heading">
           <p className="eyebrow">Make it local</p>
@@ -937,19 +928,7 @@ function FeedControls({
         </div>
       ) : null}
 
-      <button
-        aria-controls="feed-filter-panel"
-        aria-expanded={filtersOpen}
-        className="filter-toggle"
-        onClick={() => setFiltersOpen((current) => !current)}
-        ref={filterToggleRef}
-        type="button"
-      >
-        <span>{filtersOpen ? "Hide filters" : "Regions & industries"}</span>
-        <small>{activeFilterCount ? `${activeFilterCount} active` : "Refine your feed"}</small>
-      </button>
-
-      <div className={filtersOpen ? "filter-panel open" : "filter-panel"} id="feed-filter-panel">
+      <div className="filter-panel" id="feed-filter-panel">
         <div className="filter-block">
           <span className="filter-label">Regions</span>
           <div className="quick-actions">
@@ -1151,30 +1130,73 @@ function formatPublishedDate(value?: string) {
 function SiteHeader() {
   const [navigationOpen, setNavigationOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const floatingButton = useRef<HTMLButtonElement>(null);
+  const navigation = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!navigationOpen) return;
+    navigation.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+    const close = () => { setNavigationOpen(false); opener.current?.focus(); };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (![navigation.current, menuButton.current, floatingButton.current].some((element) => element?.contains(target))) setNavigationOpen(false);
+    };
+    const desktop = window.matchMedia("(min-width: 761px)");
+    const onResize = () => { if (desktop.matches) setNavigationOpen(false); };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    desktop.addEventListener("change", onResize);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+      desktop.removeEventListener("change", onResize);
+    };
+  }, [navigationOpen]);
+
+  function toggle(button: HTMLButtonElement) {
+    opener.current = button;
+    setNavigationOpen((current) => !current);
+  }
+  function closeNavigation() {
+    if (navigationOpen) opener.current?.focus();
+    setNavigationOpen(false);
+  }
+
   return <>
       <a className="skip-link" href="#main-content">Skip to news</a>
-      <header className="site-header" onKeyDown={(event) => { if (event.key === "Escape" && navigationOpen) { setNavigationOpen(false); menuButton.current?.focus(); } }}>
-        <Link className="brand" to="/">
+      <header className="site-header">
+        <Link className="brand" to="/" onClick={closeNavigation}>
           <span className="brand-mark">TX</span>
           <span className="brand-wordmark"><strong>{siteName}</strong><small>Business. Growth. Opportunity.</small></span>
         </Link>
-        <button
-          aria-controls="site-navigation"
-          aria-expanded={navigationOpen}
+        <button aria-controls="site-navigation" aria-expanded={navigationOpen}
           className="nav-toggle" ref={menuButton}
-          onClick={() => setNavigationOpen((current) => !current)}
-          type="button"
-        >
+          onClick={(event) => toggle(event.currentTarget)} type="button">
           {navigationOpen ? "Close menu" : "Menu"}
         </button>
-        <nav aria-label="Main navigation" className={navigationOpen ? "open" : ""} id="site-navigation">
-          <NavLink onClick={() => setNavigationOpen(false)} to="/">Feed</NavLink>
-          <NavLink onClick={() => setNavigationOpen(false)} to="/counties">Counties</NavLink>
-          <NavLink onClick={() => setNavigationOpen(false)} to="/mission">Mission</NavLink>
-          <NavLink onClick={() => setNavigationOpen(false)} to="/advertise">Advertise</NavLink>
-          <NavLink onClick={() => setNavigationOpen(false)} to="/contact">Contact</NavLink>
+        <nav aria-label="Main navigation" className={navigationOpen ? "open" : ""} id="site-navigation" ref={navigation}
+          onBlur={(event) => {
+            const next = event.relatedTarget;
+            if (next && !event.currentTarget.contains(next) && next !== menuButton.current && next !== floatingButton.current) setNavigationOpen(false);
+          }}>
+          <NavLink onClick={closeNavigation} to="/">Feed</NavLink>
+          <NavLink onClick={closeNavigation} to="/counties">Counties</NavLink>
+          <NavLink onClick={closeNavigation} to="/mission">Mission</NavLink>
+          <NavLink onClick={closeNavigation} to="/advertise">Advertise</NavLink>
+          <NavLink onClick={closeNavigation} to="/contact">Contact</NavLink>
         </nav>
       </header>
+      <button className="mobile-menu-button" ref={floatingButton} type="button"
+        aria-label={navigationOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={navigationOpen} aria-controls="site-navigation"
+        onClick={(event) => toggle(event.currentTarget)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+          <path d={navigationOpen ? "m6 6 12 12M6 18 18 6" : "M4 6h16M4 12h16M4 18h16"} />
+        </svg>
+        <span>{navigationOpen ? "Close" : "Menu"}</span>
+      </button>
     </>;
 }
 
@@ -1182,25 +1204,23 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <>
       <main id="main-content" tabIndex={-1}>{children}</main>
       <footer className="footer">
-        <section className="footer-card footer-brand">
-          <strong>{siteName}</strong>
-          <p>Positive business signal for the Lone Star State.</p>
-          <p className="footer-small">Independent news discovery experience linking readers to original publishers and public third-party sources.</p>
-        </section>
-        <section className="footer-card">
-          <h2>Legal</h2>
+        <div className="footer-top">
+          <div className="footer-brand">
+            <Link className="brand" to="/"><span className="brand-mark" aria-hidden="true">TX</span><strong>{siteName}</strong></Link>
+            <p>Good news. Great Texas possibilities.</p>
+            <p className="footer-small">Independent news discovery, connecting you to original publishers across the Lone Star State.</p>
+          </div>
+          <AdSlot slot="footer" limit={1} />
+        </div>
+        <nav className="footer-links" aria-label="Footer navigation">
           <Link to="/terms">Terms of Service</Link>
           <Link to="/privacy">Privacy Statement</Link>
           <Link to="/methodology">Editorial Methodology</Link>
           <Link to="/advertising-standards">Advertising Standards</Link>
           <Link to="/accessibility">Accessibility</Link>
           <Link to="/contact">Contact</Link>
-        </section>
-        <section className="footer-card">
-          <h2>Site Notes</h2>
-          <p>No accounts. News is delivered through a read-only API. Article cards use headline and factual metadata only unless source-specific commercial rights are documented.</p>
-        </section>
-        <AdSlot slot="footer" limit={1} />
+        </nav>
+        <p className="footer-note">Texas Business News, LLC <span aria-hidden="true">·</span> 254 counties. One connected Texas. <span className="footer-rights">Headlines and factual metadata. Read the full story at its original source.</span></p>
       </footer>
     </>;
 }

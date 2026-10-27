@@ -48,11 +48,18 @@ for (const template of templates) {
   });
 }
 
-test("county search results and expanded filters remain accessible", async ({ page }) => {
+test("county search results and visible filters remain accessible", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Regions & industries/ }).click();
   await page.getByRole("combobox", { name: /Choose counties/ }).fill("Frisco");
   await expect(page.getByRole("option", { name: /Collin County/ })).toBeVisible();
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  expect(describeViolations(results.violations)).toEqual([]);
+});
+
+test("mobile navigation popover remains accessible", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chrome", "Mobile navigation only");
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open navigation menu", exact: true }).click();
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(describeViolations(results.violations)).toEqual([]);
 });

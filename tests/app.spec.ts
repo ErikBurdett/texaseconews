@@ -135,8 +135,7 @@ async function mockNetworkDependencies(page: Page) {
 }
 
 async function openResponsiveFilters(page: Page) {
-  const toggle = page.getByRole("button", { name: /Regions & industries/ });
-  if (await toggle.isVisible()) await toggle.click();
+  await expect(page.locator("#feed-filter-panel")).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -534,30 +533,54 @@ test("keeps filter selections within the API fan-out budget", async ({ page }) =
   await expect(page.locator("#feed-selection-status")).toContainText("Choose up to 4 counties, 4 regions, and 4 industries");
 });
 
-test("provides labeled mobile disclosures for navigation and filters", async ({ page }, testInfo) => {
-  const menuButton = page.getByRole("button", { name: "Menu" });
-  const filterButton = page.locator('[aria-controls="feed-filter-panel"]');
+test("keeps filters visible and provides accessible floating mobile navigation", async ({ page }, testInfo) => {
+  const menuButton = page.getByRole("button", { name: "Menu", exact: true });
+  const floatingButton = page.getByRole("button", { name: "Open navigation menu", exact: true });
+  const navigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(page.getByRole("button", { name: "DFW", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Technology", exact: true })).toBeVisible();
+  await expect(page.locator(".controls-card input[type=checkbox]")).toHaveCount(0);
 
   if (testInfo.project.name === "mobile-chrome") {
     await expect(menuButton).toBeVisible();
-    await expect(menuButton).toHaveAttribute("aria-expanded", "false");
     await menuButton.click();
-    await expect(page.getByRole("navigation").getByRole("link", { name: "Counties" })).toBeVisible();
-    await page.getByRole("button", { name: "Close menu" }).click();
-
-    await expect(filterButton).toBeVisible();
-    await expect(filterButton).toHaveAttribute("aria-expanded", "false");
-    await filterButton.click();
-    await expect(filterButton).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("button", { name: "DFW", exact: true })).toBeVisible();
-    await expect(page.locator(".controls-card input[type=checkbox]")).toHaveCount(0);
+    await expect(navigation.getByRole("link", { name: "Counties" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menuButton).toBeFocused();
+    await page.locator(".footer").scrollIntoViewIfNeeded();
+    await expect(floatingButton).toBeInViewport();
+    await floatingButton.click();
+    await expect(navigation.getByRole("link", { name: "Feed", exact: true })).toBeFocused();
+    await expect(navigation).toBeInViewport();
+    await page.keyboard.press("Escape");
+    await expect(floatingButton).toBeFocused();
+    await expect(floatingButton).toHaveAttribute("aria-expanded", "false");
+    await floatingButton.click();
+    await navigation.getByRole("link", { name: "Counties" }).click();
+    await expect(page).toHaveURL(/counties/);
+    await expect(floatingButton).toHaveAttribute("aria-expanded", "false");
+    await expect(navigation).toBeHidden();
+    await floatingButton.click();
+    await page.locator(".page-hero h1").click();
+    await expect(floatingButton).toHaveAttribute("aria-expanded", "false");
     return;
   }
-
   await expect(menuButton).toBeHidden();
-  await expect(filterButton).toBeVisible();
-  await filterButton.click();
-  await expect(page.getByRole("button", { name: "DFW" })).toBeVisible();
+  await expect(floatingButton).toBeHidden();
+});
+
+test("uses the desktop width and keeps the connected map and footer responsive", async ({ page }) => {
+  for (const width of [2560, 1920, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const hero = await page.locator(".hero").boundingBox();
+    expect(hero!.width).toBeGreaterThan(width * .88);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.locator("#feed-filter-panel")).toBeVisible();
+  }
+  await expect(page.locator(".texas-map text")).toHaveCount(0);
+  expect(await page.locator(".texas-map circle").count()).toBeGreaterThan(600);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await page.locator(".network-beam").first().evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
 });
 
 test("renders shareable county and county-topic routes", async ({ page }) => {
