@@ -136,43 +136,64 @@ function rssFallbackEnabled() {
 
 const recentPages = new Map<string, { savedAt: number; page: HomePageResponse }>();
 
+const pendingPages = new Map<string, Promise<HomePageResponse>>();
+
+// Each caller owns its cancellation; a StrictMode cleanup or navigation must
+// not cancel another reader sharing the same request.
+function forSubscriber<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(signal.reason);
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener("abort", abort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
+  });
+}
+
 async function fetchHomePageFromApi(query: HomePageQuery, options: RequestOptions) {
   const url = buildHomePageUrl(query);
   const key = url.toString();
   const recent = recentPages.get(key);
-  if (!options.forceRefresh && recent && Date.now() - recent.savedAt < 120_000) return recent.page;
-  const response = await fetch(url, {
-    ...(options.forceRefresh ? { cache: "reload" as const } : {}),
-    headers: {
-      Accept: "application/json",
-    },
-    signal: options.signal,
+  if (options.signal?.aborted) throw options.signal.reason;
+  if (!options.forceRefresh && recent && Date.now() - recent.savedAt < 60_000) return recent.page;
+  const forcedKey = `${key}|refresh`;
+  const flightKey = options.forceRefresh ? forcedKey : key;
+  // Normal readers can join an explicit refresh, never the reverse.
+  const pending = pendingPages.get(forcedKey) ?? pendingPages.get(flightKey);
+  if (pending) return forSubscriber(pending, options.signal);
+  if (options.forceRefresh) recentPages.delete(key);
+  const request = Promise.resolve().then(async () => {
+    const response = await fetch(url, {
+      cache: options.forceRefresh ? "reload" : "no-cache",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(80_000),
+    });
+    if (!response.ok) {
+      const fallbackEligible = response.status >= 500 || [401, 403, 408, 429].includes(response.status);
+      throw new NewsApiError(await responseErrorMessage(response), fallbackEligible);
+    }
+    let payload: unknown;
+    try { payload = await response.json(); }
+    catch { throw new NewsApiError("News API returned invalid JSON.", true); }
+    if (!isHomePageResponse(payload)) throw new NewsApiError("News API returned an invalid home page response.", true);
+    // A newer explicit refresh supersedes a slow, older normal request.
+    if (pendingPages.get(flightKey) === request &&
+        (payload.statewide.items.length || payload.county?.items.length || !payload.statewide.meta.partialFailures)) {
+      recentPages.delete(key);
+      while (recentPages.size >= 30) recentPages.delete(recentPages.keys().next().value!);
+      recentPages.set(key, { savedAt: Date.now(), page: payload });
+    }
+    return payload;
   });
-
-  if (!response.ok) {
-    const fallbackEligible =
-      response.status >= 500 ||
-      [401, 403, 408, 429].includes(response.status);
-    throw new NewsApiError(await responseErrorMessage(response), fallbackEligible);
+  if (options.forceRefresh) pendingPages.delete(key);
+  pendingPages.set(flightKey, request);
+  try { return await forSubscriber(request, options.signal); }
+  finally {
+    // Only clear once the underlying request settles, even if this caller leaves.
+    void request.then(() => {}, () => {}).finally(() => {
+      if (pendingPages.get(flightKey) === request) pendingPages.delete(flightKey);
+    });
   }
-
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new NewsApiError("News API returned invalid JSON.", true);
-  }
-
-  if (!isHomePageResponse(payload)) {
-    throw new NewsApiError("News API returned an invalid home page response.", true);
-  }
-
-  if (payload.statewide.items.length || payload.county?.items.length || !payload.statewide.meta.partialFailures) {
-    recentPages.delete(key);
-    while (recentPages.size >= 30) recentPages.delete(recentPages.keys().next().value!);
-    recentPages.set(key, { savedAt: Date.now(), page: payload });
-  }
-  return payload;
 }
 
 async function responseErrorMessage(response: Response) {

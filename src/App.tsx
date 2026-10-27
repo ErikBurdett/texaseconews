@@ -30,8 +30,9 @@ const mission =
   "Howdy. TexasBusiness.News gathers positive business news and opportunity signals from across the Lone Star State so citizens, builders, employers, investors, visitors, and future Texans can see where momentum is forming. We focus on growth, jobs, small business, innovation, data centers, AI advancement, infrastructure, workforce pathways, and local wins that help people make the most of opportunity close to home.";
 
 const curatedStorageKey = "texasbusiness-news:selected-counties";
-const pageSize = 12;
-const pageApiLimit = pageSize * 5;
+const initialVisibleStories = 48;
+const pageSize = 24;
+const pageApiLimit = 96;
 const maxCountyFilters = 4;
 const maxRegionFilters = 4;
 const maxTopicFilters = 4;
@@ -91,8 +92,8 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
   });
   const countyItems = pageNews.data?.county?.items ?? noNewsItems;
   const statewideItems = pageNews.data?.statewide.items ?? noNewsItems;
-  const [visibleCountyCount, setVisibleCountyCount] = useState(pageSize);
-  const [visibleStatewideCount, setVisibleStatewideCount] = useState(pageSize);
+  const [visibleCountyCount, setVisibleCountyCount] = useState(initialVisibleStories);
+  const [visibleStatewideCount, setVisibleStatewideCount] = useState(initialVisibleStories);
   const scopeLabel = selectedRegions.length ? selectedRegions.map(displayLabel).join(", ") : selectedCounties.length ? selectedCounties.map((county) => county.name).join(", ") : "Texas statewide";
   const industryLabel = selectedTopics.length ? selectedTopics.map(displayLabel).join(", ") : "";
   const feedTitle = `${scopeLabel} ${industryLabel ? industryLabel.toLowerCase() : "business momentum"}`;
@@ -103,17 +104,9 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
   const hasError = Boolean(pageNews.error);
 
   usePageTitle(selectedTopicSlugs.length || selectedRegionSlugs.length ? `${scopeLabel} ${industryLabel || "News"}` : "Positive Texas Business News");
-  // A newly appended page is useless if the reveal counters stay put.
   useEffect(() => {
-    if (!pageNews.loadingMore) {
-      setVisibleCountyCount((current) => Math.min(current + pageSize, Math.max(current, countyItems.length)));
-      setVisibleStatewideCount((current) => Math.min(current + pageSize, Math.max(current, statewideItems.length)));
-    }
-  }, [countyItems.length, pageNews.loadingMore, statewideItems.length]);
-
-  useEffect(() => {
-    setVisibleCountyCount(pageSize);
-    setVisibleStatewideCount(pageSize);
+    setVisibleCountyCount(initialVisibleStories);
+    setVisibleStatewideCount(initialVisibleStories);
   }, [selectedRegionSlugs, selectedSlugs, selectedTopicSlugs]);
 
   useEffect(() => {
@@ -1235,7 +1228,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 function TexasExchangePage() {
   usePageTitle("Texas Stock Exchange");
   const news = usePageNews({ counties: [], regions: [], topics: ["tx-stock-exchange"], limit: pageApiLimit });
-  const [visible, setVisible] = useState(pageSize);
+  const [visible, setVisible] = useState(initialVisibleStories);
   const listings = [
     { symbol: "TXS", name: "Texas Capital Texas Equity Index ETF", kind: "ETF" },
     { symbol: "OILT", name: "Texas Capital Texas Oil Index ETF", kind: "ETF" },

@@ -162,7 +162,7 @@ company and commodity symbols.
 The Texas network now has 14 animated routes (previously 12), with a matching
 static `public/texas-mark.svg` for navigation and the favicon. The Apple touch
 icon is a 180px render of that same SVG. Recent API responses stay in a bounded,
-two-minute browser-memory cache; Refresh bypasses it, and changing scopes hides
+one-minute browser-memory cache; Refresh bypasses it, and changing scopes hides
 stories belonging to the previous selection while the new request completes.
 
 
@@ -179,3 +179,18 @@ The API searches up to two years back and the UI clearly marks the end.
 Sparse county desks may show explicitly labeled **Texas statewide context**
 after local and nearby retrieval are exhausted. This is context for the reader,
 not a claim that the story occurred in their county.
+
+### Larger, faster first loads
+
+Each section initially renders up to 48 matching articles and retrieves up to
+96 per API batch. Scrolling reveals 24 more cached cards at a time before
+requesting another page. Sparse desks display the available matches and retain
+their older-story cursors. Matching in-flight browser requests share one network
+operation; cancelling one subscriber does not cancel another. Explicit Refresh
+bypasses cached responses, and older pending requests cannot overwrite it.
+
+This follows the County Post's shared-snapshot and queued-refresh approach;
+Texas business, industry, positivity, and geography rules remain enforced by
+the Texas API. Active stale feeds refresh in the background and all counties
+participate in the scheduled rotation. First visits to uncached combinations
+and older historical periods can still require upstream retrieval.

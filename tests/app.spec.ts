@@ -692,8 +692,8 @@ test("does not expose unlabeled interactive controls", async ({ page }) => {
 
 test("keeps loading more stories as the reader scrolls", async ({ page }) => {
   const requestedOffsets: string[] = [];
-  const pageLength = 60;
-  const total = 180;
+  const pageLength = 96;
+  const total = 288;
 
   await page.unroute("**/v1/pages/home**");
   await page.route("**/v1/pages/home**", (route) => {
@@ -735,6 +735,9 @@ test("keeps loading more stories as the reader scrolls", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.locator(".news-card").first()).toBeVisible();
 
+  await expect(page.locator(".news-card")).toHaveCount(48);
+  expect(requestedOffsets).toEqual(["0"]);
+
   // Scroll until the feed reports every story, or we run out of patience.
   for (let attempt = 0; attempt < 30; attempt += 1) {
     if ((await page.locator(".news-card").count()) >= total) break;
@@ -743,8 +746,8 @@ test("keeps loading more stories as the reader scrolls", async ({ page }) => {
   }
 
   expect(await page.locator(".news-card").count()).toBe(total);
-  expect(requestedOffsets).toContain("60");
-  expect(requestedOffsets).toContain("120");
+  expect(requestedOffsets).toContain("96");
+  expect(requestedOffsets).toContain("192");
   // Nothing is requested past the end of the feed.
   expect(requestedOffsets).not.toContain(String(total));
   await expect(page.locator(".load-more")).toHaveAttribute("data-can-fetch-more", "false");
@@ -918,4 +921,51 @@ test("labels statewide context on a county desk without presenting it as county-
   await expect(page.getByRole("heading", {name:"Loving County coverage"})).toBeVisible();
   await expect(page.locator(".news-card").first()).toContainText("Texas statewide context");
   await expect(page.locator(".news-card").first()).not.toContainText("Loving County growth");
+});
+
+test("shares in-flight requests while allowing a subscriber to cancel", async ({ page }) => {
+  let requests = 0;
+  await page.route("**/v1/pages/home**topics=energy**", async route => {
+    requests++;
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(homePageResponse(route.request().url())) });
+  });
+  const result = await page.evaluate(async () => {
+    const modulePath = "/src/lib/news-api.ts";
+    const { fetchHomePage } = await import(/* @vite-ignore */ modulePath);
+    const query = { counties: [], regions: [], topics: ["energy"], limit: 96 };
+    const controller = new AbortController();
+    const departing = fetchHomePage(query, { signal: controller.signal }).catch((error: Error) => error.name);
+    const staying = fetchHomePage(query);
+    controller.abort();
+    return { cancelled: await departing, stories: (await staying).statewide.items.length };
+  });
+  expect(result).toEqual({ cancelled: "AbortError", stories: 1 });
+  expect(requests).toBe(1);
+});
+
+test("an explicit refresh supersedes an older pending response in the client cache", async ({ page }) => {
+  let requests = 0;
+  let releaseOld: (() => void) | undefined;
+  await page.route("**/v1/pages/home**topics=energy**", async route => {
+    const number = ++requests;
+    if (number === 1) await new Promise<void>(resolve => { releaseOld = resolve; });
+    const result = homePageResponse(route.request().url());
+    result.statewide.items[0].id = number === 1 ? "older" : "newer";
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(result) });
+    if (number === 2) releaseOld?.();
+  });
+  const result = await page.evaluate(async () => {
+    const modulePath = "/src/lib/news-api.ts";
+    const { fetchHomePage } = await import(/* @vite-ignore */ modulePath);
+    const query = { counties: [], regions: [], topics: ["energy"], limit: 96 };
+    const older = fetchHomePage(query);
+    // Give the first HTTP request time to reach the held route.
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const newer = await fetchHomePage(query, { forceRefresh: true });
+    await older;
+    return { newer: newer.statewide.items[0].id, cached: (await fetchHomePage(query)).statewide.items[0].id };
+  });
+  expect(result).toEqual({ newer: "newer", cached: "newer" });
+  expect(requests).toBe(2);
 });
