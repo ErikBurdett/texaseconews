@@ -13,6 +13,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const templates = [
   { path: "/", name: "home" },
+  { path: "/txse", name: "Texas Stock Exchange" },
   { path: "/counties", name: "county directory" },
   { path: "/county/potter", name: "county feed" },
   { path: "/topic/energy", name: "industry feed" },

@@ -145,3 +145,22 @@ For current API readiness, verified county-coverage evidence, launch criteria, k
 - `rss_source_compliance.md` — source-by-source RSS, API, image, excerpt, cache, and proxy rights audit.
 - `advertising_compliance.md` — paid-placement controls, preflight, records, complaint handling, and launch blockers.
 - `advertiser_insertion_order_template.md` — counsel-review advertiser agreement and campaign order template.
+
+
+### Texas exchange and visual identity
+
+`/txse` links to TXSE's official live market display, symbol directory, listing
+pages, notices, and exchange news. The selected security names/symbols were
+verified against https://www.txse.com/all-listings on October 26, 2026; they are
+a dated selection, not a live quote service. The official market display is
+https://live.txse.com/outputs/live-banner-6/index.html. We have not verified a
+public redistribution/embed license for TXSE market data, so no quote stream is
+re-hosted. The old AMEX:TXS ticker entry was removed after its September 16,
+2026 primary-listing transfer to TXSE; remaining widgets show vendor-supported
+company and commodity symbols.
+
+The Texas network now has 14 animated routes (previously 12), with a matching
+static `public/texas-mark.svg` for navigation and the favicon. The Apple touch
+icon is a 180px render of that same SVG. Recent API responses stay in a bounded,
+two-minute browser-memory cache; Refresh bypasses it, and changing scopes hides
+stories belonging to the previous selection while the new request completes.

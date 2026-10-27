@@ -60,6 +60,7 @@ export type HomePageQuery = {
 
 type RequestOptions = {
   signal?: AbortSignal;
+  forceRefresh?: boolean;
 };
 
 export type CountySourceDirectory = {
@@ -126,8 +127,15 @@ function rssFallbackEnabled() {
   return import.meta.env.DEV;
 }
 
+const recentPages = new Map<string, { savedAt: number; page: HomePageResponse }>();
+
 async function fetchHomePageFromApi(query: HomePageQuery, options: RequestOptions) {
-  const response = await fetch(buildHomePageUrl(query), {
+  const url = buildHomePageUrl(query);
+  const key = url.toString();
+  const recent = recentPages.get(key);
+  if (!options.forceRefresh && recent && Date.now() - recent.savedAt < 120_000) return recent.page;
+  const response = await fetch(url, {
+    ...(options.forceRefresh ? { cache: "reload" as const } : {}),
     headers: {
       Accept: "application/json",
     },
@@ -152,6 +160,11 @@ async function fetchHomePageFromApi(query: HomePageQuery, options: RequestOption
     throw new NewsApiError("News API returned an invalid home page response.", true);
   }
 
+  if (payload.statewide.items.length || payload.county?.items.length || !payload.statewide.meta.partialFailures) {
+    recentPages.delete(key);
+    while (recentPages.size >= 30) recentPages.delete(recentPages.keys().next().value!);
+    recentPages.set(key, { savedAt: Date.now(), page: payload });
+  }
   return payload;
 }
 

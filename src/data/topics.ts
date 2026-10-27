@@ -64,7 +64,7 @@ export const topicCatalog = {
     label: "TX Stock Exchange",
     category: "finance",
     description: "Texas Stock Exchange, capital markets, listings, finance jobs, and related business services.",
-    queryTerms: ["Texas Stock Exchange", "TXSE", "Y'all Street", "stock exchange", "capital markets", "listings"],
+    queryTerms: ["Texas Stock Exchange", "TXSE", "Y'all Street"],
   },
   aerospace: {
     label: "Aerospace",
@@ -96,7 +96,7 @@ export const topicCatalog = {
     label: "Film",
     category: "lifestyle",
     description: "Studio investment, film production, workforce, and Texas movie-industry growth.",
-    queryTerms: ["film industry", "movie production", "studio", "soundstage", "film incentives", "movie capital"],
+    queryTerms: ["film industry", "movie production", "film studio", "soundstage", "film incentives", "movie capital"],
   },
   "sports-business": {
     label: "Sports",

@@ -154,7 +154,7 @@ mesh = ['', '', '']
 for i, (a, b) in enumerate(sorted(edges)):
     group = 2 if i % 13 == 0 else 1 if i % 4 == 0 else 0
     mesh[group] += svg_path([points[a], points[b]])
-pulses = [svg_path([points[i] for i in route(a, b)]) for a, b in [(0, 1), (2, 3), (3, 5), (4, 8), (4, 7), (7, 9), (8, 14), (9, 10), (10, 12), (11, 12), (5, 13), (1, 15)]]
+pulses = [svg_path([points[i] for i in route(a, b)]) for a, b in [(0, 1), (2, 3), (3, 5), (4, 8), (4, 7), (7, 9), (8, 14), (9, 10), (10, 12), (11, 12), (5, 13), (1, 15), (0, 4), (9, 11)]]
 assert len(points) == 760
 assert all(inside(p) for p in points[border_count:])
 assert len(edges) > 1800
@@ -191,3 +191,16 @@ for i, (x, y) in enumerate(points):
 svg.append('</svg>')
 (ROOT / 'src/assets/texas-network.svg').write_text(''.join(svg) + '\n')
 print(f'Generated {len(points)} nodes, {len(edges)} edges, {len(pulses)} routed pulses; {len(ring)} boundary vertices.')
+
+# A coarser, static companion mark stays legible at favicon and navigation sizes.
+icon = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">',
+        '<rect x="1" y="1" width="62" height="62" rx="14" fill="#08152c" stroke="#516b99"/>',
+        '<g transform="translate(3 3) scale(.0967)">',
+        f'<path d="{outline}" fill="#173d78" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>']
+for i, d in enumerate(pulses[:10]):
+    icon.append(f'<path d="{d}" stroke="{"#ed3556" if i % 3 == 0 else "#bdcff0"}" stroke-width="5" stroke-linecap="round"/>')
+for i in [0, 2, 4, 5, 7, 8, 9, 10, 12, 14]:
+    x, y = metro[i][0]
+    icon.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="10" fill="{"#ed3556" if i % 3 == 0 else "#ffffff"}"/>')
+icon.append('</g></svg>')
+(ROOT / 'public/texas-mark.svg').write_text(''.join(icon) + '\n')

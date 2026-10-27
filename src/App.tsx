@@ -54,6 +54,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/counties" element={<CountyDirectoryPage />} />
+        <Route path="/txse" element={<TexasExchangePage />} />
         <Route path="/mission" element={<MissionPage />} />
         <Route path="/advertise" element={<AdvertisePage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -185,7 +186,7 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
             <button className="button ghost" onClick={pageNews.refresh} type="button">Refresh</button>
           </div>
 
-          {isLoading ? <StatusCard loading title="Finding the latest Texas stories" body="Checking local publishers and statewide sources. This can take up to a minute." /> : null}
+          {isLoading ? <StatusCard loading title="Finding the latest Texas stories" body="Getting your selected stories from local publishers and statewide sources." /> : null}
           {hasError ? <StatusCard title="News API unavailable" body={pageNews.error || "Showing the last available results. Try refreshing in a few minutes."} /> : null}
           {!isLoading && selectedCounties.length > 0 && !countyItems.length ? <StatusCard title="No local or nearby growth stories yet" body="The county, nearby-market, and nearby-county checks did not find matching stories. Statewide Texas articles are still listed below." /> : null}
 
@@ -1168,7 +1169,7 @@ function SiteHeader() {
       <a className="skip-link" href="#main-content">Skip to news</a>
       <header className="site-header">
         <Link className="brand" to="/" onClick={closeNavigation}>
-          <span className="brand-mark">TX</span>
+          <img className="brand-mark" src="/texas-mark.svg" width="48" height="48" alt="" />
           <span className="brand-wordmark"><strong>{siteName}</strong><small>Business. Growth. Opportunity.</small></span>
         </Link>
         <button aria-controls="site-navigation" aria-expanded={navigationOpen}
@@ -1183,7 +1184,8 @@ function SiteHeader() {
           }}>
           <NavLink onClick={closeNavigation} to="/">Feed</NavLink>
           <NavLink onClick={closeNavigation} to="/counties">Counties</NavLink>
-          <NavLink onClick={closeNavigation} to="/mission">Mission</NavLink>
+          <NavLink onClick={closeNavigation} to="/txse">TXSE <span className="nav-new">Exchange</span></NavLink>
+          <NavLink className="nav-secondary" onClick={closeNavigation} to="/mission">Mission</NavLink>
           <NavLink onClick={closeNavigation} to="/advertise">Advertise</NavLink>
           <NavLink onClick={closeNavigation} to="/contact">Contact</NavLink>
         </nav>
@@ -1206,7 +1208,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <footer className="footer">
         <div className="footer-top">
           <div className="footer-brand">
-            <Link className="brand" to="/"><span className="brand-mark" aria-hidden="true">TX</span><strong>{siteName}</strong></Link>
+            <Link className="brand" to="/"><img className="brand-mark" src="/texas-mark.svg" width="48" height="48" alt="" /><strong>{siteName}</strong></Link>
             <p>Good news. Great Texas possibilities.</p>
             <p className="footer-small">Independent news discovery, connecting you to original publishers across the Lone Star State.</p>
           </div>
@@ -1225,11 +1227,63 @@ function Shell({ children }: { children: React.ReactNode }) {
     </>;
 }
 
+function TexasExchangePage() {
+  usePageTitle("Texas Stock Exchange");
+  const news = usePageNews({ counties: [], regions: [], topics: ["tx-stock-exchange"], limit: pageApiLimit });
+  const [visible, setVisible] = useState(pageSize);
+  const listings = [
+    { symbol: "TXS", name: "Texas Capital Texas Equity Index ETF", kind: "ETF" },
+    { symbol: "OILT", name: "Texas Capital Texas Oil Index ETF", kind: "ETF" },
+    { symbol: "DDS", name: "Dillard’s", kind: "Company" },
+    { symbol: "TCBI", name: "Texas Capital Bancshares", kind: "Company" },
+    { symbol: "OBK", name: "Origin Bancorp", kind: "Company" },
+    { symbol: "ET", name: "Energy Transfer", kind: "Company" },
+  ];
+  return <Shell>
+    <section className="page-hero exchange-hero">
+      <div><p className="eyebrow">Texas capital markets</p><h1>Texas Stock Exchange</h1>
+        <p>Follow the companies, listings, and investment stories shaping Texas’s newest national securities exchange.</p>
+        <div className="hero-actions">
+          <a className="button primary" href="https://live.txse.com/outputs/live-banner-6/index.html" target="_blank" rel="noopener noreferrer">Open TXSE market display <span aria-hidden="true">↗</span></a>
+          <a className="hero-text-link" href="#exchange-news">Read exchange news ↓</a>
+        </div>
+      </div>
+      <aside className="exchange-brief" aria-label="About the TXSE market display">
+        <span className="exchange-monogram">TXSE</span><h2>The exchange’s own view</h2>
+        <p>TXSE’s official display includes its Total Market Index and broader market indicators. Check the display for market status, timestamps, and data delays.</p>
+        <a href="https://www.txse.com/trading" target="_blank" rel="noopener noreferrer">Trading information ↗</a>
+      </aside>
+    </section>
+    <div className="exchange-content">
+      <section aria-labelledby="exchange-listings-title">
+        <div className="section-heading"><a className="hero-text-link" href="https://www.txse.com/all-listings" target="_blank" rel="noopener noreferrer">All official listings ↗</a><h2 id="exchange-listings-title">A few names on TXSE</h2></div>
+        <p className="exchange-note">Selected primary listings verified October 26, 2026. Open the official directory for its latest listings and published prices.</p>
+        <div className="exchange-listings">{listings.map((listing) => <a key={listing.symbol} href="https://www.txse.com/all-listings" target="_blank" rel="noopener noreferrer" className="exchange-listing">
+          <span className="exchange-symbol">{listing.symbol}</span><span className="exchange-kind">{listing.kind}</span><strong>{listing.name}</strong><span className="exchange-listing-link">View at TXSE ↗</span>
+        </a>)}</div>
+      </section>
+      <nav className="exchange-resources" aria-label="Official TXSE resources">
+        <a href="https://www.txse.com/symbols" target="_blank" rel="noopener noreferrer"><strong>Daily symbol directory ↗</strong><span>Symbols available for trading on the exchange.</span></a>
+        <a href="https://www.txse.com/alerts-notices" target="_blank" rel="noopener noreferrer"><strong>Exchange notices ↗</strong><span>Listing announcements and operational updates.</span></a>
+        <a href="https://www.txse.com/media-center" target="_blank" rel="noopener noreferrer"><strong>TXSE media center ↗</strong><span>Official announcements and exchange coverage.</span></a>
+      </nav>
+      <section id="exchange-news" className="exchange-news" aria-label="Texas Stock Exchange news">
+        {news.loading ? <StatusCard loading title="Finding exchange news" body="Checking the latest Texas capital markets stories." /> : null}
+        {news.error ? <StatusCard title="Exchange news is temporarily unavailable" body={news.error} /> : null}
+        <FeedSection title="Texas Stock Exchange news" items={news.data?.statewide.items ?? noNewsItems} visibleCount={visible}
+          emptyTitle="No matching exchange stories yet" emptyBody="The official TXSE resources above are available while this feed updates."
+          onLoadMore={() => setVisible((count) => count + pageSize)} onFetchMore={news.loadMore} canFetchMore={news.hasMore} loadingMore={news.loadingMore} />
+      </section>
+    </div>
+  </Shell>;
+}
+
 function TickerStack() {
   const [market, setMarket] = useState<"stocks" | "crypto">("stocks");
   return <div className="ticker-stack" aria-label="Market tickers">
     <div className="market-switch" aria-label="Choose market ticker">
       <span className="market-label">Markets</span>
+      <Link className="market-exchange-link" to="/txse">TXSE <span aria-hidden="true">↗</span></Link>
       <button type="button" aria-pressed={market === "stocks"} onClick={() => setMarket("stocks")}>Stocks</button>
       <button type="button" aria-pressed={market === "crypto"} onClick={() => setMarket("crypto")}>Crypto</button>
     </div>
@@ -1283,14 +1337,8 @@ function MarketTicker() {
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
       script.textContent = JSON.stringify({
         symbols: [
-          // The Texas Stock Exchange itself cannot appear here: TXSE Group is
-          // privately held, so there is no symbol to quote, and the exchange
-          // began trading in July 2026 with National Market System symbols
-          // rather than listings of its own. TXS is the closest real proxy for
-          // a Texas market line -- an index ETF of Texas-headquartered public
-          // companies -- so it leads, followed by the largest Texas employers
-          // and the two commodities that move this state's economy.
-          { proName: "AMEX:TXS", title: "Texas Index" },
+          // These are vendor-supported company/commodity quotes. TXSE's own
+          // market display and primary listings are linked from /txse.
           { proName: "NASDAQ:TXN", title: "Texas Instruments" },
           { proName: "NYSE:XOM", title: "Exxon Mobil" },
           { proName: "NYSE:CVX", title: "Chevron" },
@@ -1373,6 +1421,8 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
   const [error, setError] = useState<string | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const activeRequest = useRef(0);
+  const previousRefresh = useRef(0);
+  const [resolvedSelection, setResolvedSelection] = useState("");
   const pendingMore = useRef(false);
 
   // Depend on the selection's value, not the array's identity. The caller
@@ -1381,6 +1431,7 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
   const countiesKey = counties.join(",");
   const regionsKey = regions.join(",");
   const topicsKey = topics.join(",");
+  const selectionKey = `${countiesKey}|${regionsKey}|${topicsKey}`;
   const selection = useMemo(
     () => ({
       counties: countiesKey ? countiesKey.split(",") : [],
@@ -1395,12 +1446,15 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
     const requestId = activeRequest.current + 1;
     activeRequest.current = requestId;
     pendingMore.current = false;
+    setLoadingMore(false);
     setLoading(true);
     setError(null);
 
-    fetchHomePage({ ...selection, limit }, { signal: controller.signal })
+    const forceRefresh = previousRefresh.current !== refreshVersion;
+    previousRefresh.current = refreshVersion;
+    fetchHomePage({ ...selection, limit }, { signal: controller.signal, forceRefresh })
       .then((response) => {
-        if (activeRequest.current === requestId) setPages([response]);
+        if (activeRequest.current === requestId) { setPages([response]); setResolvedSelection(selectionKey); }
       })
       .catch((requestError: unknown) => {
         if (controller.signal.aborted || activeRequest.current !== requestId) return;
@@ -1411,15 +1465,15 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
       });
 
     return () => controller.abort();
-  }, [limit, refreshVersion, selection]);
+  }, [limit, refreshVersion, selection, selectionKey]);
 
-  const data = useMemo(() => mergeNewsPages(pages), [pages]);
+  const data = useMemo(() => resolvedSelection === selectionKey ? mergeNewsPages(pages) : null, [pages, resolvedSelection, selectionKey]);
   const hasMore = Boolean(
     pages.at(-1)?.county?.meta.hasMore || pages.at(-1)?.statewide.meta.hasMore,
   );
 
   const loadMore = useCallback(() => {
-    if (pendingMore.current || !pages.length) return;
+    if (loading || pendingMore.current || !pages.length || resolvedSelection !== selectionKey) return;
     const latest = pages.at(-1);
     if (!latest?.county?.meta.hasMore && !latest?.statewide.meta.hasMore) return;
 
@@ -1437,10 +1491,9 @@ function usePageNews({ counties, regions, topics, limit }: HomePageQuery) {
         // reader keeps their stories and can retry by scrolling again.
       })
       .finally(() => {
-        pendingMore.current = false;
-        if (activeRequest.current === requestId) setLoadingMore(false);
+        if (activeRequest.current === requestId) { pendingMore.current = false; setLoadingMore(false); }
       });
-  }, [limit, pages, selection]);
+  }, [limit, pages, selection, loading, resolvedSelection, selectionKey]);
 
   const refresh = useCallback(() => setRefreshVersion((current) => current + 1), []);
   return { data, loading, loadingMore, hasMore, error, refresh, loadMore };

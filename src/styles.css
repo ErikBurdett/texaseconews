@@ -1544,6 +1544,40 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .footer-note { display: flex; flex-wrap: wrap; gap: .4rem .6rem; font-size: .65rem; color: #aabbd6; }
 .footer-rights { margin-left: auto; }
 .mobile-menu-button { display: none; }
+
+/* A static network mark connects the masthead to the Texas illustration. */
+.brand-mark { display: block; flex: 0 0 auto; width: 48px; height: 48px; border: 0; border-radius: 0; background: transparent; }
+.site-header { gap: 1.5rem; }
+.site-header nav { gap: .35rem; }
+.site-header nav a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+.nav-new { color: #b8c8e6; font-size: .6rem; font-weight: 400; }
+.site-header nav a.nav-secondary { margin-left: .6rem; }
+.site-header nav a:hover { background: #132c52; color: white; }
+.site-header nav a.active { color: white; background: #002868; }
+.market-exchange-link { padding: .45rem .6rem; color: #e1e9fa; border-right: 1px solid var(--line); margin-right: .35rem; text-decoration: none; font-size: .75rem; white-space: nowrap; }
+.market-exchange-link:hover { color: white; text-decoration: underline; }
+.exchange-hero { display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem; align-items: center; }
+.exchange-hero p { max-width: 60ch; line-height: 1.7; color: var(--muted); }
+.exchange-brief { border-left: 2px solid var(--texas-red); padding: 1.5rem; background: #08152c; border-radius: 0 12px 12px 0; }
+.exchange-brief h2 { font-size: 1.15rem; }
+.exchange-brief p { font-size: .9rem; }
+.exchange-brief a { font-size: .8rem; text-underline-offset: .25em; }
+.exchange-monogram { color: white; font-size: 2rem; font-weight: 750; letter-spacing: .1em; }
+.exchange-content { width: calc(100% - var(--page-gutter) * 2); margin: 2rem auto; display: grid; gap: 2rem; }
+.exchange-content .section-heading { justify-content: space-between; }
+.exchange-note { color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.exchange-listings { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .8rem; margin-top: 1.2rem; }
+.exchange-listing { display: grid; grid-template-columns: 1fr auto; gap: .65rem; align-content: start; border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem; text-decoration: none; background: #0d1e3b; }
+.exchange-listing:hover { border-color: #7999cb; transform: translateY(-2px); }
+.exchange-symbol { font-size: 1.4rem; font-weight: 700; color: white; }
+.exchange-kind { font-size: .6rem; color: var(--muted); align-self: center; }
+.exchange-listing strong { grid-column: 1 / -1; font-size: .8rem; font-weight: 500; min-height: 3.5em; line-height: 1.5; }
+.exchange-listing-link { grid-column: 1 / -1; font-size: .68rem; color: #bdcce5; }
+.exchange-resources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; border-block: 1px solid var(--line); padding: 1.5rem 0; }
+.exchange-resources a { display: grid; gap: .5rem; text-decoration: none; font-size: .9rem; }
+.exchange-resources a span { color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.exchange-news { scroll-margin-top: 120px; }
+@media (max-width: 1100px) { .nav-new { display: none; } .exchange-listings { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1800px) {
   .news-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .hero { min-height: 500px; }
@@ -1572,7 +1606,11 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   .nav-toggle { display: inline-flex; align-items: center; }
   .site-header nav { display: none; grid-column: 1 / -1; width: 100%; padding: .5rem 0; gap: .3rem; }
   .site-header nav.open { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: calc(5.2rem + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 2rem)); max-height: calc(100dvh - 7rem); overflow-y: auto; display: grid; grid-template-columns: 1fr; padding: .65rem; border: 1px solid #677b9e; border-radius: 16px; background: #0b1b38; box-shadow: 0 16px 60px #000b; animation: menu-rise 160ms ease-out; }
-  .site-header nav.open a { text-align: left; min-height: 44px; padding: .85rem 1rem; }
+  .site-header nav a.nav-secondary { margin-left: 0; }
+  .exchange-hero { grid-template-columns: 1fr; gap: 1.5rem; }
+  .exchange-resources { grid-template-columns: 1fr; gap: 1.5rem; }
+  .exchange-listings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .site-header nav.open a { justify-content: flex-start; text-align: left; min-height: 44px; padding: .85rem 1rem; }
   .site-header nav a { text-align: center; padding: .7rem .3rem; }
   .hero-copy { width: 100%; }
   .hero-copy h1 { max-width: 19ch; font-size: clamp(2.5rem, 7.2vw, 3.8rem); }
@@ -1590,7 +1628,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   html { scroll-padding-top: 95px; }
   .brand-wordmark strong { font-size: .95rem; }
   .brand-wordmark small { font-size: .52rem; letter-spacing: .07em; }
-  .brand-mark { width: 34px; height: 38px; border-radius: 8px; font-size: .8rem; }
+  .brand-mark { width: 40px; height: 40px; }
   .brand { gap: .55rem; }
   .hero { padding: 1.5rem; border-radius: 12px; }
   .hero-copy .eyebrow { font-size: .58rem; letter-spacing: .12em; }

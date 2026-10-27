@@ -302,7 +302,7 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(page.locator(".news-card img")).toHaveCount(0);
   await expect(page.getByText("Headlines from original publishers. Open a story to read the full report.")).toBeVisible();
   await expect(page.locator(".news-card").first()).not.toContainText("Texas statewide manufacturing and AI infrastructure investment");
-  await expect(page.getByRole("link", { name: /TX TexasBusiness.News Business/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /TexasBusiness.News Business/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
 });
@@ -802,4 +802,43 @@ test("market selector and unified masthead remain usable on small screens", asyn
   await expect(page.locator(".hero-panel")).toHaveCount(0);
   await expect(page.locator("header")).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("offers verified TXSE resources and a matching static site mark", async ({ page }) => {
+  await page.locator('.market-switch').getByRole('link', { name: /TXSE/ }).click();
+  await expect(page.getByRole('heading', { name: 'Texas Stock Exchange', exact: true })).toBeVisible();
+  await expect(page.locator('.exchange-listing')).toHaveCount(6);
+  await expect(page.getByRole('link', { name: /Open TXSE market display/ })).toHaveAttribute('href', 'https://live.txse.com/outputs/live-banner-6/index.html');
+  await expect(page.getByRole('link', { name: /All official listings/ })).toHaveAttribute('href', 'https://www.txse.com/all-listings');
+  await expect(page.locator('.exchange-note')).toContainText('verified October 26, 2026');
+  await expect(page.locator('.site-header .brand-mark')).toHaveAttribute('src', '/texas-mark.svg');
+  const icon = await page.request.get('/texas-mark.svg');
+  expect(icon.ok()).toBe(true);
+  expect(await icon.text()).not.toMatch(/<animate|@keyframes|animation:/);
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/texas-mark.svg');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("reuses recent filter results, refreshes on request, and hides mismatched stories", async ({ page }) => {
+  const original = 'Texas semiconductor manufacturing expansion adds jobs';
+  await expect(page.getByRole('link', { name: original, exact: true })).toBeVisible();
+  let release: (() => void) | undefined;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  let generalRequests = 0;
+  await page.route('**/v1/pages/home**', async (route) => {
+    const data = homePageResponse(route.request().url());
+    const isEnergy = new URL(route.request().url()).searchParams.get('topics') === 'energy';
+    if (isEnergy) { await gate; data.statewide.items[0].title = 'Texas energy project creates new jobs'; }
+    else generalRequests += 1;
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(data)});
+  });
+  await page.getByRole('button', { name: 'Energy', exact: true }).click();
+  await expect(page.getByRole('link', { name: original, exact: true })).toBeHidden();
+  release!();
+  await expect(page.getByRole('link', { name: 'Texas energy project creates new jobs', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'All growth', exact: true }).click();
+  await expect(page.getByRole('link', { name: original, exact: true })).toBeVisible();
+  expect(generalRequests).toBe(0);
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect.poll(() => generalRequests).toBe(1);
 });

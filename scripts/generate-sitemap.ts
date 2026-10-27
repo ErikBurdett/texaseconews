@@ -15,6 +15,7 @@ const canonicalOrigin = "https://texasbusiness.news";
 const staticPaths = [
   "/",
   "/counties",
+  "/txse",
   "/mission",
   "/advertise",
   "/contact",
