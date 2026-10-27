@@ -1,5 +1,3 @@
-import { fetchRssFallbackPage } from "./rss-fallback";
-
 export const coverageTiers = ["county", "market", "nearby", "statewide"] as const;
 export type CoverageTier = (typeof coverageTiers)[number];
 export type CoverageMix = Partial<Record<CoverageTier, number>>;
@@ -113,6 +111,7 @@ export async function fetchHomePage(query: HomePageQuery, options: RequestOption
     if (!rssFallbackEnabled()) throw error;
 
     try {
+      const { fetchRssFallbackPage } = await import("./rss-fallback");
       return await fetchRssFallbackPage(query, options);
     } catch (fallbackError) {
       if (options.signal?.aborted || isAbortError(fallbackError)) throw fallbackError;

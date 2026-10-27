@@ -135,7 +135,7 @@ async function mockNetworkDependencies(page: Page) {
 }
 
 async function openResponsiveFilters(page: Page) {
-  const toggle = page.getByRole("button", { name: /Show regions, industries & counties/ });
+  const toggle = page.getByRole("button", { name: /Regions & industries/ });
   if (await toggle.isVisible()) await toggle.click();
 }
 
@@ -288,8 +288,8 @@ test("generates bounded primary, market, and nearby feeds for all 254 counties",
 });
 
 test("renders the home feed, sponsor content, and core filter controls", async ({ page }) => {
-  await expect(page.getByRole("heading", { name: "Good news from every corner of Texas." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Build your Texas feed" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Great Texas possibilities/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your Texas. Your perspective." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Texas statewide articles" })).toBeVisible();
   await expect(page.getByText("Texas semiconductor manufacturing expansion adds jobs")).toBeVisible();
   await expect(page.locator(".ad-disclosure").first()).toHaveText("Advertisement");
@@ -301,9 +301,9 @@ test("renders the home feed, sponsor content, and core filter controls", async (
   await expect(sponsorLink).toHaveAttribute("rel", /sponsored/);
   await expect(page.locator(".controls-card").getByText("Premium ranch products from Double B Ranch")).toHaveCount(0);
   await expect(page.locator(".news-card img")).toHaveCount(0);
-  await expect(page.locator(".news-card").first()).toContainText("Headline and metadata only");
+  await expect(page.getByText("Headlines from original publishers. Open a story to read the full report.")).toBeVisible();
   await expect(page.locator(".news-card").first()).not.toContainText("Texas statewide manufacturing and AI infrastructure investment");
-  await expect(page.getByRole("link", { name: "TX TexasBusiness.News", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /TX TexasBusiness.News Business/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Privacy Statement" })).toBeVisible();
 });
@@ -500,8 +500,10 @@ test("does not hide API validation errors behind the RSS fallback", async ({ pag
 });
 
 test("supports multi-county search, region filters, and industry navigation", async ({ page }) => {
-  await page.getByPlaceholder("Search county, city, metro, or region. Try: Frisco or Potter, Randall").fill("Potter, Randall");
-  await page.getByRole("button", { name: "Add matches" }).click();
+  await page.getByRole("combobox", { name: /Choose counties/ }).fill("Potter");
+  await page.getByRole("option", { name: /Potter County/ }).click();
+  await page.getByRole("combobox", { name: /Choose counties/ }).fill("Randall");
+  await page.getByRole("option", { name: /Randall County/ }).click();
 
   await expect(page.getByRole("button", { name: "Remove Potter County" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove Randall County" })).toBeVisible();
@@ -517,8 +519,8 @@ test("supports multi-county search, region filters, and industry navigation", as
 });
 
 test("finds a rural county through its town name", async ({ page }) => {
-  await page.getByPlaceholder("Search county, city, metro, or region. Try: Frisco or Potter, Randall").fill("Lufkin");
-  await page.getByRole("button", { name: "Add matches" }).click();
+  await page.getByRole("combobox", { name: /Choose counties/ }).fill("Lufkin");
+  await page.getByRole("option", { name: /Angelina County/ }).click();
   await expect(page.getByRole("button", { name: "Remove Angelina County" })).toBeVisible();
 });
 
@@ -529,7 +531,7 @@ test("keeps filter selections within the API fan-out budget", async ({ page }) =
   }
 
   await expect(page.getByRole("button", { name: "Technology", exact: true })).toBeDisabled();
-  await expect(page.getByRole("status")).toContainText("Choose up to 4 counties, 4 regions, and 4 industries");
+  await expect(page.locator("#feed-selection-status")).toContainText("Choose up to 4 counties, 4 regions, and 4 industries");
 });
 
 test("provides labeled mobile disclosures for navigation and filters", async ({ page }, testInfo) => {
@@ -547,12 +549,14 @@ test("provides labeled mobile disclosures for navigation and filters", async ({ 
     await expect(filterButton).toHaveAttribute("aria-expanded", "false");
     await filterButton.click();
     await expect(filterButton).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("button", { name: "Browse all Texas counties" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "DFW", exact: true })).toBeVisible();
+    await expect(page.locator(".controls-card input[type=checkbox]")).toHaveCount(0);
     return;
   }
 
   await expect(menuButton).toBeHidden();
-  await expect(filterButton).toBeHidden();
+  await expect(filterButton).toBeVisible();
+  await filterButton.click();
   await expect(page.getByRole("button", { name: "DFW" })).toBeVisible();
 });
 
@@ -713,4 +717,58 @@ test("keeps loading more stories as the reader scrolls", async ({ page }) => {
   // Nothing is requested past the end of the feed.
   expect(requestedOffsets).not.toContain(String(total));
   await expect(page.locator(".load-more")).toHaveAttribute("data-can-fetch-more", "false");
+});
+
+
+test("county autocomplete supports keyboard selection, empty states, and bounded results", async ({ page }) => {
+  const search = page.getByRole("combobox", { name: /Choose counties/ });
+  await search.focus();
+  await expect(search).toHaveAttribute("aria-expanded", "true");
+  expect(await page.getByRole("option").count()).toBeLessThanOrEqual(8);
+  await search.fill("Frisco");
+  await expect(page.getByRole("option", { name: /Collin County/ })).toBeVisible();
+  await expect(page.getByRole("option", { name: /Denton County/ })).toBeVisible();
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await expect(page.getByRole("button", { name: "Remove Denton County" })).toBeVisible();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveAttribute("aria-expanded", "false");
+  await search.fill("not-a-texas-place");
+  await expect(page.getByText(/No available counties match/)).toBeVisible();
+  await search.press("Escape");
+  await expect(search).toHaveAttribute("aria-expanded", "false");
+  await expect(search).toBeFocused();
+  await search.fill("a");
+  expect(await page.getByRole("option").count()).toBeLessThanOrEqual(8);
+  await search.press("Tab");
+  await page.getByRole("heading", { name: /Great Texas possibilities/ }).click();
+  await expect(search).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("button", { name: "Remove Denton County" }).click();
+  await expect(page.getByRole("button", { name: "Remove Denton County" })).toHaveCount(0);
+});
+
+test("county autocomplete prevents excess selections and can reset the feed", async ({ page }) => {
+  const search = page.getByRole("combobox", { name: /Choose counties/ });
+  for (const county of ["Harris", "Dallas", "Travis", "Bexar"]) {
+    await search.fill(county);
+    await page.getByRole("option", { name: new RegExp(`^${county} County`) }).click();
+  }
+  await search.fill("Potter");
+  await expect(page.getByRole("option", { name: /Potter County/ })).toHaveAttribute("aria-disabled", "true");
+  await search.press("Enter");
+  await expect(page.getByRole("button", { name: "Remove Potter County" })).toHaveCount(0);
+  await search.press("Escape");
+  await page.getByRole("button", { name: "Clear all filters" }).click();
+  await expect(page.locator(".selected-counties button")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("texasbusiness-news:selected-counties") || "[]"))).toEqual([]);
+});
+
+test("market selector and unified masthead remain usable on small screens", async ({ page }) => {
+  await expect(page.getByRole("complementary", { name: "Market ticker", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Crypto", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Crypto", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("complementary", { name: "Crypto ticker", exact: true })).toBeVisible();
+  await expect(page.locator(".hero-panel")).toHaveCount(0);
+  await expect(page.locator("header")).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
