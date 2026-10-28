@@ -80,6 +80,7 @@ export type CountySourceDirectory = {
     kind: "newsroom" | "official" | "registered";
     coverage: "county" | "statewide";
     basedInSelectedPlace?: boolean;
+    newsroomScope?: "local" | "regional";
     homeCities?: string[];
   }>;
 };
@@ -95,7 +96,8 @@ export async function fetchCountySources(countySlug: string, signal: AbortSignal
   if (!isRecord(value) || value.countySlug !== countySlug || !Array.isArray(value.sources) || !value.sources.every((source) =>
     isRecord(source) && isString(source.id) && isString(source.name) && isString(source.websiteUrl) &&
     /^https?:\/\//u.test(source.websiteUrl) && ["newsroom", "official", "registered"].includes(String(source.kind)) &&
-    ["county", "statewide"].includes(String(source.coverage)))) {
+    ["county", "statewide"].includes(String(source.coverage)) &&
+    (source.newsroomScope === undefined || ["local", "regional"].includes(String(source.newsroomScope))))) {
     throw new NewsApiError("The source directory returned an invalid response.");
   }
   return value as CountySourceDirectory;

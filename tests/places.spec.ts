@@ -1,4 +1,17 @@
 import { test, expect } from "@playwright/test";
+
+test("regional reporting is labeled separately from a hometown newsroom", async ({ page }) => {
+  await page.route("**/v1/sources/counties/loving", route => route.fulfill({ json: { countySlug: "loving", sources: [
+    { id: "regional", name: "Houston Chronicle", websiteUrl: "https://www.houstonchronicle.com/", kind: "newsroom", coverage: "county", newsroomScope: "regional" },
+    { id: "official", name: "Loving County Government", websiteUrl: "https://www.co.loving.tx.us/", kind: "official", coverage: "county" },
+  ] } }));
+  await page.goto("/county/loving/sources");
+  const regional = page.locator("article").filter({ has: page.getByRole("heading", { name: "Regional reporting for this county" }) });
+  await expect(regional.getByRole("link", { name: /Houston Chronicle/ })).toBeVisible();
+  await expect(page.getByText("Regional reporting · Loving County")).toBeVisible();
+  await expect(page.getByText(/not yet verified a local newsroom/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
 import { texasPlaces, placeSlug } from "../src/data/places";
 
 const empty = () => ({ items: [], meta: { count: 0, total: 0, hasMore: false, sourcesUsed: [], fetchedAt: new Date().toISOString(), cacheTtlSeconds: 300, stale: false, partialFailures: 0 } });

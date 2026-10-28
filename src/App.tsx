@@ -387,7 +387,8 @@ function CountySourcesPage() {
   const current = result?.slug === sourceKey ? result : undefined;
   const sources = current?.data?.sources;
   const groups = [
-    { title: "Local newsrooms", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "newsroom", empty: "We have not yet verified a local newsroom for this county. Official and statewide sources are listed separately below." },
+    { title: "Local newsrooms", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "newsroom" && source.newsroomScope !== "regional", empty: "We have not yet verified a local newsroom for this county. County-serving regional reporters and official sources are listed separately below." },
+    { title: "Regional reporting for this county", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "newsroom" && source.newsroomScope === "regional", empty: "No additional regional newsroom has been verified for this county." },
     { title: "Official county sources", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "official", empty: "No official source is currently listed." },
     { title: "Additional regional and statewide sources", match: (source: CountySourceDirectory["sources"][number]) => source.kind === "registered", empty: "No additional sources are currently listed." },
   ];
@@ -409,7 +410,7 @@ function CountySourcesPage() {
       return <article className="directory-section" key={group.title}>
         <h2>{group.title}</h2>
         {!entries.length ? <p>{group.empty}</p> : <div className="county-link-grid">{entries.map((source) =>
-          <a className="county-link-card" key={source.id} href={source.websiteUrl} target="_blank" rel="noopener noreferrer"><strong>{source.name}</strong><span>{source.basedInSelectedPlace ? `Based in ${city}` : source.coverage === "county" ? `${county.displayName} coverage` : "Texas statewide"}</span></a>,
+          <a className="county-link-card" key={source.id} href={source.websiteUrl} target="_blank" rel="noopener noreferrer"><strong>{source.name}</strong><span>{source.basedInSelectedPlace ? `Based in ${city}` : source.newsroomScope === "regional" ? `Regional reporting · ${county.displayName}` : source.coverage === "county" ? `${county.displayName} coverage` : "Texas statewide"}</span></a>,
         )}</div>}
       </article>;
     })}</section> : null}
