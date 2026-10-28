@@ -249,7 +249,12 @@ textarea:focus-visible {
 
 .crypto-ticker {
   background: #071329;
+  position: relative;
 }
+
+.ticker-notice { height: 48px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 0 8px; font-size: 12px; }
+.ticker-notice button { padding: 5px 9px; font-size: 12px; white-space: nowrap; }
+.ticker-loading { position: absolute; inset: 0; background: #071329; pointer-events: none; }
 
 .crypto-ticker .livecoinwatch-widget-container,
 .market-ticker .tradingview-widget-container {

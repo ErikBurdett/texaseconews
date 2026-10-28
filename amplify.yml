@@ -70,7 +70,7 @@ customHeaders:
           connect-src 'self' https://ql3mj2hit5lv7p4bb7cm2unxoy0kopsi.lambda-url.us-west-2.on.aws
           https://xacsxkbcfv7yhykz6slylxujou0spwxq.lambda-url.us-west-2.on.aws https://api.livecoinwatch.com https://www.livecoinwatch.com
           https://http-api.livecoinwatch.com https://*.tradingview-widget.com;
-          frame-src https://s.tradingview.com https://www.tradingview.com
+          frame-src 'self' https://s.tradingview.com https://www.tradingview.com
           https://www.tradingview-widget.com https://*.tradingview-widget.com
           https://www.livecoinwatch.com;
           upgrade-insecure-requests

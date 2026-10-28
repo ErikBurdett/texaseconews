@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes, useLocation, useParams } from "react-rout
 import { AdSlot, SponsorBadge } from "./components/AdSlot";
 import { CountyCombobox } from "./components/CountyCombobox";
 import { TexasMap } from "./components/TexasMap";
+import { CryptoTicker } from "./components/CryptoTicker";
 import { countySearchText, getCountyBySlug, normalizeCountySearch, texasCounties, type TexasCounty } from "./data/counties";
 import { placeSlug, texasPlaces } from "./data/places";
 import { countyPlaces } from "./data/county-places";
@@ -708,7 +709,7 @@ function PrivacyPage() {
           <p>Visible sponsor impressions and sponsor-link clicks create limited events containing event type, campaign ID, sponsor name, and placement slot in the current page’s in-memory <code>dataLayer</code>. County, region, account, cross-site identifier, and sensitive data are not included. No analytics recipient is currently connected, and the in-memory events end with the page session.</p>
         </LegalSection>
         <LegalSection title="6. Market ticker widgets">
-          <p>Every page loads market ticker widgets from LiveCoinWatch and TradingView. Because their scripts run in your browser, those vendors receive your IP address, browser and device details, and page-request information, and may use cookies, local storage, or similar technologies under their own privacy policies rather than this one. {siteName} does not receive or store what they collect.</p>
+          <p>The selected market ticker loads a widget from TradingView for stocks or LiveCoinWatch for crypto. Because its script runs in your browser, that vendor receives your IP address, browser and device details, and page-request information, and may use cookies, local storage, or similar technologies under its own privacy policy rather than this one. {siteName} does not receive or store what it collects.</p>
           <p>If you prefer not to load them, a browser content blocker or script blocker will stop them without affecting the news feed, the filters, or the sponsor labels, which do not depend on either vendor.</p>
         </LegalSection>
         <LegalSection title="7. News delivery and RSS proxies">
@@ -1359,39 +1360,8 @@ function TickerStack() {
       <button type="button" aria-pressed={market === "stocks"} onClick={() => setMarket("stocks")}>Stocks</button>
       <button type="button" aria-pressed={market === "crypto"} onClick={() => setMarket("crypto")}>Crypto</button>
     </div>
-    <div className="ticker-view" hidden={market !== "stocks"}><MarketTicker /></div>
-    <div className="ticker-view" hidden={market !== "crypto"}><CryptoTicker /></div>
+    <div className="ticker-view">{market === "stocks" ? <MarketTicker /> : <CryptoTicker />}</div>
   </div>;
-}
-
-function CryptoTicker() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let script: HTMLScriptElement | undefined;
-    const timer = window.setTimeout(() => {
-      container.innerHTML = '<div class="livecoinwatch-widget-5" lcw-base="USD" lcw-color-tx="#ffffff" lcw-marquee-1="coins" lcw-marquee-2="none" lcw-marquee-items="12"></div>';
-      script = document.createElement("script");
-      script.async = true;
-      script.src = "https://www.livecoinwatch.com/static/lcw-widget.js";
-      container.appendChild(script);
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-      script?.remove();
-      container.innerHTML = "";
-    };
-  }, []);
-
-  return (
-    <aside className="crypto-ticker" aria-label="Crypto ticker">
-      <div className="livecoinwatch-widget-container" ref={containerRef} />
-    </aside>
-  );
 }
 
 function MarketTicker() {
