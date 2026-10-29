@@ -12,7 +12,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 
 ### Paid Advertising
 
-- Every `AdSlot` and compact sponsor badge visibly displays `Advertisement` and `Paid sponsor`, identifies Double B Ranch, and has an accessible paid-ad name.
+- Every `AdSlot` and compact sponsor badge visibly displays `Advertisement` and advertiser identity, identifies the advertiser, and has an accessible advertisement name.
 - External sponsor links now use HTTPS plus `rel="sponsored nofollow noopener noreferrer"` and a strict-origin referrer policy.
 - Ad measurement was minimized to event type, campaign, sponsor, and slot in an in-memory `dataLayer`; county and region fields were removed and no analytics recipient is connected.
 - `/advertising-standards` publishes disclosure, prohibited-category, restricted-category, substantiation, rights, destination, privacy, review, and enforcement rules.
@@ -65,7 +65,7 @@ The current app is a substantial lightweight MVP: the expanded Texas business ta
 ### Advertising
 
 - Double B Ranch is the only active advertiser.
-- `ad-assets/bb-ranch-deer-final.png` is the only ad asset.
+- Optimized logos for four advertisers are in `ad-assets/partners/`; see `docs/advertiser-partners.md`.
 - The same Double B Ranch creative is eligible for hero, sidebar, inline-feed, and footer placements.
 - All other ad creatives and ad assets have been removed.
 - The supplied PNG is 4.58 MB. Browser decoding is asynchronous and layout dimensions are reserved, but the source should be compressed substantially before production to improve first-load performance.

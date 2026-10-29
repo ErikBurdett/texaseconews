@@ -20,6 +20,7 @@ const staticPaths = [
   "/txse",
   "/mission",
   "/advertise",
+  "/partners",
   "/contact",
   "/terms",
   "/privacy",

@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useParams } from "react-router-dom";
+import { ads } from "./data/ads";
+import { trackAdEvent } from "./lib/ads";
 import { AdSlot, SponsorBadge } from "./components/AdSlot";
 import { CountyCombobox } from "./components/CountyCombobox";
 import { TexasMap } from "./components/TexasMap";
@@ -62,6 +64,7 @@ function AppContent() {
         <Route path="/txse" element={<TexasExchangePage />} />
         <Route path="/mission" element={<MissionPage />} />
         <Route path="/advertise" element={<AdvertisePage />} />
+        <Route path="/partners" element={<PartnersPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
@@ -130,9 +133,11 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
     <Shell>
       <section className="hero" aria-label="Discover Texas business news">
         <div className="hero-copy">
-          <p className="eyebrow"><span className="signal-dot" /> The Texas opportunity journal</p>
+          <p className="eyebrow"><span className="signal-dot" /> Texas Business News</p>
+          <p className="hero-howdy">Howdy Y’all<span aria-hidden="true"> ✦</span></p>
           <h1>{selectedTopicSlugs.length === 1 ? `${selectedTopics[0].label} news across Texas.` : selectedRegionSlugs.length === 1 ? `${selectedRegions[0].label} growth news.` : <>Good news.<br /><em>Great Texas possibilities.</em></>}</h1>
-          <p>{selectedTopicSlugs.length === 1 ? selectedTopics[0].description : selectedRegionSlugs.length === 1 ? selectedRegions[0].description : "The businesses, people, and projects moving Texas forward. Discover new jobs, local investment, and opportunity in the places you care about."}</p>
+          <p>{selectedTopicSlugs.length === 1 ? selectedTopics[0].description : selectedRegionSlugs.length === 1 ? selectedRegions[0].description : "Texas: A Business Friendly State filled with Friendly People"}</p>
+          <p className="hero-mission">From Your Local County &amp; Community Positive News all the way to Y’all Street and Outer-Space - we strive to bring it all to you.</p>
           <div className="hero-actions">
             <a className="button primary" href="#feed-controls" onClick={() => document.getElementById("county-search")?.focus()}>Find your county <span aria-hidden="true">↗</span></a>
             <Link className="hero-text-link" to="/places">Find your town ↗</Link>
@@ -143,6 +148,10 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
         <TexasMap />
       </section>
 
+      <section className="partner-spotlight" aria-label="Advertiser partners">
+        <div className="partner-spotlight-heading"><p className="eyebrow">Meet our advertiser partners</p><Link to="/partners">The businesses behind the banners <span aria-hidden="true">↗</span></Link></div>
+        <AdSlot slot="hero" limit={4} />
+      </section>
       <section className="workspace">
         <div className="filter-stack">
           <FeedControls
@@ -437,6 +446,33 @@ function MissionPage() {
   );
 }
 
+function PartnersPage() {
+  usePageTitle("Advertiser Partners");
+  return <Shell>
+    <section className="page-hero partners-hero">
+      <p className="eyebrow">Our advertiser partners</p>
+      <h1>Texas ambition.<br /><em>Meet the businesses behind it.</em></h1>
+      <p>From the land beneath our boots to the infrastructure of tomorrow, meet the businesses advertising with Texas Business News.</p>
+      <p className="partners-disclosure">These are advertiser profiles. Advertising supports this site and remains separate from our independent news selection.</p>
+      <a className="hero-text-link" href="#partner-directory">Meet our partners ↓</a>
+    </section>
+    <section id="partner-directory" className="partner-directory" aria-label="Advertiser profiles">
+      {ads.filter(ad => ad.active).map(ad => <article className="partner-profile" key={ad.id}>
+        <div className={`partner-logo-panel logo-${ad.logoTheme}`}><img src={ad.imageUrl} alt={`${ad.sponsor} logo`} width="200" height="200" loading="lazy" decoding="async" /></div>
+        <div className="partner-profile-copy">
+          <div className="partner-profile-meta"><span className="ad-disclosure">Advertisement</span><span>{ad.sector}</span></div>
+          <h2>{ad.sponsor}</h2>
+          <p>{ad.about}</p>
+          <h3>A part of Texas growth</h3>
+          <p>{ad.texasImpact}</p>
+          <a className="partner-visit" href={ad.href} target="_blank" rel="sponsored nofollow noopener noreferrer" onClick={() => trackAdEvent("ad_click", ad, "partners")} aria-label={`Visit ${ad.sponsor} (opens in a new tab)`}>{ad.cta} <span aria-hidden="true">↗</span><small>Opens in a new tab</small></a>
+        </div>
+      </article>)}
+    </section>
+    <section className="partner-invitation"><div><p className="eyebrow">Your business. Your Texas.</p><h2>Be part of the next chapter.</h2><p>Introduce your business to readers following opportunity across the Lone Star State.</p></div><Link className="button primary" to="/advertise">Advertise with us ↗</Link></section>
+  </Shell>;
+}
+
 function AdvertisePage() {
   usePageTitle("Advertise");
 
@@ -449,7 +485,7 @@ function AdvertisePage() {
       </section>
       <section className="feature-grid">
         <InfoCard title="Contextual Placements" body="Choose statewide, regional, county, or industry context. TexasBusiness.News does not currently build behavioral advertising profiles or target readers using sensitive personal data." />
-        <InfoCard title="Unmistakable Disclosure" body="Every paid placement displays Advertisement and Paid sponsor labeling, remains visually separate from editorial links, and identifies the paying advertiser." />
+        <InfoCard title="Unmistakable Disclosure" body="Every placement displays Advertisement, names the advertiser, and remains visually separate from editorial links." />
         <InfoCard title="Minimal Measurement" body="Impression and click events are held in the page's in-memory dataLayer with campaign and slot fields. No analytics recipient is currently connected." />
       </section>
       <section className="advertise-panel">
@@ -790,7 +826,7 @@ function AdvertisingStandardsPage() {
       </section>
       <section className="legal-document">
         <LegalSection title="Disclosure and separation">
-          <p>Every placement must show “Advertisement” and “Paid sponsor” next to the advertiser’s identity on every device. Ads must remain visually and technically distinct from article cards and may not mimic newsroom controls, system alerts, or publisher branding.</p>
+          <p>Every placement must show “Advertisement” next to the advertiser’s identity on every device. Ads must remain visually and technically distinct from article cards and may not mimic newsroom controls, system alerts, or publisher branding.</p>
         </LegalSection>
         <LegalSection title="Editorial independence and false association">
           <p>Payment does not guarantee coverage, placement near a specific publisher, favorable treatment, or editorial influence. Creative may not imply endorsement by {siteName}, a linked publisher, article subject, county, university, public agency, or other third party without documented permission.</p>
@@ -1100,7 +1136,7 @@ function FeedSection({ title, items, visibleCount, emptyTitle, emptyBody, onLoad
           <Fragment key={item.id}>
             {index > 0 && index % 10 === 0 ? (
               <div className="feed-ad-break">
-                <AdSlot slot="feed-inline" topics={item.topics} county={getCountyBySlug(item.countySlug)} />
+                <AdSlot slot="feed-inline" offset={Math.floor(index / 10) - 1} topics={item.topics} county={getCountyBySlug(item.countySlug)} />
               </div>
             ) : null}
             <NewsCard item={item} />
@@ -1258,6 +1294,7 @@ function SiteHeader() {
           <NavLink onClick={closeNavigation} to="/counties">Counties</NavLink>
           <NavLink onClick={closeNavigation} to="/txse">TXSE <span className="nav-new">Exchange</span></NavLink>
           <NavLink className="nav-secondary" onClick={closeNavigation} to="/mission">Mission</NavLink>
+          <NavLink onClick={closeNavigation} to="/partners">Partners</NavLink>
           <NavLink onClick={closeNavigation} to="/advertise">Advertise</NavLink>
           <NavLink onClick={closeNavigation} to="/contact">Contact</NavLink>
         </nav>
@@ -1275,6 +1312,8 @@ function SiteHeader() {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  const partnerOffset = Array.from(pathname).reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return <>
       <main id="main-content" tabIndex={-1}>{children}</main>
       <footer className="footer">
@@ -1284,10 +1323,11 @@ function Shell({ children }: { children: React.ReactNode }) {
             <p>Good news. Great Texas possibilities.</p>
             <p className="footer-small">Independent news discovery, connecting you to original publishers across the Lone Star State.</p>
           </div>
-          <AdSlot slot="footer" limit={1} />
+          <AdSlot slot="footer" limit={1} offset={partnerOffset} />
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <Link to="/places">Cities & towns</Link>
+          <Link to="/partners">Advertiser partners</Link>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/privacy">Privacy Statement</Link>
           <Link to="/methodology">Editorial Methodology</Link>

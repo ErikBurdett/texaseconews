@@ -6,11 +6,12 @@ export type AdContext = {
   county?: TexasCounty;
   topics?: string[];
   limit?: number;
+  offset?: number;
   catalog?: AdCreative[];
 };
 
-export function resolveAds({ slot, county, topics = [], limit = 1, catalog = ads }: AdContext) {
-  return catalog
+export function resolveAds({ slot, county, topics = [], limit = 1, offset = 0, catalog = ads }: AdContext) {
+  const eligible = catalog
     .filter((ad) => {
       if (!ad.active || !ad.targeting.slots.includes(slot)) return false;
       if (ad.targeting.countySlugs?.length && (!county || !ad.targeting.countySlugs.includes(county.slug))) return false;
@@ -18,8 +19,10 @@ export function resolveAds({ slot, county, topics = [], limit = 1, catalog = ads
       if (ad.targeting.topics?.length && !ad.targeting.topics.some((topic) => topics.includes(topic))) return false;
       return true;
     })
-    .sort((first, second) => second.priority - first.priority || first.id.localeCompare(second.id))
-    .slice(0, limit);
+    .sort((first, second) => second.priority - first.priority || first.id.localeCompare(second.id));
+  if (!eligible.length) return [];
+  const start = Math.max(0, Math.floor(offset)) % eligible.length;
+  return [...eligible.slice(start), ...eligible.slice(0, start)].slice(0, limit);
 }
 
 export const siteOperatorName = "Texas Business News, LLC";

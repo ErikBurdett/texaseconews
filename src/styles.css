@@ -1677,3 +1677,73 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .town-news-content { width: calc(100% - (var(--page-gutter) * 2)); margin-inline: auto; }
 .page-hero label[for="place-search"], .town-search label { display: block; margin-top: 1.5rem; font-weight: 600; }
 .page-hero .feed-source-note { font-size: .9rem; line-height: 1.6; color: var(--muted); }
+
+/* Locally hosted partner creative: quiet flag colors, crisp brand marks. */
+.hero-copy p.hero-howdy { color: #ff9eb0; font: italic clamp(1.5rem, 2.4vw, 2.1rem)/1.2 Georgia, serif; margin: 0 0 .8rem; }
+.hero-howdy span { display: inline-block; font-size: .65em; margin-left: .3rem; color: #fff; }
+.hero-copy p.hero-mission { max-width: 59ch; font-size: .9rem; color: #b9c6df; margin-top: -.3rem; }
+.partner-spotlight { margin: 1.5rem auto 2rem; }
+.partner-spotlight-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .85rem; }
+.partner-spotlight-heading p { margin: 0; }
+.partner-spotlight-heading a { font-size: .8rem; color: #dce5f5; text-underline-offset: 4px; }
+.partner-spotlight .ad-slot { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; gap: 1rem; }
+.ad-card { border: 1px solid #2a3e60; border-radius: 12px; background: linear-gradient(135deg, #101f3d, #0a142a); min-width: 0; transition: border-color .2s, background .2s; }
+.ad-card:hover { border-color: #d36179; background: #122447; }
+.ad-card:focus-visible, .partner-visit:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.ad-card .ad-image { width: 100%; height: 100px; max-height: none; object-fit: contain; padding: .55rem; border-radius: 8px; }
+.ad-card .logo-light, .sponsor-badge .logo-light, .logo-light { background: #fff; }
+.ad-card .logo-black, .sponsor-badge .logo-black, .logo-black { background: #000; }
+.ad-card .logo-dark, .sponsor-badge .logo-dark, .logo-dark { background: #08142b; }
+.partner-spotlight .ad-card { grid-template-rows: 100px auto auto 1fr auto; gap: .6rem; padding: .9rem; }
+.partner-spotlight .ad-card > strong { font-size: 1rem; line-height: 1.4; }
+.partner-spotlight .ad-card > span:not([class]) { display: none; }
+.partner-spotlight .ad-label { font-size: .6rem; letter-spacing: .06em; line-height: 1.5; }
+.partner-spotlight .ad-disclosure { font-size: .52rem; }
+.partner-spotlight .ad-card em { font-size: .76rem; font-weight: 600; color: #dce5f5; }
+.feed-ad-break .ad-card { width: 100%; grid-template-columns: 130px 1fr; column-gap: 1.5rem; justify-items: start; text-align: left; padding: 1.4rem; }
+.feed-ad-break .ad-image { grid-row: 1 / 6; height: 130px; align-self: center; }
+.feed-ad-break .ad-card > :not(img) { grid-column: 2; }
+.feed-ad-break .ad-card strong { font-family: Georgia, serif; font-weight: 400; font-size: 1.5rem; }
+.feed-ad-break .ad-card > span:not([class]) { font-size: .85rem; line-height: 1.6; }
+.footer .ad-card .ad-image { width: 68px; height: 84px; padding: .2rem; }
+.partners-hero { position: relative; padding: clamp(1.5rem, 4vw, 4rem); border-left: 3px solid #bf0a30; }
+.partners-hero h1 { max-width: 25ch; }
+.partners-hero h1 em { font-style: normal; color: #e5c4cd; }
+.partners-hero p { max-width: 70ch; }
+.partners-hero .partners-disclosure { font-size: .8rem; color: #bcc9df; }
+.partner-directory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin: 2rem auto; scroll-margin-top: 6rem; }
+.partner-profile { overflow: hidden; border: 1px solid #2a3e60; border-radius: 16px; background: #0c1931; }
+.partner-logo-panel { height: 200px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #2a3e60; }
+.partner-logo-panel img { width: 150px; height: 150px; object-fit: contain; }
+.partner-logo-panel.logo-black img { width: 210px; }
+.partner-profile-copy { padding: clamp(1.3rem, 2.3vw, 2rem); }
+.partner-profile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; color: #c2cfe5; font-size: .7rem; }
+.partner-profile h2 { font: 400 clamp(1.5rem, 2.3vw, 2rem)/1.2 Georgia, serif; margin: 1.1rem 0; color: white; letter-spacing: -.02em; }
+.partner-profile h3 { font-size: .8rem; color: #ffa9bb; margin: 1.5rem 0 .65rem; }
+.partner-profile p { font-size: .94rem; line-height: 1.8; color: #c4d0e5; }
+.partner-visit { margin-top: 1.5rem; display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; color: #fff; font-weight: 600; text-decoration: none; padding-top: 1rem; border-top: 1px solid #304463; }
+.partner-visit small { flex-basis: 100%; font-size: .68rem; font-weight: 400; color: #b8c7df; }
+.partner-visit:hover { color: #ffa9bb; }
+.partner-invitation { display: flex; align-items: center; justify-content: space-between; gap: 2rem; border: 1px solid #344467; border-radius: 14px; padding: 2rem; background: linear-gradient(110deg, #102344, #20152c); }
+.partner-invitation h2 { color: #fff; font: 400 2rem/1.2 Georgia, serif; margin: .8rem 0; }
+.partner-invitation p:not(.eyebrow) { color: #c3cfe3; line-height: 1.6; }
+.partner-invitation .button { flex-shrink: 0; }
+@media (max-width: 1100px) {
+  .partner-spotlight .ad-slot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .partner-directory { grid-template-columns: 1fr; }
+  .partner-spotlight-heading { align-items: start; flex-direction: column; gap: .5rem; }
+  .partner-spotlight .ad-slot { gap: .7rem; }
+  .partner-spotlight .ad-card { padding: .65rem; grid-template-rows: 80px auto auto 1fr auto; }
+  .partner-spotlight .ad-image { height: 80px; }
+  .partner-spotlight .ad-card strong { font-size: .9rem; }
+  .partner-spotlight .ad-label { font-size: .54rem; }
+  .partner-spotlight .ad-card em { font-size: .7rem; }
+  .partner-invitation { flex-direction: column; align-items: start; padding: 1.5rem; }
+  .feed-ad-break .ad-card { grid-template-columns: 85px 1fr; gap: .5rem 1rem; padding: 1rem; }
+  .feed-ad-break .ad-image { height: 95px; }
+  .feed-ad-break .ad-card strong { font-size: 1.2rem; }
+}
+
+.partner-spotlight, .partner-directory, .partner-invitation { width: calc(100% - (var(--page-gutter) * 2)); margin-inline: auto; }

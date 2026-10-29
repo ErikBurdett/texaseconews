@@ -15,7 +15,7 @@ TexasBusiness.News is a Texas-only React SPA for positive business news and oppo
 - Shareable county-topic feeds, such as `/county/dallas/topic/jobs`.
 - County directory for browsing and opening county feeds.
 - Texas-themed red, white, and blue visual treatment with friendly Texas copy.
-- Paid placements with visible `Advertisement` and `Paid sponsor` labels, external-link safeguards, and page-memory-only interaction events.
+- Paid placements with visible `Advertisement` and advertiser identity labels, external-link safeguards, and page-memory-only interaction events.
 - News article links open in a new tab and prefer publisher/source URLs over Google News URLs when available.
 - Rights-conscious article cards display headline, actual source, date, automated tags, and the original link without publisher images or feed excerpts.
 - Optional LiveCoinWatch and TradingView scripts remain off until the reader allows them.
@@ -96,7 +96,7 @@ npm run test:e2e
 - Verify selecting a county shows county-specific articles first and statewide Texas articles beneath.
 - With the API mocked offline, verify a sparse rural county shows labeled market and nearby stories without county-specific links or claims.
 - Verify external news article links open in a new tab.
-- Verify every sponsor placement visibly says `Advertisement` and `Paid sponsor`, identifies the advertiser, and uses a sponsored external link.
+- Verify every sponsor placement visibly says `Advertisement` and advertiser identity, identifies the advertiser, and uses a sponsored external link.
 - Verify article cards do not render publisher images or feed excerpts.
 - Verify optional ticker vendors do not load before the reader allows them.
 - Smoke-check `/methodology` and `/advertising-standards`.

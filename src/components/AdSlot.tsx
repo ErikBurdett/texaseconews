@@ -4,8 +4,8 @@ import type { AdSlotId } from "../data/ads";
 import type { TexasCounty } from "../data/counties";
 import { adDisclosureCopy, resolveAds, trackAdEvent } from "../lib/ads";
 
-export function AdSlot({ slot, county, topics, limit = 1 }: { slot: AdSlotId; county?: TexasCounty; topics?: string[]; limit?: number }) {
-  const ads = useMemo(() => resolveAds({ slot, county, topics, limit }), [county, limit, slot, topics]);
+export function AdSlot({ slot, county, topics, limit = 1, offset = 0 }: { slot: AdSlotId; county?: TexasCounty; topics?: string[]; limit?: number; offset?: number }) {
+  const ads = useMemo(() => resolveAds({ slot, county, topics, limit, offset }), [county, limit, offset, slot, topics]);
 
   if (!ads.length) return null;
 
@@ -48,7 +48,7 @@ export function SponsorBadge() {
   const disclosure = adDisclosureCopy(ad, isExternal);
   const content = (
     <>
-      {ad.imageUrl ? <img alt="" className="sponsor-badge-logo" decoding="async" height="256" src={ad.imageUrl} width="256" /> : null}
+      {ad.imageUrl ? <img alt="" className={`sponsor-badge-logo logo-${ad.logoTheme}`} decoding="async" height="256" src={ad.imageUrl} width="256" /> : null}
       <span className="ad-disclosure">Advertisement</span>
       <span className={`ad-label ad-label-${ad.disclosure}`}>{disclosure.label}</span>
     </>
@@ -98,7 +98,7 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
   const disclosure = adDisclosureCopy(ad, isExternal);
   const content = (
     <>
-      {ad.imageUrl ? <img className="ad-image" src={ad.imageUrl} alt="" decoding="async" fetchPriority="low" height="256" loading="lazy" width="256" /> : null}
+      {ad.imageUrl ? <img className={`ad-image logo-${ad.logoTheme}`} src={ad.imageUrl} alt="" decoding="async" fetchPriority="low" height="256" loading="lazy" width="256" /> : null}
       <span className="ad-disclosure">Advertisement</span>
       <span className={`ad-label ad-label-${ad.disclosure}`}>{disclosure.label}</span>
       <strong>{ad.title}</strong>
@@ -109,14 +109,14 @@ function AdCard({ ad, slot, county }: { ad: ReturnType<typeof resolveAds>[number
 
   if (isExternal) {
     return (
-      <a aria-label={`${disclosure.accessibleName}: ${ad.title}`} className={`ad-card ad-card-${ad.placement}`} href={ad.href} onClick={() => trackAdEvent("ad_click", ad, slot)} ref={ref} referrerPolicy="strict-origin-when-cross-origin" rel="sponsored nofollow noopener noreferrer" target="_blank">
+      <a aria-label={`${disclosure.accessibleName}: ${ad.title}`} data-ad-id={ad.id} className={`ad-card ad-card-${ad.placement}`} href={ad.href} onClick={() => trackAdEvent("ad_click", ad, slot)} ref={ref} referrerPolicy="strict-origin-when-cross-origin" rel="sponsored nofollow noopener noreferrer" target="_blank">
         {content}
       </a>
     );
   }
 
   return (
-    <Link aria-label={`${disclosure.accessibleName}: ${ad.title}`} className={`ad-card ad-card-${ad.placement}`} onClick={() => trackAdEvent("ad_click", ad, slot)} ref={ref} to={ad.href}>
+    <Link aria-label={`${disclosure.accessibleName}: ${ad.title}`} data-ad-id={ad.id} className={`ad-card ad-card-${ad.placement}`} onClick={() => trackAdEvent("ad_click", ad, slot)} ref={ref} to={ad.href}>
       {content}
     </Link>
   );
