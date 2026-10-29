@@ -38,7 +38,7 @@ no unverified project outcomes are attributed to an advertiser.
 - Local assets use build hashes (small files may be inlined by Vite). No remote
   logo requests, ad SDK, or tracking service was added. Images use fixed boxes,
   asynchronous decoding, and lazy loading for cards/profiles.
-- Four homepage placements; inline ads rotate through all four every ten news
+- Four homepage placements below the articles; inline ads rotate through all four every ten news
   articles. Footer selection varies by route; filters retain a compact badge.
 - `/partners` is linked in desktop/mobile navigation and the footer, added to
   the sitemap and explicit Amplify HTTP-200 SPA rewrite.

@@ -138,6 +138,7 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
           <h1>{selectedTopicSlugs.length === 1 ? `${selectedTopics[0].label} news across Texas.` : selectedRegionSlugs.length === 1 ? `${selectedRegions[0].label} growth news.` : <>Good news.<br /><em>Great Texas possibilities.</em></>}</h1>
           <p>{selectedTopicSlugs.length === 1 ? selectedTopics[0].description : selectedRegionSlugs.length === 1 ? selectedRegions[0].description : "Texas: A Business Friendly State filled with Friendly People"}</p>
           <p className="hero-mission">From Your Local County &amp; Community Positive News all the way to Y’all Street and Outer-Space - we strive to bring it all to you.</p>
+          <p className="hero-description">The businesses, people, and projects moving Texas forward. Discover new jobs, local investment, and opportunity in the places you care about.</p>
           <div className="hero-actions">
             <a className="button primary" href="#feed-controls" onClick={() => document.getElementById("county-search")?.focus()}>Find your county <span aria-hidden="true">↗</span></a>
             <Link className="hero-text-link" to="/places">Find your town ↗</Link>
@@ -148,10 +149,6 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
         <TexasMap />
       </section>
 
-      <section className="partner-spotlight" aria-label="Advertiser partners">
-        <div className="partner-spotlight-heading"><p className="eyebrow">Meet our advertiser partners</p><Link to="/partners">The businesses behind the banners <span aria-hidden="true">↗</span></Link></div>
-        <AdSlot slot="hero" limit={4} />
-      </section>
       <section className="workspace">
         <div className="filter-stack">
           <FeedControls
@@ -207,6 +204,10 @@ function HomePage({ initialCounty, initialRegion, topicSlug }: { initialCounty?:
             onLoadMore={() => setVisibleStatewideCount((current) => Math.min(current + pageSize, statewideItems.length))}
           />
         </div>
+      </section>
+      <section className="partner-spotlight" aria-label="Advertiser partners">
+        <div className="partner-spotlight-heading"><p className="eyebrow">Meet our advertiser partners</p><Link to="/partners">The businesses behind the banners <span aria-hidden="true">↗</span></Link></div>
+        <AdSlot slot="hero" limit={4} />
       </section>
     </Shell>
   );

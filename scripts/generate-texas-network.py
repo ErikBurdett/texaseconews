@@ -165,12 +165,12 @@ styles = """
 .mesh { stroke-linejoin: round; stroke-linecap: round; stroke-width: .65; }
 .mesh-0 { stroke: #97b8ef; stroke-opacity: .36; }
 .mesh-1 { stroke: #e0eaff; stroke-opacity: .58; }
-.mesh-2 { stroke: #df3153; stroke-opacity: .8; stroke-width: .8; }
+.mesh-2 { stroke: #bf0a30; stroke-opacity: .8; stroke-width: .8; }
 .node { fill: #9dbcef; }
 .node-white { fill: #ffffff; }
-.node-red { fill: #f04464; }
+.node-red { fill: #bf0a30; }
 .network-beam { stroke: #ffffff; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 3 97; animation: flow 9s linear infinite; }
-.beam-red { stroke: #ff486c; }
+.beam-red { stroke: #bf0a30; }
 @keyframes flow { from { stroke-dashoffset: 100; } to { stroke-dashoffset: -100; } }
 @media (prefers-reduced-motion: reduce) { .network-beam { animation: none; } }
 """
@@ -198,9 +198,9 @@ icon = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"
         '<g transform="translate(3 3) scale(.0967)">',
         f'<path d="{outline}" fill="#173d78" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>']
 for i, d in enumerate(pulses[:10]):
-    icon.append(f'<path d="{d}" stroke="{"#ed3556" if i % 3 == 0 else "#bdcff0"}" stroke-width="5" stroke-linecap="round"/>')
+    icon.append(f'<path d="{d}" stroke="{"#bf0a30" if i % 3 == 0 else "#bdcff0"}" stroke-width="5" stroke-linecap="round"/>')
 for i in [0, 2, 4, 5, 7, 8, 9, 10, 12, 14]:
     x, y = metro[i][0]
-    icon.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="10" fill="{"#ed3556" if i % 3 == 0 else "#ffffff"}"/>')
+    icon.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="10" fill="{"#bf0a30" if i % 3 == 0 else "#ffffff"}"/>')
 icon.append('</g></svg>')
 (ROOT / 'public/texas-mark.svg').write_text(''.join(icon) + '\n')

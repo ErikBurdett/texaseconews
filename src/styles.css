@@ -10,25 +10,25 @@
   --mint: #ffffff;
   --gold: #f4f7fb;
   --blue: #4f8ccc;
-  --red: #d35d68;
+  --red: #bf0a30;
   /*
    * Texas flag red, used at full strength everywhere.
    *
    * The one rule to keep: this red never sits as text on the navy panels. It
    * reaches only 2.94:1 there, under the 4.5:1 small text needs, and the way
    * to fix that is a lighter background, not a lighter red -- lightening this
-   * red turns it pink. Red text therefore goes on a light pill (5.69:1 on
+   * red changes its hue. Red text therefore goes on a light pill (6.38:1 on
    * white), and red on dark is a bar, rule or border rather than a letterform.
    */
-  --texas-red: #c72132;
-  --texas-red-line: rgba(199, 33, 50, 0.66);
-  --texas-red-soft: rgba(199, 33, 50, 0.17);
+  --texas-red: #bf0a30;
+  --texas-red-line: rgba(191, 10, 48, 0.66);
+  --texas-red-soft: rgba(191, 10, 48, 0.17);
   /* Hairline used for the divisions inside a card. */
   --line-soft: rgba(191, 213, 238, 0.11);
   --accent: #73a7df;
   --accent-strong: #4d89c9;
   --accent-soft: rgba(84, 145, 207, 0.2);
-  --highlight-soft: rgba(211, 93, 104, 0.14);
+  --highlight-soft: rgba(191, 10, 48, 0.14);
   --surface: rgba(255, 255, 255, 0.045);
   --surface-hover: rgba(255, 255, 255, 0.085);
   --muted: #afbfcc;
@@ -47,7 +47,7 @@ body {
   margin: 0;
   background:
     radial-gradient(circle at 10% 4%, rgba(63, 124, 188, 0.24), transparent 34rem),
-    radial-gradient(circle at 94% 88%, rgba(159, 65, 83, 0.12), transparent 34rem),
+    radial-gradient(circle at 94% 88%, rgba(191, 10, 48, 0.12), transparent 34rem),
     linear-gradient(150deg, #061126 0%, #0a1a36 54%, #12172c 100%);
 }
 
@@ -709,7 +709,7 @@ textarea:focus-visible {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: linear-gradient(180deg, var(--texas-red), rgba(199, 33, 50, 0.2));
+  background: linear-gradient(180deg, var(--texas-red), rgba(191, 10, 48, 0.2));
 }
 
 .news-card:hover,
@@ -958,7 +958,7 @@ textarea:focus-visible {
   content: "";
   position: absolute;
   inset: -40%;
-  background: conic-gradient(from 180deg, transparent, rgba(255, 255, 255, 0.14), rgba(201, 32, 50, 0.18), transparent);
+  background: conic-gradient(from 180deg, transparent, rgba(255, 255, 255, 0.14), rgba(191, 10, 48, 0.18), transparent);
   animation: loading-sweep 2.8s linear infinite;
 }
 
@@ -1242,8 +1242,8 @@ textarea:focus-visible {
 }
 
 .form-status.error {
-  border-color: rgba(255, 138, 138, 0.45);
-  color: #ffd4d4;
+  border-color: var(--texas-red);
+  color: #ffffff;
   background: rgba(148, 27, 39, 0.24);
 }
 
@@ -1522,8 +1522,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .hero-copy h1 em { color: white; }
 .hero-copy .eyebrow { color: #d3dced; }
 .signal-dot { background: #bf0a30; box-shadow: 0 0 0 5px #bf0a3026, 0 0 15px #bf0a3050; }
-.button.primary { background: #bf0a30; border-color: #dc3658; color: white; box-shadow: 0 8px 24px #bf0a3026; }
-.button.primary:hover { background: #a80729; border-color: #f06a85; }
+.button.primary { background: #bf0a30; border-color: var(--texas-red); color: white; box-shadow: 0 8px 24px #bf0a3026; }
+.button.primary:hover { background: #a80729; border-color: var(--texas-red); }
 .texas-map { width: 42%; height: calc(100% - 2rem); max-width: 560px; right: 3%; }
 @keyframes menu-rise { from { transform: translateY(8px); } to { transform: translateY(0); } }
 .quick-actions button.selected, .topic-chip.selected { box-shadow: inset 0 -2px #bf0a30; color: white; }
@@ -1679,8 +1679,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .page-hero .feed-source-note { font-size: .9rem; line-height: 1.6; color: var(--muted); }
 
 /* Locally hosted partner creative: quiet flag colors, crisp brand marks. */
-.hero-copy p.hero-howdy { color: #ff9eb0; font: italic clamp(1.5rem, 2.4vw, 2.1rem)/1.2 Georgia, serif; margin: 0 0 .8rem; }
-.hero-howdy span { display: inline-block; font-size: .65em; margin-left: .3rem; color: #fff; }
+.hero-copy p.hero-howdy { color: var(--texas-red); background: #ffffff; width: fit-content; padding: .16em .42em; border-radius: 5px; font: italic clamp(1.5rem, 2.4vw, 2.1rem)/1.2 Georgia, serif; margin: 0 0 .8rem; }
+.hero-howdy span { display: inline-block; font-size: .65em; margin-left: .3rem; color: var(--texas-red); }
 .hero-copy p.hero-mission { max-width: 59ch; font-size: .9rem; color: #b9c6df; margin-top: -.3rem; }
 .partner-spotlight { margin: 1.5rem auto 2rem; }
 .partner-spotlight-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .85rem; }
@@ -1688,7 +1688,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .partner-spotlight-heading a { font-size: .8rem; color: #dce5f5; text-underline-offset: 4px; }
 .partner-spotlight .ad-slot { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; gap: 1rem; }
 .ad-card { border: 1px solid #2a3e60; border-radius: 12px; background: linear-gradient(135deg, #101f3d, #0a142a); min-width: 0; transition: border-color .2s, background .2s; }
-.ad-card:hover { border-color: #d36179; background: #122447; }
+.ad-card:hover { border-color: var(--texas-red); background: #122447; }
 .ad-card:focus-visible, .partner-visit:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 .ad-card .ad-image { width: 100%; height: 100px; max-height: none; object-fit: contain; padding: .55rem; border-radius: 8px; }
 .ad-card .logo-light, .sponsor-badge .logo-light, .logo-light { background: #fff; }
@@ -1708,7 +1708,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .footer .ad-card .ad-image { width: 68px; height: 84px; padding: .2rem; }
 .partners-hero { position: relative; padding: clamp(1.5rem, 4vw, 4rem); border-left: 3px solid #bf0a30; }
 .partners-hero h1 { max-width: 25ch; }
-.partners-hero h1 em { font-style: normal; color: #e5c4cd; }
+.partners-hero h1 em { font-style: normal; color: #ffffff; text-decoration: underline; text-decoration-color: var(--texas-red); text-decoration-thickness: 3px; text-underline-offset: .14em; }
 .partners-hero p { max-width: 70ch; }
 .partners-hero .partners-disclosure { font-size: .8rem; color: #bcc9df; }
 .partner-directory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin: 2rem auto; scroll-margin-top: 6rem; }
@@ -1719,11 +1719,11 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .partner-profile-copy { padding: clamp(1.3rem, 2.3vw, 2rem); }
 .partner-profile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; color: #c2cfe5; font-size: .7rem; }
 .partner-profile h2 { font: 400 clamp(1.5rem, 2.3vw, 2rem)/1.2 Georgia, serif; margin: 1.1rem 0; color: white; letter-spacing: -.02em; }
-.partner-profile h3 { font-size: .8rem; color: #ffa9bb; margin: 1.5rem 0 .65rem; }
+.partner-profile h3 { font-size: .8rem; color: #ffffff; border-left: 3px solid var(--texas-red); padding-left: .65rem; margin: 1.5rem 0 .65rem; }
 .partner-profile p { font-size: .94rem; line-height: 1.8; color: #c4d0e5; }
 .partner-visit { margin-top: 1.5rem; display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; color: #fff; font-weight: 600; text-decoration: none; padding-top: 1rem; border-top: 1px solid #304463; }
 .partner-visit small { flex-basis: 100%; font-size: .68rem; font-weight: 400; color: #b8c7df; }
-.partner-visit:hover { color: #ffa9bb; }
+.partner-visit:hover { color: #ffffff; border-top-color: var(--texas-red); text-decoration: underline; text-decoration-color: var(--texas-red); text-underline-offset: .2em; }
 .partner-invitation { display: flex; align-items: center; justify-content: space-between; gap: 2rem; border: 1px solid #344467; border-radius: 14px; padding: 2rem; background: linear-gradient(110deg, #102344, #20152c); }
 .partner-invitation h2 { color: #fff; font: 400 2rem/1.2 Georgia, serif; margin: .8rem 0; }
 .partner-invitation p:not(.eyebrow) { color: #c3cfe3; line-height: 1.6; }
