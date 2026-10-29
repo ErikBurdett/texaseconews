@@ -77,6 +77,41 @@ the exact function origin to Amplify's live CSP as well as `amplify.yml`.
 
 ## Local Development
 
+### Google Analytics
+
+Production builds initialize Google tag `G-1B4J1YS4JK` from
+`src/lib/analytics.ts`. The tag loads asynchronously, once per document, and is
+absent from the Vite development server. Google Signals and advertising
+personalization signals are disabled. Custom sponsor `dataLayer` events remain
+page-local and are not forwarded through `gtag('event', ...)`.
+
+Page views use GA4's enhanced history measurement; keep **Page changes based on
+browser history events** enabled in the web stream. Do not add a second React
+route tracker, which would duplicate page views. The live tag was verified to
+generate both the initial view and a client-side navigation view in the local
+production build, once each, on desktop and mobile.
+
+`amplify.yml` records the required Google CSP origins; apply its policy to the
+Amplify app's `customHeaders` field as described in that file. No inline-script
+exception is required. The Privacy Statement discloses Analytics and cookies.
+
+To verify a production build and its candidate CSP:
+
+```sh
+npm run build
+npm run preview -- --host 127.0.0.1 --port 4175
+# In another terminal; omit CHROMIUM_PATH to use Playwright's installed browser:
+CHROMIUM_PATH=/usr/bin/chromium node scripts/check-analytics.mjs
+# Or verify the deployed site:
+CHROMIUM_PATH=/usr/bin/chromium node scripts/check-analytics.mjs https://texasbusiness.news
+```
+
+The checker runs the real Google script but intercepts collection requests so
+QA does not populate Analytics reports. Google Analytics Realtime/DebugView and
+property retention settings require access to the Google account separately.
+
+### Commands
+
 Use Node 22 from `/home/telephone/PIA/.nvmrc`.
 
 ```bash

@@ -89,6 +89,6 @@ export function trackAdEvent(eventName: "ad_impression" | "ad_click", ad: AdCrea
 
 declare global {
   interface Window {
-    dataLayer?: Array<Record<string, unknown>>;
+    dataLayer?: Array<Record<string, unknown> | IArguments>;
   }
 }

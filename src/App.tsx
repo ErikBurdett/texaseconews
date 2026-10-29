@@ -487,7 +487,7 @@ function AdvertisePage() {
       <section className="feature-grid">
         <InfoCard title="Contextual Placements" body="Choose statewide, regional, county, or industry context. TexasBusiness.News does not currently build behavioral advertising profiles or target readers using sensitive personal data." />
         <InfoCard title="Unmistakable Disclosure" body="Every placement displays Advertisement, names the advertiser, and remains visually separate from editorial links." />
-        <InfoCard title="Minimal Measurement" body="Impression and click events are held in the page's in-memory dataLayer with campaign and slot fields. No analytics recipient is currently connected." />
+        <InfoCard title="Minimal Measurement" body="Impression and click events are held in the page's in-memory dataLayer with campaign and slot fields. These custom sponsor events are not forwarded to Google Analytics, which measures site usage separately." />
       </section>
       <section className="advertise-panel">
         <div>
@@ -722,7 +722,7 @@ function PrivacyPage() {
       <section className="page-hero legal-page">
         <p className="eyebrow">Privacy statement</p>
         <h1>Privacy-first by design.</h1>
-        <p>Effective {legalEffectiveDate}. This statement explains the limited data used by {siteName}, operated by {siteOperator}, the vendors involved, your choices, and how to make a privacy request.</p>
+        <p>Effective October 29, 2026. This statement explains the limited data used by {siteName}, operated by {siteOperator}, the vendors involved, your choices, and how to make a privacy request.</p>
       </section>
       <section className="legal-document">
         <LegalSection title="1. Scope and operator contact">
@@ -743,7 +743,11 @@ function PrivacyPage() {
           <p>AWS Amplify Hosting, the news API, and security infrastructure may process IP address, request time, requested URL, user-agent or browser details, referring page, device and network information, and error or security logs. Retention and access depend on the configured AWS and API logging settings.</p>
         </LegalSection>
         <LegalSection title="5. Sponsor measurement">
-          <p>Visible sponsor impressions and sponsor-link clicks create limited events containing event type, campaign ID, sponsor name, and placement slot in the current page’s in-memory <code>dataLayer</code>. County, region, account, cross-site identifier, and sensitive data are not included. No analytics recipient is currently connected, and the in-memory events end with the page session.</p>
+          <p>Visible sponsor impressions and sponsor-link clicks create limited events containing event type, campaign ID, sponsor name, and placement slot in the current page’s in-memory <code>dataLayer</code>. County, region, account, cross-site identifier, and sensitive data are not included. These custom sponsor events are not forwarded to Google Analytics, and the in-memory events end with the page session.</p>
+        </LegalSection>
+        <LegalSection title="Website analytics">
+          <p>We use Google Analytics to understand page visits, navigation, and engagement. Google receives page and referrer URLs, browser and device details, network request information, and cookie-based identifiers used to distinguish visits and sessions. Analytics cookies may remain between visits; retention follows our Google Analytics property settings. We do not send contact-form message content, email addresses, or names as analytics parameters.</p>
+          <p>Google Signals and advertising personalization signals are disabled in our tag configuration. Custom sponsor impression and click events described above remain in page memory; standard Analytics measurements may separately include outbound-link clicks. You can block the Google Analytics script with browser privacy controls or use <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">Google’s Analytics opt-out browser add-on</a>. See <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">how Google uses information from sites that use its services</a>.</p>
         </LegalSection>
         <LegalSection title="6. Market ticker widgets">
           <p>The selected market ticker loads a widget from TradingView for stocks or LiveCoinWatch for crypto. Because its script runs in your browser, that vendor receives your IP address, browser and device details, and page-request information, and may use cookies, local storage, or similar technologies under its own privacy policy rather than this one. {siteName} does not receive or store what it collects.</p>
@@ -753,10 +757,10 @@ function PrivacyPage() {
           <p>The primary news API receives selected county, region, and industry slugs plus a result limit. Browser RSS fallback is off by default in production and should be enabled only after source rights and proxy terms are approved. When enabled after an eligible API failure, RSS2JSON or AllOrigins receives the public feed URL and normal network request data. Those services do not receive contact-form content from this site and do not grant rights to publisher content.</p>
         </LegalSection>
         <LegalSection title="8. Uses and legal bases">
-          <p>We use information to deliver requested pages, remember choices, route contact messages, secure and debug the service, prevent abuse, measure sponsor placement within the page, comply with law, and handle corrections or rights requests. Depending on the activity and applicable law, processing is based on providing the requested service, legitimate operational interests, or legal obligations.</p>
+          <p>We use information to deliver requested pages, remember choices, route contact messages, secure and debug the service, prevent abuse, understand site usage, measure sponsor placement within the page, comply with law, and handle corrections or rights requests. Depending on the activity and applicable law, processing is based on providing the requested service, legitimate operational interests, or legal obligations.</p>
         </LegalSection>
         <LegalSection title="9. Disclosure and sale">
-          <p>Information may be processed by AWS Amplify, the news API operator and vendors you choose to load, and may be disclosed when legally required or in a business transfer subject to appropriate protections. {siteName} does not currently sell personal data, share it for cross-context behavioral advertising, or use it for targeted advertising as those terms are commonly defined. Current sponsor placement is contextual.</p>
+          <p>Information may be processed by AWS Amplify, Google Analytics, the news API operator and market-widget vendors, and may be disclosed when legally required or in a business transfer subject to appropriate protections. {siteName} does not currently sell personal data, share it for cross-context behavioral advertising, or use it for targeted advertising as those terms are commonly defined. Current sponsor placement is contextual.</p>
         </LegalSection>
         <LegalSection title="10. Retention and security">
           <p>Browser preferences remain until cleared or changed. RSS fallback cache entries expire after 45 minutes. Page-memory ad events end when the page session ends. Contact messages and infrastructure logs are retained only as reasonably needed for the request, security, records, and legal obligations under operator and vendor settings. We use reasonable safeguards, but no internet system is completely secure.</p>

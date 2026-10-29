@@ -658,14 +658,14 @@ test("covers directory, mission, advertising, and not-found routes", async ({ pa
   await expect(page.getByRole("link", { name: "Browse counties" })).toBeVisible();
 });
 
-test("loads the market ticker vendors on every page", async ({ page }) => {
-  // The consent gate was removed: both vendors now load for every reader, and
-  // the Privacy Statement says so rather than promising they are blocked.
+test("loads stocks by default and crypto only when selected", async ({ page }) => {
   await expect
     .poll(() => page.evaluate(() => Boolean(window.__tradingViewMocked)))
     .toBe(true);
+  await expect(page.getByTitle("Crypto price ticker")).toHaveCount(0);
+  await page.getByRole("button", { name: "Crypto", exact: true }).click();
   await expect
-    .poll(() => page.evaluate(() => Boolean(window.__liveCoinWatchMocked)))
+    .poll(() => page.frameLocator('iframe[title="Crypto price ticker"]').locator("body").evaluate(() => Boolean(window.__liveCoinWatchMocked)))
     .toBe(true);
   await expect(page.getByText("Optional LiveCoinWatch and TradingView tickers are off.")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Manage privacy choices" })).toHaveCount(0);

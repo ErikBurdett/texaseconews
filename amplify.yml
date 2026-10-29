@@ -43,9 +43,8 @@ frontend:
 customHeaders:
   - pattern: '**'
     headers:
-      # The site loads no third-party script of its own. The two exceptions are
-      # the LiveCoinWatch and TradingView ticker widgets; naming them here means
-      # anything else is blocked outright rather than silently permitted.
+      # Allow the market widgets and Google Analytics explicitly. The tag is
+      # initialized in the application bundle, without unsafe-inline scripts.
       #
       # TradingView serves its script from s3.tradingview.com but renders into an
       # iframe on tradingview-widget.com, and that iframe calls a sheriff
@@ -62,14 +61,15 @@ customHeaders:
           object-src 'none';
           frame-ancestors 'none';
           form-action 'self';
-          script-src 'self' https://s3.tradingview.com https://www.livecoinwatch.com;
+          script-src 'self' https://s3.tradingview.com https://www.livecoinwatch.com https://www.googletagmanager.com;
           style-src 'self' 'unsafe-inline';
           img-src 'self' data: https://www.livecoinwatch.com https://s3.tradingview.com
-          https://lcw.nyc3.cdn.digitaloceanspaces.com;
+          https://lcw.nyc3.cdn.digitaloceanspaces.com https://www.googletagmanager.com https://*.google-analytics.com;
           font-src 'self' data:;
           connect-src 'self' https://ql3mj2hit5lv7p4bb7cm2unxoy0kopsi.lambda-url.us-west-2.on.aws
           https://xacsxkbcfv7yhykz6slylxujou0spwxq.lambda-url.us-west-2.on.aws https://api.livecoinwatch.com https://www.livecoinwatch.com
-          https://http-api.livecoinwatch.com https://*.tradingview-widget.com;
+          https://http-api.livecoinwatch.com https://*.tradingview-widget.com
+          https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com;
           frame-src 'self' https://s.tradingview.com https://www.tradingview.com
           https://www.tradingview-widget.com https://*.tradingview-widget.com
           https://www.livecoinwatch.com;
