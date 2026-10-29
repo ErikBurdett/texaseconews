@@ -11,15 +11,7 @@
   --gold: #f4f7fb;
   --blue: #4f8ccc;
   --red: #bf0a30;
-  /*
-   * Texas flag red, used at full strength everywhere.
-   *
-   * The one rule to keep: this red never sits as text on the navy panels. It
-   * reaches only 2.94:1 there, under the 4.5:1 small text needs, and the way
-   * to fix that is a lighter background, not a lighter red -- lightening this
-   * red changes its hue. Red text therefore goes on a light pill (6.38:1 on
-   * white), and red on dark is a bar, rule or border rather than a letterform.
-   */
+  /* Shared flag-red accent; the hero greeting uses it directly on navy. */
   --texas-red: #bf0a30;
   --texas-red-line: rgba(191, 10, 48, 0.66);
   --texas-red-soft: rgba(191, 10, 48, 0.17);
@@ -1679,7 +1671,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .page-hero .feed-source-note { font-size: .9rem; line-height: 1.6; color: var(--muted); }
 
 /* Locally hosted partner creative: quiet flag colors, crisp brand marks. */
-.hero-copy p.hero-howdy { color: var(--texas-red); background: #ffffff; width: fit-content; padding: .16em .42em; border-radius: 5px; font: italic clamp(1.5rem, 2.4vw, 2.1rem)/1.2 Georgia, serif; margin: 0 0 .8rem; }
+.hero-copy p.hero-howdy { color: var(--texas-red); background: transparent; width: fit-content; padding: 0; font: italic clamp(1.5rem, 2.4vw, 2.1rem)/1.2 Georgia, serif; margin: 0 0 .8rem; }
 .hero-howdy span { display: inline-block; font-size: .65em; margin-left: .3rem; color: var(--texas-red); }
 .hero-copy p.hero-mission { max-width: 59ch; font-size: .9rem; color: #b9c6df; margin-top: -.3rem; }
 .partner-spotlight { margin: 1.5rem auto 2rem; }
